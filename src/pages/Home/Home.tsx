@@ -10,6 +10,7 @@ import iconPeople2 from '../../assets/icon-people2.svg';
 import iconPeople3 from '../../assets/icon-people3.svg';
 import FruitInfiniteRow from '../../components/common/FruitInfiniteRow';
 import Testimonial from '../../components/common/Testimonial';
+import SignupModal from '../../components/common/SignupModal';
 import logo from '../../assets/logo.svg';
 import chevronUp from '../../assets/icon-ChevronUp.svg';
 import kakaoLogin from '../../assets/kakaoLogin.svg';
@@ -1158,6 +1159,22 @@ const CtaIcon = styled.span`
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
+
+  // 테스트용 키보드 단축키 (개발 시에만 사용)
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ctrl + M 또는 Cmd + M으로 모달 열기/닫기
+      if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
+        e.preventDefault();
+        setIsSignupModalOpen(prev => !prev);
+        console.log('모달 토글:', !isSignupModalOpen);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [isSignupModalOpen]);
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -1167,7 +1184,32 @@ const Home: React.FC = () => {
   };
 
   const handleKakaoLogin = () => {
+    // 실제로는 여기서 카카오 로그인 API를 호출하고
+    // 기존 유저인지 신규 유저인지 확인해야 합니다
+    // 지금은 데모를 위해 항상 신규 유저로 처리
+    setIsSignupModalOpen(true);
+  };
+
+  const handleSignupSubmit = async (data: {
+    name: string;
+    farmName: string;
+    farmLocation: string;
+  }) => {
+    console.log('회원가입 데이터:', data);
+    
+    // 실제로는 여기서 서버에 데이터를 전송해야 합니다
+    // 지금은 시뮬레이션을 위해 딜레이만 추가
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // 회원가입 완료 후 모달 닫기
+    setIsSignupModalOpen(false);
+    
+    // /home으로 이동
     navigate('/home');
+  };
+
+  const handleSignupClose = () => {
+    setIsSignupModalOpen(false);
   };
 
   return (
@@ -1325,6 +1367,13 @@ const Home: React.FC = () => {
           </ScrollToTopWrapper>
         </RelativeBgSection>
       </PageContainer>
+      
+      {/* 회원가입 모달 */}
+      <SignupModal 
+        isOpen={isSignupModalOpen}
+        onClose={handleSignupClose}
+        onSubmit={handleSignupSubmit}
+      />
     </LandingPageWrapper>
   );
 };
