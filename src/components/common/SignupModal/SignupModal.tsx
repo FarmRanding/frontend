@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import { signupUser } from '../../../api/auth';
 
 interface SignupModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: {
-    name: string;
-    farmName: string;
-    farmLocation: string;
-  }) => void;
+  onComplete: () => void;
+  userInfo: {
+    userId: string;
+    email: string;
+    nickname: string;
+    membershipType: string;
+  };
 }
 
 interface SignupData {
@@ -17,6 +20,233 @@ interface SignupData {
   farmLocation: string;
 }
 
+const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onComplete, userInfo }) => {
+  const [formData, setFormData] = useState<SignupData>({
+    name: '',
+    farmName: '',
+    farmLocation: ''
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [addressSearchResults, setAddressSearchResults] = useState<string[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const handleInputChange = (field: keyof SignupData) => (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: e.target.value
+    }));
+    
+    // 농가 위치 필드의 경우 입력 시 검색 결과 초기화
+    if (field === 'farmLocation') {
+      setShowDropdown(false);
+      setAddressSearchResults([]);
+    }
+  };
+
+  // 주소 검색 함수
+  const searchAddress = async (query: string) => {
+    if (!query.trim()) {
+      setAddressSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    setIsSearching(true);
+    
+    try {
+      // 목업 데이터로 시뮬레이션
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const mockResults = [
+        '서울특별시 강남구 역삼동',
+        '서울특별시 서초구 서초동',
+        '경기도 화성시 동탄면',
+        '경기도 화성시 봉담읍',
+        '경기도 화성시 남양읍',
+        '경기도 성남시 분당구 정자동',
+        '경기도 용인시 기흥구 구갈동',
+        '부산광역시 해운대구 우동',
+        '대구광역시 수성구 범어동',
+        '인천광역시 연수구 송도동'
+      ];
+      
+      const filteredResults = mockResults.filter(address => 
+        address.toLowerCase().includes(query.toLowerCase())
+      );
+      
+      setAddressSearchResults(filteredResults);
+      setShowDropdown(true);
+    } catch (error) {
+      console.error('주소 검색 실패:', error);
+      setAddressSearchResults([]);
+      setShowDropdown(false);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleAddressSearch = () => {
+    searchAddress(formData.farmLocation);
+  };
+
+  const handleAddressSelect = (selectedAddress: string) => {
+    setFormData(prev => ({
+      ...prev,
+      farmLocation: selectedAddress
+    }));
+    setShowDropdown(false);
+    setAddressSearchResults([]);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name.trim() || !formData.farmName.trim() || !formData.farmLocation.trim()) {
+      alert('모든 필드를 입력해주세요.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      const result = await signupUser({
+        name: formData.name,
+        farmName: formData.farmName,
+        location: formData.farmLocation
+      });
+      
+      console.log('회원가입 성공:', result);
+      alert('회원가입이 완료되었습니다!');
+      onComplete();
+    } catch (error: any) {
+      console.error('회원가입 실패:', error);
+      
+      // 에러 메시지가 "성공"인 경우 실제로는 성공으로 처리
+      if (error?.message === '성공' || error?.toString().includes('성공')) {
+        console.log('실제로는 성공');
+        alert('회원가입이 완료되었습니다!');
+        onComplete();
+      } else {
+        alert('회원가입에 실패했습니다. 다시 시도해주세요.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+      setShowDropdown(false);
+    }
+  };
+
+  const handleContainerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  const isFormValid = formData.name.trim() && formData.farmName.trim() && formData.farmLocation.trim();
+
+  if (!isOpen) return null;
+
+  return (
+    <ModalOverlay isOpen={isOpen} onClick={handleOverlayClick}>
+      <ModalContainer isOpen={isOpen} onClick={handleContainerClick}>
+        <CloseButton onClick={onClose} type="button">
+          ×
+        </CloseButton>
+        
+        <ModalHeader>
+          <ModalTitle>환영합니다!</ModalTitle>
+          <ModalSubtitle>
+            팜랜딩 서비스 이용을 위해<br />
+            기본 정보를 입력해주세요.
+          </ModalSubtitle>
+        </ModalHeader>
+        
+        <ModalForm onSubmit={handleSubmit}>
+          <FormGroup>
+            <FormLabel htmlFor="name">이름</FormLabel>
+            <FormInput
+              id="name"
+              type="text"
+              placeholder="실명을 입력해주세요"
+              value={formData.name}
+              onChange={handleInputChange('name')}
+              required
+            />
+          </FormGroup>
+          
+          <FormGroup>
+            <FormLabel htmlFor="farmName">농가명</FormLabel>
+            <FormInput
+              id="farmName"
+              type="text"
+              placeholder="농가 이름을 입력해주세요"
+              value={formData.farmName}
+              onChange={handleInputChange('farmName')}
+              required
+            />
+          </FormGroup>
+          
+          <FormGroup>
+            <FormLabel htmlFor="farmLocation">농가 위치</FormLabel>
+            <AddressSearchContainer>
+              <AddressSearchInput
+                id="farmLocation"
+                type="text"
+                placeholder="화성, 서울, 부산 등 입력 후 검색 버튼 클릭"
+                value={formData.farmLocation}
+                onChange={handleInputChange('farmLocation')}
+                required
+              />
+              <SearchButton onClick={handleAddressSearch} disabled={isSearching} type="button">
+                {isSearching ? '검색중...' : '검색'}
+              </SearchButton>
+            </AddressSearchContainer>
+            
+            {showDropdown && (
+              <SearchResultsDropdown isVisible={showDropdown}>
+                {addressSearchResults.length > 0 ? (
+                  addressSearchResults.map((address, index) => (
+                    <SearchResultItem key={index} onClick={() => handleAddressSelect(address)}>
+                      {address}
+                    </SearchResultItem>
+                  ))
+                ) : (
+                  <NoResultsMessage>
+                    검색 결과가 없습니다.
+                  </NoResultsMessage>
+                )}
+              </SearchResultsDropdown>
+            )}
+          </FormGroup>
+          
+          <ButtonGroup>
+            <Button type="button" variant="secondary" onClick={onClose}>
+              취소
+            </Button>
+            <Button 
+              type="submit" 
+              variant="primary" 
+              disabled={!isFormValid || isSubmitting}
+            >
+              {isSubmitting ? '가입 중...' : '가입 완료'}
+            </Button>
+          </ButtonGroup>
+        </ModalForm>
+      </ModalContainer>
+    </ModalOverlay>
+  );
+};
+
+export default SignupModal;
+
+// Styled Components
 const ModalOverlay = styled.div<{ isOpen: boolean }>`
   position: fixed;
   top: 0;
@@ -203,189 +433,6 @@ const FormInput = styled.input`
   }
 `;
 
-// 주소 검색 컨테이너
-const AddressSearchContainer = styled.div`
-  position: relative;
-  width: 100%;
-`;
-
-const AddressSearchInput = styled(FormInput)`
-  padding-right: 70px;
-  
-  @media (min-width: 768px) {
-    padding-right: 80px;
-  }
-  
-  @media (min-width: 1024px) {
-    padding-right: 90px;
-  }
-`;
-
-const SearchButton = styled.button`
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 60px;
-  height: 40px;
-  border: none;
-  background: linear-gradient(135deg, #1F41BB 0%, #4F46E5 100%);
-  color: white;
-  border-radius: 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  
-  &:hover:not(:disabled) {
-    transform: translateY(-50%) scale(1.05);
-    box-shadow: 0 4px 12px rgba(31, 65, 187, 0.3);
-  }
-  
-  &:active:not(:disabled) {
-    transform: translateY(-50%) scale(1.02);
-  }
-  
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: translateY(-50%);
-  }
-  
-  @media (min-width: 768px) {
-    right: 10px;
-    width: 68px;
-    height: 44px;
-    border-radius: 14px;
-    font-size: 13px;
-  }
-  
-  @media (min-width: 1024px) {
-    right: 12px;
-    width: 76px;
-    height: 48px;
-    border-radius: 16px;
-    font-size: 14px;
-  }
-`;
-
-// 주소 검색 결과 드롭다운
-const SearchResultsDropdown = styled.div<{ isVisible: boolean }>`
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: white;
-  border-radius: 16px;
-  border: 2px solid rgba(31, 65, 187, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  z-index: 99999;
-  max-height: 240px;
-  overflow-y: auto;
-  margin-top: 8px;
-  opacity: ${props => props.isVisible ? 1 : 0};
-  visibility: ${props => props.isVisible ? 'visible' : 'hidden'};
-  transform: ${props => props.isVisible ? 'translateY(0)' : 'translateY(-10px)'};
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  
-  @media (min-width: 768px) {
-    border-radius: 18px;
-    margin-top: 10px;
-  }
-  
-  @media (min-width: 1024px) {
-    border-radius: 20px;
-    margin-top: 12px;
-  }
-`;
-
-const SearchResultItem = styled.button`
-  width: 100%;
-  padding: 16px 20px;
-  text-align: left;
-  border: none;
-  background: white;
-  color: #374151;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border-bottom: 1px solid rgba(31, 65, 187, 0.05);
-  
-  &:first-child {
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
-  }
-  
-  &:last-child {
-    border-bottom: none;
-    border-bottom-left-radius: 16px;
-    border-bottom-right-radius: 16px;
-  }
-  
-  &:hover {
-    background: rgba(31, 65, 187, 0.05);
-    color: #1F41BB;
-  }
-  
-  &:active {
-    background: rgba(31, 65, 187, 0.1);
-  }
-  
-  @media (min-width: 768px) {
-    padding: 18px 24px;
-    font-size: 17px;
-    
-    &:first-child {
-      border-top-left-radius: 18px;
-      border-top-right-radius: 18px;
-    }
-    
-    &:last-child {
-      border-bottom-left-radius: 18px;
-      border-bottom-right-radius: 18px;
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    padding: 20px 28px;
-    font-size: 18px;
-    
-    &:first-child {
-      border-top-left-radius: 20px;
-      border-top-right-radius: 20px;
-    }
-    
-    &:last-child {
-      border-bottom-left-radius: 20px;
-      border-bottom-right-radius: 20px;
-    }
-  }
-`;
-
-const NoResultsMessage = styled.div`
-  padding: 20px;
-  text-align: center;
-  color: #9CA3AF;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 14px;
-  
-  @media (min-width: 768px) {
-    padding: 24px;
-    font-size: 15px;
-  }
-  
-  @media (min-width: 1024px) {
-    padding: 28px;
-    font-size: 16px;
-  }
-`;
-
 const ButtonGroup = styled.div`
   display: flex;
   gap: 16px;
@@ -533,227 +580,184 @@ const CloseButton = styled.button`
   }
 `;
 
-const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSubmit }) => {
-  const [formData, setFormData] = useState<SignupData>({
-    name: '',
-    farmName: '',
-    farmLocation: ''
-  });
+// 주소 검색 관련 컴포넌트
+const AddressSearchContainer = styled.div`
+  position: relative;
+  width: 100%;
+`;
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [addressSearchResults, setAddressSearchResults] = useState<string[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
+const AddressSearchInput = styled(FormInput)`
+  padding-right: 70px;
+  
+  @media (min-width: 768px) {
+    padding-right: 80px;
+  }
+  
+  @media (min-width: 1024px) {
+    padding-right: 90px;
+  }
+`;
 
-  const handleInputChange = (field: keyof SignupData) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: e.target.value
-    }));
+const SearchButton = styled.button`
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 60px;
+  height: 40px;
+  border: none;
+  background: linear-gradient(135deg, #1F41BB 0%, #4F46E5 100%);
+  color: white;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 4px 12px rgba(31, 65, 187, 0.3);
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(-50%) scale(1.02);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: translateY(-50%);
+  }
+  
+  @media (min-width: 768px) {
+    right: 10px;
+    width: 68px;
+    height: 44px;
+    border-radius: 14px;
+    font-size: 13px;
+  }
+  
+  @media (min-width: 1024px) {
+    right: 12px;
+    width: 76px;
+    height: 48px;
+    border-radius: 16px;
+    font-size: 14px;
+  }
+`;
+
+const SearchResultsDropdown = styled.div<{ isVisible: boolean }>`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 16px;
+  border: 2px solid rgba(31, 65, 187, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  z-index: 99999;
+  max-height: 240px;
+  overflow-y: auto;
+  margin-top: 8px;
+  opacity: ${props => props.isVisible ? 1 : 0};
+  visibility: ${props => props.isVisible ? 'visible' : 'hidden'};
+  transform: ${props => props.isVisible ? 'translateY(0)' : 'translateY(-10px)'};
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  @media (min-width: 768px) {
+    border-radius: 18px;
+    margin-top: 10px;
+  }
+  
+  @media (min-width: 1024px) {
+    border-radius: 20px;
+    margin-top: 12px;
+  }
+`;
+
+const SearchResultItem = styled.button`
+  width: 100%;
+  padding: 16px 20px;
+  text-align: left;
+  border: none;
+  background: white;
+  color: #374151;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(31, 65, 187, 0.05);
+  
+  &:first-child {
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+  }
+  
+  &:last-child {
+    border-bottom: none;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+  }
+  
+  &:hover {
+    background: rgba(31, 65, 187, 0.05);
+    color: #1F41BB;
+  }
+  
+  &:active {
+    background: rgba(31, 65, 187, 0.1);
+  }
+  
+  @media (min-width: 768px) {
+    padding: 18px 24px;
+    font-size: 17px;
     
-    // 농가 위치 필드의 경우 입력 시 검색 결과 초기화
-    if (field === 'farmLocation') {
-      setShowDropdown(false);
-      setAddressSearchResults([]);
+    &:first-child {
+      border-top-left-radius: 18px;
+      border-top-right-radius: 18px;
     }
-  };
-
-  // 주소 검색 함수 (실제로는 행정동 API 호출)
-  const searchAddress = async (query: string) => {
-    if (!query.trim()) {
-      setAddressSearchResults([]);
-      setShowDropdown(false);
-      return;
-    }
-
-    setIsSearching(true);
     
-    try {
-      // 실제로는 행정동 API를 호출해야 합니다
-      // 지금은 목업 데이터로 시뮬레이션
-      await new Promise(resolve => setTimeout(resolve, 500)); // API 호출 시뮬레이션
-      
-      const mockResults = [
-        '서울특별시 강남구 역삼동',
-        '서울특별시 서초구 서초동',
-        '경기도 화성시 동탄면',
-        '경기도 화성시 봉담읍',
-        '경기도 화성시 남양읍',
-        '경기도 화성시 매송면',
-        '경기도 화성시 우정읍',
-        '경기도 성남시 분당구 정자동',
-        '경기도 용인시 기흥구 구갈동',
-        '경기도 안양시 동안구 평촌동',
-        '인천광역시 연수구 송도동',
-        '부산광역시 해운대구 우동',
-        '대구광역시 수성구 범어동',
-        '광주광역시 서구 치평동',
-        '대전광역시 유성구 도룡동',
-        '울산광역시 남구 삼산동',
-        '전라북도 전주시 완산구 효자동',
-        '전라남도 순천시 연향동',
-        '경상북도 포항시 북구 두호동',
-        '경상남도 창원시 의창구 팔용동',
-        '충청북도 청주시 서원구 사창동',
-        '충청남도 천안시 동남구 신부동',
-        '강원도 춘천시 효자동',
-        '제주특별자치도 제주시 이도동'
-      ];
-      
-      // 검색어가 포함된 주소 필터링 (대소문자 구분 없이)
-      const filteredResults = mockResults.filter(address => 
-        address.toLowerCase().includes(query.toLowerCase()) ||
-        address.includes(query)
-      );
-      
-      console.log(`검색어: "${query}", 결과: ${filteredResults.length}개`, filteredResults);
-      
-      setAddressSearchResults(filteredResults);
-      setShowDropdown(true); // 결과가 없어도 드롭다운은 표시
-    } catch (error) {
-      console.error('주소 검색 실패:', error);
-      setAddressSearchResults([]);
-      setShowDropdown(false);
-    } finally {
-      setIsSearching(false);
+    &:last-child {
+      border-bottom-left-radius: 18px;
+      border-bottom-right-radius: 18px;
     }
-  };
-
-  const handleAddressSearch = () => {
-    searchAddress(formData.farmLocation);
-  };
-
-  const handleAddressSelect = (selectedAddress: string) => {
-    setFormData(prev => ({
-      ...prev,
-      farmLocation: selectedAddress
-    }));
-    setShowDropdown(false);
-    setAddressSearchResults([]);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  }
+  
+  @media (min-width: 1024px) {
+    padding: 20px 28px;
+    font-size: 18px;
     
-    if (!formData.name.trim() || !formData.farmName.trim() || !formData.farmLocation.trim()) {
-      alert('모든 필드를 입력해주세요.');
-      return;
+    &:first-child {
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
     }
-
-    setIsSubmitting(true);
     
-    try {
-      await onSubmit(formData);
-    } finally {
-      setIsSubmitting(false);
+    &:last-child {
+      border-bottom-left-radius: 20px;
+      border-bottom-right-radius: 20px;
     }
-  };
+  }
+`;
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-      setShowDropdown(false);
-    }
-  };
-
-  // 모달 외부 클릭 시 드롭다운 닫기
-  const handleContainerClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
-
-  const isFormValid = formData.name.trim() && formData.farmName.trim() && formData.farmLocation.trim();
-
-  return (
-    <ModalOverlay isOpen={isOpen} onClick={handleOverlayClick}>
-      <ModalContainer isOpen={isOpen} onClick={handleContainerClick}>
-        <CloseButton onClick={onClose} type="button">
-          ×
-        </CloseButton>
-        
-        <ModalHeader>
-          <ModalTitle>환영합니다!</ModalTitle>
-          <ModalSubtitle>
-            팜랜딩 서비스 이용을 위해<br />
-            기본 정보를 입력해주세요.
-          </ModalSubtitle>
-        </ModalHeader>
-        
-        <ModalForm onSubmit={handleSubmit}>
-          <FormGroup>
-            <FormLabel htmlFor="name">이름</FormLabel>
-            <FormInput
-              id="name"
-              type="text"
-              placeholder="실명을 입력해주세요"
-              value={formData.name}
-              onChange={handleInputChange('name')}
-              required
-            />
-          </FormGroup>
-          
-          <FormGroup>
-            <FormLabel htmlFor="farmName">농가명</FormLabel>
-            <FormInput
-              id="farmName"
-              type="text"
-              placeholder="농가 이름을 입력해주세요"
-              value={formData.farmName}
-              onChange={handleInputChange('farmName')}
-              required
-            />
-          </FormGroup>
-          
-          <FormGroup>
-            <FormLabel htmlFor="farmLocation">농가 위치</FormLabel>
-            <AddressSearchContainer>
-              <AddressSearchInput
-                id="farmLocation"
-                type="text"
-                placeholder="화성, 서울, 부산 등 입력 후 검색 버튼 클릭"
-                value={formData.farmLocation}
-                onChange={handleInputChange('farmLocation')}
-                required
-              />
-              <SearchButton onClick={handleAddressSearch} disabled={isSearching} type="button">
-                {isSearching ? '검색중...' : '검색'}
-              </SearchButton>
-            </AddressSearchContainer>
-            
-            {showDropdown && (
-              <SearchResultsDropdown isVisible={showDropdown}>
-                {addressSearchResults.length > 0 ? (
-                  addressSearchResults.map((address, index) => (
-                    <SearchResultItem key={index} onClick={() => handleAddressSelect(address)}>
-                      {address}
-                    </SearchResultItem>
-                  ))
-                ) : (
-                  <NoResultsMessage>
-                    검색 결과가 없습니다.
-                  </NoResultsMessage>
-                )}
-              </SearchResultsDropdown>
-            )}
-          </FormGroup>
-          
-          <ButtonGroup>
-            <Button type="button" variant="secondary" onClick={onClose}>
-              취소
-            </Button>
-            <Button 
-              type="submit" 
-              variant="primary" 
-              disabled={!isFormValid || isSubmitting}
-            >
-              {isSubmitting ? '가입 중...' : '가입 완료'}
-            </Button>
-          </ButtonGroup>
-        </ModalForm>
-      </ModalContainer>
-    </ModalOverlay>
-  );
-};
-
-export default SignupModal; 
+const NoResultsMessage = styled.div`
+  padding: 20px;
+  text-align: center;
+  color: #9CA3AF;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  
+  @media (min-width: 768px) {
+    padding: 24px;
+    font-size: 15px;
+  }
+  
+  @media (min-width: 1024px) {
+    padding: 28px;
+    font-size: 16px;
+  }
+`; 

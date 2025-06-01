@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import SignupModal from '../components/common/SignupModal/SignupModal';
+import { useState } from 'react';
 
 const meta: Meta<typeof SignupModal> = {
   title: 'Components/SignupModal',
@@ -15,7 +16,7 @@ const meta: Meta<typeof SignupModal> = {
   argTypes: {
     isOpen: {
       control: 'boolean',
-      description: '모달의 열림/닫힘 상태를 제어합니다.',
+      defaultValue: true,
     },
     onClose: {
       action: 'closed',
@@ -32,21 +33,33 @@ const meta: Meta<typeof SignupModal> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const SignupModalWrapper = (args: any) => {
+  const [isOpen, setIsOpen] = useState(args.isOpen);
+
+  return (
+    <SignupModal
+      {...args}
+      isOpen={isOpen}
+      onClose={() => setIsOpen(false)}
+      onComplete={() => {
+        console.log('회원가입 완료!');
+        setIsOpen(false);
+      }}
+      userInfo={{
+        userId: 'test123',
+        email: 'test@example.com',
+        nickname: '테스트유저',
+        membershipType: 'BASIC'
+      }}
+    />
+  );
+};
+
 // 기본 스토리
 export const Default: Story = {
+  render: SignupModalWrapper,
   args: {
     isOpen: true,
-    onClose: () => console.log('Modal closed'),
-    onSubmit: (data) => {
-      console.log('Form submitted:', data);
-      // 실제 사용 시에는 여기서 API 호출을 하게 됩니다
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          alert(`가입 완료!\n이름: ${data.name}\n농가명: ${data.farmName}\n위치: ${data.farmLocation}`);
-          resolve(undefined);
-        }, 1000);
-      });
-    },
   },
   parameters: {
     docs: {
@@ -59,13 +72,9 @@ export const Default: Story = {
 
 // 닫힌 상태 스토리
 export const Closed: Story = {
+  render: SignupModalWrapper,
   args: {
     isOpen: false,
-    onClose: () => console.log('Modal closed'),
-    onSubmit: (data) => {
-      console.log('Form submitted:', data);
-      return Promise.resolve();
-    },
   },
   parameters: {
     docs: {
