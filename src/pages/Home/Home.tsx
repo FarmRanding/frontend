@@ -47,6 +47,8 @@ const fruitImages = [
   fruit1, fruit2, fruit3, fruit4, fruit5, fruit6, fruit7, fruit8, fruit9, fruit10, fruit11, fruit12
 ];
 
+const KAKAO_AUTH_URL = `${import.meta.env.VITE_API_BASE_URL}/oauth2/authorization/kakao`;
+
 // 랜딩페이지 전체 래퍼 - 완전히 흰색 배경
 const LandingPageWrapper = styled.div`
   width: 100vw;
@@ -1184,8 +1186,7 @@ const Home: React.FC = () => {
   };
 
   const handleKakaoLogin = () => {
-    // 백엔드의 카카오 OAuth2 로그인 엔드포인트로 리다이렉트
-    window.location.href = 'http://localhost:8081/oauth2/authorization/kakao';
+    window.location.href = KAKAO_AUTH_URL;
   };
 
   const handleSignupClose = () => {
