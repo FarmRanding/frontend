@@ -53,7 +53,7 @@ const ContentArea = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 30px 16px 40px 16px;
+  padding: 86px 16px 40px 16px;
   flex: 1;
   width: 100%;
   max-width: 100%;
@@ -164,6 +164,7 @@ const HistoryListContainer = styled.div`
   flex: 1;
   overflow-y: auto;
   box-sizing: border-box;
+  animation: ${fadeIn} 0.6s ease-out;
 `;
 
 const DateGroup = styled.div`
@@ -292,6 +293,7 @@ const MembershipContainer = styled.div`
   box-sizing: border-box;
   overflow-y: auto;
   flex: 1;
+  animation: ${fadeIn} 0.6s ease-out;
   
   /* 마이페이지 멤버십 탭에 맞는 스타일링 */
   .membership-list {
@@ -484,7 +486,6 @@ const MyPage: React.FC = () => {
         '가격 제안: 무제한',
         '판매글 생성: 무제한',
         '감성형 / 실용형 / 쇼핑몰형 등 다양한 문체 지원',
-        '24/7 전용 고객 지원',
       ],
       isPremium: true,
     },
@@ -492,8 +493,8 @@ const MyPage: React.FC = () => {
 
   // PersonalInfo 데이터
   const personalData: PersonalInfoData = {
-    name: "기요미",
-    farmName: "기요미 하은팜",
+    name: "윤하은",
+    farmName: " 하은팜",
     location: "○○도 □□시 △△동"
   };
 
@@ -716,18 +717,28 @@ const MyPage: React.FC = () => {
   const renderTabContent = () => {
     switch (selectedTab) {
       case 'branding':
-        return renderBrandingContent();
+        return (
+          <div key="branding-content">
+            {renderBrandingContent()}
+          </div>
+        );
       case 'pricing':
-        return renderPricingContent();
+        return (
+          <div key="pricing-content">
+            {renderPricingContent()}
+          </div>
+        );
       case 'membership':
         return (
-          <MembershipContainer>
-            <MembershipList
-              plans={membershipPlans}
-              onSelectPlan={handleSelectPlan}
-              className="membership-list"
-            />
-          </MembershipContainer>
+          <div key="membership-content">
+            <MembershipContainer>
+              <MembershipList
+                plans={membershipPlans}
+                onSelectPlan={handleSelectPlan}
+                className="membership-list"
+              />
+            </MembershipContainer>
+          </div>
         );
       default:
         return null;

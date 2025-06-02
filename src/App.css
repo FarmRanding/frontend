@@ -11,7 +11,14 @@ html, body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
-  background-color: #F4FAFF;
+  background-color: #FFFFFF;
+  scroll-behavior: smooth;
+}
+
+@media (max-width: 480px) {
+  html, body {
+    background-color: #FFFFFF;
+  }
 }
 
 #root {
@@ -19,4 +26,46 @@ html, body {
   min-height: 100vh;
   margin: 0;
   padding: 0;
+  background: #FFFFFF;
+  scroll-behavior: smooth;
+}
+
+/* Jalnan 2 폰트 정의 */
+@font-face {
+  font-family: 'Jalnan 2';
+  src: url('/fonts/Jalnan2.otf') format('opentype'),
+       url('/fonts/Jalnan2TTF.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 모든 요소에 Jalnan 2 폰트 적용 */
+* {
+  font-family: 'Jalnan 2', sans-serif !important;
+}
+
+/* CSS 변수 정의 */
+:root {
+  --font-jalnan: 'Jalnan 2', sans-serif;
+}
+
+/* 브랜딩 플로우 특정 요소들에 최고 우선순위 적용 */
+button,
+span,
+h1,
+h2,
+h3 {
+  font-family: 'Jalnan 2', sans-serif !important;
+}
+
+/* 더욱 구체적인 선택자로 강제 적용 */
+.step-text,
+.step-number,
+.brand-title,
+.status-text,
+.nav-button,
+.regen-button {
+  font-family: 'Jalnan 2', sans-serif !important;
+  font-weight: 400 !important;
 } 

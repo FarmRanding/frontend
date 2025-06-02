@@ -182,9 +182,9 @@ const StoryField = styled.div<{ isExpanded: boolean; isPremium: boolean }>`
   align-items: flex-start;
   padding: 16px;
   width: 100%;
-  min-height: ${props => props.isExpanded ? 'auto' : '60px'};
+  min-height: 60px;
   background: #fafbff;
-  border-radius: ${props => props.isExpanded || props.isPremium ? '12px' : '12px 12px 0px 0px'};
+  border-radius: 12px;
   border: 1px solid rgba(31, 65, 187, 0.1);
   box-sizing: border-box;
   transition: all 0.2s ease;
@@ -255,7 +255,7 @@ const BrandResult: React.FC<BrandResultProps> = ({
     setIsStoryExpanded(!isStoryExpanded);
   };
 
-  const showMoreButton = !isPremium && !isStoryExpanded;
+  const showMoreButton = !isPremium;
 
   return (
     <BrandResultCard className={className}>
@@ -306,7 +306,7 @@ const BrandResult: React.FC<BrandResultProps> = ({
             </StoryField>
             {showMoreButton && (
               <MoreButton onClick={handleMoreClick}>
-                프리미엄 구독하고 더 보기
+                {isStoryExpanded ? '접기' : '프리미엄 구독하고 더 보기'}
               </MoreButton>
             )}
           </StoryContainer>

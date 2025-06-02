@@ -144,34 +144,62 @@ const ActionSection = styled.div`
 const DeleteButton = styled.button`
   width: 36px;
   height: 36px;
-  border: none;
-  background: transparent;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
   transition: all 0.3s ease;
   position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    transform: translate(-50%, -50%);
+  }
 
   &:hover {
-    background: rgba(255, 59, 48, 0.1);
-    transform: scale(1.1);
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    transform: scale(1.05);
+    
+    &::before {
+      width: 100%;
+      height: 100%;
+    }
   }
 
   &:active {
     transform: scale(0.95);
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
   }
 `;
 
 const DeleteIcon = styled.img`
   width: 14px;
   height: 14px;
-  filter: brightness(0) saturate(100%) invert(16%) sepia(99%) saturate(7404%) hue-rotate(3deg) brightness(95%) contrast(118%);
+  filter: brightness(0) saturate(100%) invert(28%) sepia(99%) saturate(3207%) hue-rotate(343deg) brightness(96%) contrast(93%);
   transition: all 0.3s ease;
-
+  position: relative;
+  z-index: 1;
+  
   ${DeleteButton}:hover & {
-    filter: brightness(0) saturate(100%) invert(16%) sepia(99%) saturate(7404%) hue-rotate(3deg) brightness(95%) contrast(118%);
     transform: scale(1.1);
   }
 `;

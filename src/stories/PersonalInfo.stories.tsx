@@ -27,8 +27,8 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const sampleData: PersonalInfoData = {
-  name: '기요미',
-  farmName: '기요미 하은팜',
+  name: '',
+  farmName: ' 하은팜',
   location: '○○도 □□시 △△동',
 };
 

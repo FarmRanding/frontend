@@ -1,75 +1,61 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
+import Header from '../../components/common/Header';
 import InputField from '../../components/common/InputField/InputField';
 import Button from '../../components/common/Button/Button';
 import GradeSelector from '../../components/common/GradeSelector/GradeSelector';
-import iconCancel from '../../assets/icon-cancel.svg';
 import iconGrade from '../../assets/icon-grade.svg';
+
+// 애니메이션
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+const slideInUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
 
 const PageContainer = styled.div`
   width: 100%;
-  height: 874px;
+  min-height: 874px;
   background: #F4FAFF;
   display: flex;
   flex-direction: column;
   position: relative;
-`;
-
-const Header = styled.div`
-  width: 100%;
-  height: 47px;
-  background: #F4FAFF;
-  display: flex;
-  align-items: center;
-  padding: 0;
-  position: relative;
-`;
-
-const CloseButton = styled.button`
-  position: absolute;
-  left: 15px;
-  top: 0;
-  width: 42px;
-  height: 42px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-
-  &:hover {
-    opacity: 0.7;
-  }
-
-  &:active {
-    opacity: 0.5;
-  }
-`;
-
-const CloseIcon = styled.img`
-  width: 21px;
-  height: 21px;
 `;
 
 const ContentArea = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding-top: 40px;
+  padding: 107px 16px 30px 16px; /* 56px(Header) + 51px(기존) = 107px */
   flex: 1;
+  max-width: 100%;
 `;
 
 const MainContent = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 88px;
+  gap: 48px;
   width: 100%;
   max-width: 320px;
+  animation: ${fadeIn} 0.8s ease-out;
 `;
 
 const Title = styled.h1`
@@ -89,6 +75,7 @@ const FormContainer = styled.div`
   flex-direction: column;
   gap: 25px;
   width: 100%;
+  animation: ${slideInUp} 0.8s ease-out 0.2s both;
 `;
 
 const GradeContainer = styled.div`
@@ -145,14 +132,10 @@ const GradeIcon = styled.img`
 `;
 
 const ButtonContainer = styled.div`
-  position: absolute;
-  bottom: 114px;
-  left: 50%;
-  transform: translateX(-50%);
   width: 100%;
   max-width: 300px;
-  padding: 0 16px;
-  box-sizing: border-box;
+  margin-top: 32px;
+  animation: ${slideInUp} 0.8s ease-out 0.4s both;
 `;
 
 interface BrandingFormData {
@@ -174,6 +157,14 @@ const Branding: React.FC = () => {
 
   const handleClose = () => {
     navigate('/');
+  };
+
+  const handleLogoClick = () => {
+    navigate('/');
+  };
+
+  const handleMypageClick = () => {
+    navigate('/mypage');
   };
 
   const handleInputChange = (field: keyof BrandingFormData, value: string) => {
@@ -213,11 +204,10 @@ const Branding: React.FC = () => {
 
   return (
     <PageContainer>
-      <Header>
-        <CloseButton onClick={handleClose} aria-label="닫기">
-          <CloseIcon src={iconCancel} alt="닫기" />
-        </CloseButton>
-      </Header>
+      <Header 
+        onClickLogo={handleLogoClick}
+        onClickMypage={handleMypageClick}
+      />
 
       <ContentArea>
         <MainContent>
@@ -256,18 +246,18 @@ const Branding: React.FC = () => {
               </GradeInput>
             </GradeContainer>
           </FormContainer>
+
+          <ButtonContainer>
+            <Button
+              variant="primary"
+              onClick={handleNext}
+              disabled={!isFormValid}
+            >
+              다음
+            </Button>
+          </ButtonContainer>
         </MainContent>
       </ContentArea>
-
-      <ButtonContainer>
-        <Button
-          variant="primary"
-          onClick={handleNext}
-          disabled={!isFormValid}
-        >
-          다음
-        </Button>
-      </ButtonContainer>
 
       {showGradeSelector && (
         <GradeSelector

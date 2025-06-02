@@ -24,7 +24,7 @@ const PersonalInfoCard = styled.div`
   padding: 24px;
   width: 100%;
   max-width: 370px;
-  background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
+  background: #FFFFFF;
   border-radius: 20px;
   box-shadow: 
     0 4px 20px rgba(31, 65, 187, 0.08),

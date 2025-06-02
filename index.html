@@ -1,9 +1,53 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Jalnan 2 폰트 직접 로딩 -->
+    <link rel="preload" href="/fonts/Jalnan2.otf" as="font" type="font/otf" crossorigin>
+    <link rel="preload" href="/fonts/Jalnan2TTF.ttf" as="font" type="font/ttf" crossorigin>
+    
+    <!-- Jalnan 2 폰트 정의 -->
+    <style>
+      @font-face {
+        font-family: 'Jalnan 2';
+        src: url('/fonts/Jalnan2.otf') format('opentype'),
+             url('/fonts/Jalnan2TTF.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
+      
+      /* 브랜딩 플로우 특정 요소들에 강제 적용 */
+      button, span, h1, h2, h3,
+      .step-text, .step-number, .brand-title, .status-text, .nav-button, .regen-button {
+        font-family: 'Jalnan 2', sans-serif !important;
+        font-weight: 400 !important;
+      }
+    </style>
+
+    <!-- Jalnan 2 폰트 JavaScript 로딩 -->
+    <script>
+      (function() {
+        const jalnan2Urls = [
+          '/fonts/Jalnan2.otf',
+          '/fonts/Jalnan2TTF.ttf'
+        ];
+        
+        jalnan2Urls.forEach((url) => {
+          const fontFace = new FontFace('Jalnan 2', `url(${url})`);
+          fontFace.load().then(() => {
+            document.fonts.add(fontFace);
+            console.log(`✅ Jalnan 2 폰트 로딩 성공: ${url}`);
+          }).catch(err => {
+            console.warn(`⚠️ Jalnan 2 폰트 로딩 실패: ${url}`, err);
+          });
+        });
+      })();
+    </script>
+    
     <title>팜랜딩</title>
   </head>
   <body>

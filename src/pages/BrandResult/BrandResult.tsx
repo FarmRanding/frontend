@@ -342,7 +342,7 @@ const BrandResultPage: React.FC = () => {
         </BrandResultContainer>
 
         <KeywordSection>
-          <KeywordSectionTitle>선택하신 키워드</KeywordSectionTitle>
+          <KeywordSectionTitle>선택한 키워드</KeywordSectionTitle>
           <KeywordContainer>
             <KeywordGrid $showAll={showAllKeywords}>
               {visibleKeywords.map((keyword, index) => (

@@ -10,25 +10,26 @@ const ButtonContainer = styled.button`
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  width: ${MORE_BUTTON_WIDTH}px;
-  padding: 8px 112px;
-  background: #ffffff;
-  border: none;
-  border-radius: 0px 0px 8px 8px;
-  box-shadow: 0px 16px 24px 0px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px 16px;
+  background: rgba(31, 65, 187, 0.05);
+  border: 1px solid rgba(31, 65, 187, 0.2);
+  border-radius: 8px;
   cursor: pointer;
   box-sizing: border-box;
   transition: all 0.2s ease;
 
   &:hover {
-    opacity: 0.9;
+    background: rgba(31, 65, 187, 0.1);
+    border-color: rgba(31, 65, 187, 0.3);
     transform: translateY(-1px);
-    box-shadow: 0px 18px 28px 0px rgba(0, 0, 0, 0.18);
+    box-shadow: 0px 4px 12px rgba(31, 65, 187, 0.15);
   }
 
   &:active {
     transform: translateY(0px);
-    box-shadow: 0px 14px 20px 0px rgba(0, 0, 0, 0.12);
+    background: rgba(31, 65, 187, 0.08);
   }
 
   &:focus {
@@ -44,28 +45,26 @@ const ButtonContainer = styled.button`
 `;
 
 const ChevronIconContainer = styled.div`
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-80px, -50%);
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  margin-right: 8px;
 `;
 
 const ChevronIcon = styled.img`
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   display: block;
+  opacity: 0.7;
 `;
 
 const ButtonText = styled.span`
   font-family: 'Jalnan 2', sans-serif;
   font-weight: 400;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.18;
   color: #1F41BB;
   text-align: center;

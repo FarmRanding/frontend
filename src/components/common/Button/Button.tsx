@@ -57,9 +57,9 @@ const StyledButton = styled.button<{ variant: ButtonVariant; disabled: boolean }
   color: ${({ variant, disabled }) => getButtonStyles(variant, disabled).color};
   border: none;
   border-radius: 8px;
-  font-family: 'Jalnan 2', 'Jalnan', sans-serif;
+  font-family: var(--font-jalnan) !important;
   font-size: 16px;
-  font-weight: 400;
+  font-weight: normal;
   line-height: 1.18;
   text-align: center;
   white-space: nowrap;

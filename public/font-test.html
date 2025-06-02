@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 최강 폰트 로더 테스트 - 팜랜딩</title>
+    
+    <!-- DNS preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://fastly.jsdelivr.net" crossorigin>
+    
+    <!-- 폰트 preload -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.0/JalnanOTF00.woff2" as="font" type="font/woff2" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* 모든 폰트 정의 - 최강 버전 */
+        @font-face {
+            font-family: 'Jalnan';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.0/JalnanOTF00.woff2') format('woff2'),
+                 url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.0/JalnanOTF00.woff2') format('woff2'),
+                 url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.0/JalnanOTF00.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        @font-face {
+            font-family: 'JalnanAlt';
+            src: url('https://fonts.gstatic.com/ea/jalnan/v1/JalnanOTF.woff2') format('woff2'),
+                 url('https://fonts.gstatic.com/ea/jalnan/v1/JalnanOTF.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        @font-face {
+            font-family: 'JalnanLatest';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.2/JalnanOTF00.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        :root {
+            --font-jalnan: 'Jalnan', 'JalnanForce', 'JalnanGoogleForce', 'JalnanAPI', 'JalnanAlt', 'JalnanLatest', 'yg-jalnan', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', sans-serif;
+            --font-jalnan-loaded: var(--font-jalnan);
+            --font-weight-bold: 800;
+        }
+        
+        body {
+            font-family: var(--font-jalnan-loaded);
+            font-weight: var(--font-weight-bold);
+            padding: 20px;
+            background: #F4FAFF;
+            line-height: 1.6;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .font-jalnan-original {
+            font-family: 'Jalnan', sans-serif;
+            font-weight: normal;
+        }
+        
+        .font-jalnan-force {
+            font-family: 'JalnanForce', 'Jalnan', sans-serif;
+            font-weight: normal;
+        }
+        
+        .font-jalnan-google-force {
+            font-family: 'JalnanGoogleForce', 'JalnanAlt', sans-serif;
+            font-weight: normal;
+        }
+        
+        .font-jalnan-api {
+            font-family: 'JalnanAPI', sans-serif;
+            font-weight: normal;
+        }
+        
+        .font-jalnan-latest {
+            font-family: 'JalnanLatest', sans-serif;
+            font-weight: normal;
+        }
+        
+        .font-noto-kr {
+            font-family: 'Noto Sans KR', sans-serif;
+            font-weight: 800;
+        }
+        
+        .font-noto-kr-900 {
+            font-family: 'Noto Sans KR', sans-serif;
+            font-weight: 900;
+        }
+        
+        .font-system {
+            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', sans-serif;
+            font-weight: 800;
+        }
+        
+        .service-card-style {
+            font-family: var(--font-jalnan-loaded);
+            font-weight: var(--font-weight-bold);
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 16px 0px rgba(0, 0, 0, 0.25);
+            margin: 10px 0;
+        }
+        
+        .first-line {
+            font-size: 10px;
+            color: #1F41BB;
+            margin-bottom: 2px;
+        }
+        
+        .second-line {
+            font-size: 16px;
+            color: #000000;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .comparison-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .font-name {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 8px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 400;
+        }
+        
+        .font-test-text {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .status-good { border-color: #28a745; }
+        .status-fallback { border-color: #ffc107; }
+        .status-fail { border-color: #dc3545; }
+        
+        .loading-status {
+            padding: 10px;
+            background: #e3f2fd;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+        }
+        
+        .super-test {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 최강 폰트 로더 테스트 - 팜랜딩</h1>
+    
+    <div class="loading-status" id="loading-status">
+        🔄 강력한 폰트 로더 실행 중...
+    </div>
+    
+    <div class="super-test">
+        <h2>🎯 메인 폰트 스택 테스트 (최신 로더 적용)</h2>
+        <div class="service-card-style">
+            <div class="first-line">마케팅은 저희가 할게요.</div>
+            <div class="second-line">내 작물 브랜딩</div>
+        </div>
+        <div class="service-card-style">
+            <div class="first-line">적정 가격 찾아드릴게요.</div>
+            <div class="second-line">예상 가격 받아보기</div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 강력한 폰트 로더 비교 테스트</h2>
+        <div class="comparison-grid">
+            <div class="comparison-item" id="jalnan-original-test">
+                <div class="font-name">Jalnan 원본</div>
+                <div class="font-jalnan-original font-test-text">팜랜딩 농업 브랜딩</div>
+                <div class="font-jalnan-original font-test-text">FARMRANDING 2025</div>
+            </div>
+            
+            <div class="comparison-item" id="jalnan-force-test">
+                <div class="font-name">JalnanForce (JS 로더)</div>
+                <div class="font-jalnan-force font-test-text">팜랜딩 농업 브랜딩</div>
+                <div class="font-jalnan-force font-test-text">FARMRANDING 2025</div>
+            </div>
+            
+            <div class="comparison-item" id="jalnan-google-force-test">
+                <div class="font-name">JalnanGoogleForce (구글 CDN)</div>
+                <div class="font-jalnan-google-force font-test-text">팜랜딩 농업 브랜딩</div>
+                <div class="font-jalnan-google-force font-test-text">FARMRANDING 2025</div>
+            </div>
+            
+            <div class="comparison-item" id="jalnan-api-test">
+                <div class="font-name">JalnanAPI (FontFace API)</div>
+                <div class="font-jalnan-api font-test-text">팜랜딩 농업 브랜딩</div>
+                <div class="font-jalnan-api font-test-text">FARMRANDING 2025</div>
+            </div>
+            
+            <div class="comparison-item" id="jalnan-latest-test">
+                <div class="font-name">JalnanLatest (v1.2)</div>
+                <div class="font-jalnan-latest font-test-text">팜랜딩 농업 브랜딩</div>
+                <div class="font-jalnan-latest font-test-text">FARMRANDING 2025</div>
+            </div>
+            
+            <div class="comparison-item" id="noto-900-test">
+                <div class="font-name">Noto Sans KR (Weight 900)</div>
+                <div class="font-noto-kr-900 font-test-text">팜랜딩 농업 브랜딩</div>
+                <div class="font-noto-kr-900 font-test-text">FARMRANDING 2025</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 실제 사용 예시</h2>
+        <div style="font-family: var(--font-jalnan-loaded); font-weight: var(--font-weight-bold);">
+            <h3>내 정보</h3>
+            <p>농업인 김농장주님의 맞춤 정보</p>
+            <p>• 브랜딩 히스토리: 3건</p>
+            <p>• 가격 견적: 5건</p>
+            <p>• 멤버십: Premium 등급</p>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. 강력한 폰트 로딩 상태</h2>
+        <div id="font-status">
+            <p>폰트 로딩 확인 중...</p>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/webfontloader@1.6.28/webfontloader.js"></script>
+    <script>
+        // 강력한 폰트 로더 실행
+        const loadingStatus = document.getElementById('loading-status');
+        
+        // 1단계: WebFont Loader
+        loadingStatus.innerHTML = '🔄 1단계: WebFont Loader 실행 중...';
+        
+        WebFont.load({
+            custom: {
+                families: ['Jalnan', 'JalnanAlt'],
+                urls: [
+                    'https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.0/JalnanOTF00.woff2',
+                    'https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.0/JalnanOTF00.woff2',
+                    'https://fonts.gstatic.com/ea/jalnan/v1/JalnanOTF.woff2'
+                ]
+            },
+            timeout: 5000,
+            active: () => {
+                loadingStatus.innerHTML = '✅ 1단계: WebFont Loader 성공!';
+                console.log('✅ WebFont Loader 성공');
+            },
+            inactive: () => {
+                loadingStatus.innerHTML = '⚠️ 1단계: WebFont Loader 실패, 2단계 시도 중...';
+                console.warn('⚠️ WebFont Loader 실패');
+                tryAlternativeLoading();
+            }
+        });
+        
+        // 2단계: 대안 로딩 방법들
+        function tryAlternativeLoading() {
+            loadingStatus.innerHTML = '🔄 2단계: CSS 직접 주입 중...';
+            
+            // CSS 직접 주입
+            const jalnanCSS = `
+                @font-face {
+                    font-family: 'JalnanForce';
+                    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.0/JalnanOTF00.woff2') format('woff2'),
+                         url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.0/JalnanOTF00.woff2') format('woff2');
+                    font-weight: normal;
+                    font-style: normal;
+                    font-display: swap;
+                }
+                
+                @font-face {
+                    font-family: 'JalnanGoogleForce';
+                    src: url('https://fonts.gstatic.com/ea/jalnan/v1/JalnanOTF.woff2') format('woff2'),
+                         url('https://fonts.gstatic.com/ea/jalnan/v1/JalnanOTF.woff') format('woff');
+                    font-weight: normal;
+                    font-style: normal;
+                    font-display: swap;
+                }
+            `;
+            
+            const styleEl = document.createElement('style');
+            styleEl.textContent = jalnanCSS;
+            document.head.appendChild(styleEl);
+            
+            // 3단계: FontFace API
+            if ('fonts' in document) {
+                loadingStatus.innerHTML = '🔄 3단계: FontFace API 시도 중...';
+                
+                const jalnanFont = new FontFace('JalnanAPI', 
+                    'url(https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.0/JalnanOTF00.woff2)'
+                );
+                
+                jalnanFont.load().then(() => {
+                    document.fonts.add(jalnanFont);
+                    loadingStatus.innerHTML = '✅ 3단계: FontFace API 성공!';
+                    console.log('✅ FontFace API 성공');
+                }).catch(error => {
+                    loadingStatus.innerHTML = '⚠️ 3단계: FontFace API 실패';
+                    console.warn('⚠️ FontFace API 실패:', error);
+                });
+            }
+        }
+        
+        // 폰트 로딩 상태 확인
+        document.fonts.ready.then(function() {
+            const fonts = [
+                'Jalnan', 'JalnanForce', 'JalnanGoogleForce', 'JalnanAPI', 
+                'JalnanAlt', 'JalnanLatest', 'Noto Sans KR', 'Inter'
+            ];
+            
+            const results = fonts.map(font => {
+                const isLoaded = document.fonts.check(`16px "${font}"`);
+                return { font, isLoaded };
+            });
+            
+            const statusDiv = document.getElementById('font-status');
+            const loadedFonts = results.filter(r => r.isLoaded);
+            const failedFonts = results.filter(r => !r.isLoaded);
+            
+            statusDiv.innerHTML = `
+                <p><strong>🎯 최강 폰트 로더 결과:</strong></p>
+                <p><strong>✅ 로드 성공 (${loadedFonts.length}개):</strong><br>
+                ${loadedFonts.map(r => r.font).join(', ')}</p>
+                <p><strong>❌ 로드 실패 (${failedFonts.length}개):</strong><br>
+                ${failedFonts.map(r => r.font).join(', ')}</p>
+                <hr>
+                <p><strong>🔍 환경 정보:</strong></p>
+                <p>User Agent: ${navigator.userAgent.substring(0, 100)}...</p>
+                <p>플랫폼: ${navigator.platform}</p>
+                <p>언어: ${navigator.language}</p>
+                <p>화면 해상도: ${screen.width} x ${screen.height}</p>
+                <p>디바이스 픽셀 비율: ${window.devicePixelRatio}</p>
+            `;
+            
+            // 폰트별 상태 표시
+            updateFontStatus('jalnan-original-test', results.find(r => r.font === 'Jalnan')?.isLoaded || false);
+            updateFontStatus('jalnan-force-test', results.find(r => r.font === 'JalnanForce')?.isLoaded || false);
+            updateFontStatus('jalnan-google-force-test', results.find(r => r.font === 'JalnanGoogleForce')?.isLoaded || false);
+            updateFontStatus('jalnan-api-test', results.find(r => r.font === 'JalnanAPI')?.isLoaded || false);
+            updateFontStatus('jalnan-latest-test', results.find(r => r.font === 'JalnanLatest')?.isLoaded || false);
+            updateFontStatus('noto-900-test', results.find(r => r.font === 'Noto Sans KR')?.isLoaded || false);
+            
+            // 최종 상태 업데이트
+            const anyJalnanLoaded = ['Jalnan', 'JalnanForce', 'JalnanGoogleForce', 'JalnanAPI', 'JalnanLatest'].some(
+                font => results.find(r => r.font === font)?.isLoaded
+            );
+            
+            if (anyJalnanLoaded) {
+                loadingStatus.innerHTML = '🎉 최강 폰트 로더 성공! Jalnan 폰트 사용 가능';
+                loadingStatus.style.background = '#c8e6c9';
+            } else {
+                loadingStatus.innerHTML = '⚠️ Jalnan 로딩 실패, 백업 폰트 사용 중';
+                loadingStatus.style.background = '#ffecb3';
+            }
+        });
+        
+        function updateFontStatus(elementId, isLoaded) {
+            const element = document.getElementById(elementId);
+            if (isLoaded) {
+                element.classList.add('status-good');
+            } else {
+                element.classList.add('status-fail');
+            }
+        }
+        
+        // 추가 디버깅
+        setTimeout(() => {
+            console.log('🔍 최종 폰트 상태:');
+            ['Jalnan', 'JalnanForce', 'JalnanGoogleForce', 'JalnanAPI', 'JalnanLatest'].forEach(font => {
+                const isAvailable = document.fonts.check(`16px "${font}"`);
+                console.log(`${font}: ${isAvailable ? '✅ 사용 가능' : '❌ 사용 불가'}`);
+            });
+        }, 3000);
+    </script>
+</body>
+</html> 
