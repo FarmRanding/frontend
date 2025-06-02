@@ -1,0 +1,92 @@
+name: 🚀 팜랜딩 프론트엔드 배포
+
+# 트리거: main 브랜치에 push 시 실행
+on:
+  push:
+    branches:
+      - main
+  # 수동 실행도 가능하도록 설정
+  workflow_dispatch:
+
+jobs:
+  build_and_deploy:
+    name: 🏗️ 빌드 및 배포
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1️⃣ 코드 체크아웃
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 전체 히스토리 가져오기 (optional)
+
+      # 2️⃣ Node.js 환경 설정
+      - name: 🟢 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ secrets.NODE_VERSION }}
+          cache: 'npm'  # npm 캐시 활용으로 빌드 속도 향상
+
+      # 3️⃣ 의존성 설치
+      - name: 📦 의존성 설치
+        run: |
+          npm ci
+          echo "✅ 의존성 설치 완료"
+
+      # 5️⃣ 빌드 실행
+      - name: 🏗️ 프로젝트 빌드
+        run: |
+          npm run build
+          echo "✅ 빌드 완료"
+          echo "📂 빌드 출력 디렉토리 내용:"
+          ls -la dist/
+
+      # 6️⃣ AWS 자격 증명 설정
+      - name: 🔐 AWS 자격 증명 설정
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # 7️⃣ S3에 파일 업로드
+      - name: 📤 S3에 빌드 파일 업로드
+        run: |
+          echo "🚀 S3 업로드 시작..."
+          
+          # HTML 파일은 짧은 캐시 (즉시 업데이트)
+          aws s3 cp dist/index.html s3://${{ secrets.S3_BUCKET }}/index.html \
+            --content-type "text/html" \
+            --cache-control "max-age=0, no-cache, no-store, must-revalidate" \
+            --metadata-directive REPLACE
+          
+          # 정적 자산은 긴 캐시 (CSS, JS, 이미지 등)
+          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }}/ \
+            --delete \
+            --cache-control "max-age=31536000, public, immutable" \
+            --exclude "index.html" \
+            --size-only
+          
+          echo "✅ S3 업로드 완료"
+
+      # 8️⃣ CloudFront 캐시 무효화
+      - name: 🔄 CloudFront 캐시 무효화
+        run: |
+          echo "🔄 CloudFront 캐시 무효화 시작..."
+          
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*" \
+            --query 'Invalidation.Id' \
+            --output text)
+          
+          echo "무효화 ID: $INVALIDATION_ID"
+          echo "✅ CloudFront 캐시 무효화 요청 완료"
+          echo "📝 배포가 완전히 반영되려면 1-3분 정도 소요됩니다."
+
+      # 9️⃣ 배포 완료 알림
+      - name: 🎉 배포 완료
+        run: |
+          echo "🎉 팜랜딩 프론트엔드 배포가 성공적으로 완료되었습니다!"
+          echo "🌐 웹사이트: https://팜랜딩.net"
+          echo "📅 배포 시간: $(date)"

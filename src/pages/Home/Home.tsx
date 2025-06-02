@@ -468,7 +468,7 @@ const SectionSubTitle = styled.p`
   margin: 0 auto;
   
   @media (min-width: 768px) {
-    font-size: 18px;
+  font-size: 18px;
     max-width: 600px;
   }
   
@@ -617,7 +617,7 @@ const ServiceCardTitle = styled.h2`
   /* 대형 화면 */
   @media (min-width: 1440px) {
     font-size: 26px;
-    line-height: 1.3;
+  line-height: 1.3;
     padding: 44px 40px;
     border-radius: 36px;
   }
@@ -948,7 +948,7 @@ const KakaoLoginButton = styled.button`
     background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
     transition: left 0.5s ease;
   }
-  
+
   &:hover {
     transform: translateY(-4px) scale(1.02);
       
