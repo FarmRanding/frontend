@@ -245,8 +245,42 @@ const BrandingFlow: React.FC = () => {
     }
   };
 
-  const updateBrandingData = (updates: Partial<BrandingData>) => {
-    setBrandingData(prev => ({ ...prev, ...updates }));
+  const updateBrandingData = (newData: Partial<BrandingData>) => {
+    setBrandingData(prev => {
+      const updated = { ...prev, ...newData };
+      
+      // 작물명이 변경되면 localStorage에 저장
+      if (newData.cropName) {
+        localStorage.setItem('brandingCropName', newData.cropName);
+      }
+      
+      // 품종이 변경되면 localStorage에 저장
+      if (newData.variety) {
+        localStorage.setItem('brandingVariety', newData.variety);
+      }
+      
+      // 재배 방식이 변경되면 localStorage에 저장
+      if (newData.cultivationMethod) {
+        localStorage.setItem('brandingCultivationMethod', newData.cultivationMethod);
+      }
+      
+      // 등급이 변경되면 localStorage에 저장
+      if (newData.grade !== undefined) {
+        localStorage.setItem('brandingGrade', newData.grade);
+      }
+      
+      // GAP 인증 정보가 변경되면 localStorage에 저장
+      if (newData.isGapVerified !== undefined) {
+        localStorage.setItem('brandingIsGapVerified', newData.isGapVerified.toString());
+      }
+      
+      // GAP 번호가 변경되면 localStorage에 저장
+      if (newData.gapNumber !== undefined) {
+        localStorage.setItem('brandingGapNumber', newData.gapNumber);
+      }
+      
+      return updated;
+    });
   };
 
   const getProgress = () => {

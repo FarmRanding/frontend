@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
+import { brandingService, BrandNameRequest } from '../../../api/brandingService';
 
 // 애니메이션들
 const fadeIn = keyframes`
@@ -151,6 +152,18 @@ const RegenerateButton = styled.button`
   }
 `;
 
+const ErrorText = styled.div`
+  color: #e74c3c;
+  font-size: 14px;
+  text-align: center;
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(231, 76, 60, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(231, 76, 60, 0.2);
+  animation: ${fadeIn} 0.5s ease-out;
+`;
+
 // 브랜드명 생성 로직
 const generateBrandName = (selectedKeywords: string[]): string => {
   const brandNames = [
@@ -163,7 +176,7 @@ const generateBrandName = (selectedKeywords: string[]): string => {
   return brandNames[Math.floor(Math.random() * brandNames.length)];
 };
 
-type GenerationStatus = 'generating' | 'complete';
+type GenerationStatus = 'generating' | 'complete' | 'error';
 
 interface BrandNameGenerationStepProps {
   allKeywords: string[];
@@ -180,16 +193,35 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
   const [brandName, setBrandName] = useState<string>('');
   const [displayedName, setDisplayedName] = useState<string>('');
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState<string>('');
 
-  const startGeneration = () => {
+  // 브랜딩 데이터에서 작물명과 키워드 추출
+  const cropName = localStorage.getItem('brandingCropName') || '토마토'; // 기본값
+  const variety = localStorage.getItem('brandingVariety') || undefined; // 품종 정보
+  const brandingKeywords = allKeywords.slice(0, 5); // 처음 5개를 브랜드 이미지 키워드로 사용
+  const cropAppealKeywords = allKeywords.slice(5, 10); // 나머지를 작물 매력 키워드로 사용
+
+  const startGeneration = async () => {
     setStatus('generating');
     setDisplayedName('');
     setIsTyping(false);
+    setError('');
     onValidationChange(false);
     
-    // 브랜드명 생성 시뮬레이션
-    setTimeout(() => {
-      const newBrandName = generateBrandName(allKeywords);
+    try {
+      // 실제 API 호출로 브랜드명 생성 - 새로운 프롬프트 구조에 맞춤
+      const request: BrandNameRequest = {
+        cropName,
+        variety,  // 품종 정보 추가
+        brandingKeywords,  // 브랜드 이미지 키워드
+        cropAppealKeywords  // 작물의 매력 키워드
+      };
+      
+      console.log('브랜드명 생성 요청 데이터:', request);
+      
+      const response = await brandingService.generateBrandName(request);
+      const newBrandName = response.brandName;
+      
       setBrandName(newBrandName);
       setStatus('complete');
       onBrandNameGenerated(newBrandName);
@@ -209,7 +241,19 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
           }
         }, 150);
       }, 500);
-    }, 2500);
+      
+    } catch (error) {
+      console.error('브랜드명 생성 실패:', error);
+      setError('브랜드명 생성에 실패했습니다. 다시 시도해주세요.');
+      setStatus('error');
+      
+      // 에러 시 fallback 브랜드명 사용
+      const fallbackBrandName = generateBrandName(allKeywords);
+      setBrandName(fallbackBrandName);
+      setStatus('complete');
+      onBrandNameGenerated(fallbackBrandName);
+      onValidationChange(true);
+    }
   };
 
   useEffect(() => {
@@ -242,6 +286,12 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
         브랜드명이 만들어졌어요!
       </StatusText>
 
+      {error && (
+        <ErrorText style={{ fontFamily: "'Jalnan 2', sans-serif" }}>
+          {error}
+        </ErrorText>
+      )}
+
       <BrandNameContainer>
         {status === 'generating' ? (
           <LoadingDots>
@@ -258,7 +308,7 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
         )}
       </BrandNameContainer>
 
-      {status === 'complete' && (
+      {(status === 'complete' || status === 'error') && (
         <RegenerateButton 
           onClick={handleRegenerate} 
           className="regen-button"

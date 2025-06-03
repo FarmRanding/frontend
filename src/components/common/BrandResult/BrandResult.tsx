@@ -1,8 +1,27 @@
 import React, { useState } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import iconDownload from '../../../assets/icon-download.svg';
 import iconCopy from '../../../assets/icon-copy.svg';
 import MoreButton from '../MoreButton/MoreButton';
+
+// 로딩 애니메이션
+const spin = keyframes`
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+`;
+
+const pulse = keyframes`
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+`;
 
 const BrandResultCard = styled.div`
   display: flex;
@@ -130,18 +149,63 @@ const ImageContainer = styled.div`
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0px 4px 16px 0px rgba(31, 65, 187, 0.12);
+  background: #f0f4ff;
 `;
 
-const BrandImage = styled.img`
+const BrandImage = styled.img<{ $isLoading?: boolean }>`
   width: 100%;
   height: 100%;
-  background: #f0f4ff;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  opacity: ${props => props.$isLoading ? 0 : 1};
 
   &:hover {
     transform: scale(1.02);
   }
+`;
+
+const ImageLoadingContainer = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f0f4ff;
+  gap: 16px;
+`;
+
+const LoadingSpinner = styled.div`
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(31, 65, 187, 0.1);
+  border-top: 3px solid #1F41BB;
+  border-radius: 50%;
+  animation: ${spin} 1s linear infinite;
+`;
+
+const LoadingText = styled.div`
+  font-family: 'Jalnan 2', sans-serif;
+  font-size: 12px;
+  color: #1F41BB;
+  text-align: center;
+  animation: ${pulse} 2s ease-in-out infinite;
+`;
+
+const PlaceholderImage = styled.div`
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8f1ff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Jalnan 2', sans-serif;
+  font-size: 14px;
+  color: #9CA3AF;
+  text-align: center;
 `;
 
 const DownloadButton = styled.button`
@@ -239,6 +303,8 @@ const BrandResult: React.FC<BrandResultProps> = ({
   className,
 }) => {
   const [isStoryExpanded, setIsStoryExpanded] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(!!data.imageUrl);
+  const [imageError, setImageError] = useState(false);
 
   const handleCopy = (field: 'brandName' | 'promotionText' | 'story', value: string) => {
     navigator.clipboard.writeText(value);
@@ -246,7 +312,7 @@ const BrandResult: React.FC<BrandResultProps> = ({
   };
 
   const handleDownload = () => {
-    if (data.imageUrl) {
+    if (data.imageUrl && !isImageLoading && !imageError) {
       onDownload?.(data.imageUrl);
     }
   };
@@ -255,7 +321,64 @@ const BrandResult: React.FC<BrandResultProps> = ({
     setIsStoryExpanded(!isStoryExpanded);
   };
 
+  const handleImageLoad = () => {
+    setIsImageLoading(false);
+    setImageError(false);
+  };
+
+  const handleImageError = () => {
+    setIsImageLoading(false);
+    setImageError(true);
+  };
+
+  // 이미지 URL이 변경될 때 로딩 상태 초기화
+  React.useEffect(() => {
+    if (data.imageUrl) {
+      setIsImageLoading(true);
+      setImageError(false);
+    } else {
+      setIsImageLoading(false);
+      setImageError(false);
+    }
+  }, [data.imageUrl]);
+
   const showMoreButton = !isPremium;
+
+  const renderImageContent = () => {
+    // 이미지 URL이 없는 경우 (아직 생성 중)
+    if (!data.imageUrl) {
+      return (
+        <ImageLoadingContainer>
+          <LoadingSpinner />
+          <LoadingText>이미지 생성 중...</LoadingText>
+        </ImageLoadingContainer>
+      );
+    }
+
+    // 이미지 로딩 중
+    if (isImageLoading) {
+      return (
+        <ImageLoadingContainer>
+          <LoadingSpinner />
+          <LoadingText>이미지 로딩 중...</LoadingText>
+        </ImageLoadingContainer>
+      );
+    }
+
+    // 이미지 로딩 실패
+    if (imageError) {
+      return (
+        <PlaceholderImage>
+          브랜드 이미지
+          <br />
+          생성 완료
+        </PlaceholderImage>
+      );
+    }
+
+    // 정상적인 이미지 표시
+    return null;
+  };
 
   return (
     <BrandResultCard className={className}>
@@ -270,13 +393,21 @@ const BrandResult: React.FC<BrandResultProps> = ({
         </FieldContainer>
 
         <ImageContainer>
-          <BrandImage 
-            src={data.imageUrl || 'https://placehold.co/200x200/a4a4a4/ffffff?text=Brand+Image'} 
-            alt="브랜드 이미지" 
-          />
-          <DownloadButton onClick={handleDownload}>
-            <DownloadIcon src={iconDownload} alt="다운로드" />
-          </DownloadButton>
+          {renderImageContent()}
+          {data.imageUrl && (
+            <BrandImage 
+              src={data.imageUrl} 
+              alt="브랜드 이미지" 
+              $isLoading={isImageLoading}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+            />
+          )}
+          {data.imageUrl && !isImageLoading && !imageError && (
+            <DownloadButton onClick={handleDownload}>
+              <DownloadIcon src={iconDownload} alt="다운로드" />
+            </DownloadButton>
+          )}
         </ImageContainer>
 
         <FieldContainer>
