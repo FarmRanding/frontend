@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import Header from '../../components/common/Header/Header';
@@ -14,6 +14,8 @@ import type { PriceQuoteHistory } from '../../types/priceHistory';
 import iconSort from '../../assets/icon-sort.svg';
 import iconBrush from '../../assets/icon-brush.svg';
 import iconMoney from '../../assets/icon-money.svg';
+import { fetchMyUser } from '../../api/userService';
+import type { UserResponse } from '../../types/user';
 
 // 애니메이션
 const fadeIn = keyframes`
@@ -331,6 +333,21 @@ const MyPage: React.FC = () => {
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [selectedBrandingHistory, setSelectedBrandingHistory] = useState<BrandingHistory | null>(null);
   const [isBrandingDetailVisible, setIsBrandingDetailVisible] = useState(false);
+  const [user, setUser] = useState<UserResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchMyUser()
+      .then((data) => {
+        setUser(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message || '사용자 정보를 불러오지 못했습니다.');
+        setLoading(false);
+      });
+  }, []);
 
   // 5년간 더미 데이터 생성 함수
   const generatePriceData = () => {
@@ -490,13 +507,6 @@ const MyPage: React.FC = () => {
       isPremium: true,
     },
   ];
-
-  // PersonalInfo 데이터
-  const personalData: PersonalInfoData = {
-    name: "윤하은",
-    farmName: " 하은팜",
-    location: "○○도 □□시 △△동"
-  };
 
   const handleTabChange = (tab: MyPageTabOption) => {
     setSelectedTab(tab);
@@ -753,9 +763,21 @@ const MyPage: React.FC = () => {
       />
       
       <ContentArea>
-        <SectionTitle>개인 정보</SectionTitle>
+        <SectionTitle>내 정보</SectionTitle>
         <PersonalInfoContainer>
-          <PersonalInfo data={personalData} />
+          {loading ? (
+            <div>로딩 중...</div>
+          ) : error ? (
+            <div style={{ color: 'red' }}>{error}</div>
+          ) : user ? (
+            <PersonalInfo
+              data={{
+                name: user.name || user.nickname || '-',
+                farmName: user.farmName || '-',
+                location: user.location || '-',
+              }}
+            />
+          ) : null}
         </PersonalInfoContainer>
 
         <TabContainer>
