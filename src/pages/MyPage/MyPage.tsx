@@ -14,7 +14,8 @@ import type { PriceQuoteHistory } from '../../types/priceHistory';
 import iconSort from '../../assets/icon-sort.svg';
 import iconBrush from '../../assets/icon-brush.svg';
 import iconMoney from '../../assets/icon-money.svg';
-import { fetchMyUser } from '../../api/userService';
+import iconPencil from '../../assets/icon-pencil.svg';
+import { fetchMyUser, updateMyUserProfile, type UpdateProfileRequest } from '../../api/userService';
 import type { UserResponse } from '../../types/user';
 
 // 애니메이션
@@ -63,6 +64,15 @@ const ContentArea = styled.div`
   overflow-x: hidden;
 `;
 
+const SectionHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 370px;
+  margin-bottom: 24px;
+`;
+
 const SectionTitle = styled.h2`
   font-family: 'Jalnan 2', sans-serif;
   font-weight: 400;
@@ -70,9 +80,38 @@ const SectionTitle = styled.h2`
   line-height: 1.18;
   letter-spacing: -2%;
   color: #1F41BB;
-  margin: 0 0 24px 0;
-  align-self: flex-start;
+  margin: 0;
   animation: ${fadeIn} 0.6s ease-out;
+`;
+
+const EditButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(31, 65, 187, 0.1);
+  border: 1px solid rgba(31, 65, 187, 0.2);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: rgba(31, 65, 187, 0.15);
+    border-color: rgba(31, 65, 187, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(31, 65, 187, 0.15);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+const EditIcon = styled.img`
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) saturate(100%) invert(25%) sepia(98%) saturate(1653%) hue-rotate(221deg) brightness(96%) contrast(91%);
 `;
 
 const PersonalInfoContainer = styled.div`
@@ -336,11 +375,25 @@ const MyPage: React.FC = () => {
   const [user, setUser] = useState<UserResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // 편집 관련 상태
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValues, setEditValues] = useState<PersonalInfoData>({
+    name: '',
+    farmName: '',
+    location: ''
+  });
+  const [updateLoading, setUpdateLoading] = useState(false);
 
   useEffect(() => {
     fetchMyUser()
       .then((data) => {
         setUser(data);
+        setEditValues({
+          name: data.name || '',
+          farmName: data.farmName || '',
+          location: data.location || ''
+        });
         setLoading(false);
       })
       .catch((err) => {
@@ -348,6 +401,51 @@ const MyPage: React.FC = () => {
         setLoading(false);
       });
   }, []);
+
+  const handleEditClick = () => {
+    if (user) {
+      setEditValues({
+        name: user.name || '',
+        farmName: user.farmName || '',
+        location: user.location || ''
+      });
+      setIsEditing(true);
+    }
+  };
+
+  const handleValueChange = (field: keyof PersonalInfoData, value: string) => {
+    setEditValues(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+
+    setUpdateLoading(true);
+    try {
+      const updatedUser = await updateMyUserProfile(editValues);
+      setUser(updatedUser);
+      setIsEditing(false);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || '프로필 수정에 실패했습니다.');
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (user) {
+      setEditValues({
+        name: user.name || '',
+        farmName: user.farmName || '',
+        location: user.location || ''
+      });
+    }
+    setIsEditing(false);
+  };
 
   // 5년간 더미 데이터 생성 함수
   const generatePriceData = () => {
@@ -763,7 +861,15 @@ const MyPage: React.FC = () => {
       />
       
       <ContentArea>
-        <SectionTitle>내 정보</SectionTitle>
+        <SectionHeader>
+          <SectionTitle>내 정보</SectionTitle>
+          {!isEditing && (
+            <EditButton onClick={handleEditClick}>
+              <EditIcon src={iconPencil} alt="수정" />
+            </EditButton>
+          )}
+        </SectionHeader>
+        
         <PersonalInfoContainer>
           {loading ? (
             <div>로딩 중...</div>
@@ -772,10 +878,15 @@ const MyPage: React.FC = () => {
           ) : user ? (
             <PersonalInfo
               data={{
-                name: user.name || user.nickname || '-',
+                name: user.name || '-',
                 farmName: user.farmName || '-',
                 location: user.location || '-',
               }}
+              isEditing={isEditing}
+              editValues={editValues}
+              onValueChange={handleValueChange}
+              onSave={handleSave}
+              onCancel={handleCancel}
             />
           ) : null}
         </PersonalInfoContainer>

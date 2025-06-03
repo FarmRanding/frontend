@@ -193,6 +193,65 @@ const ValueText = styled.span`
   }
 `;
 
+const EditInput = styled.input`
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #334155;
+  border: 1px solid rgba(31, 65, 187, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  flex: 1;
+  min-width: 0;
+  background: white;
+  transition: all 0.3s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #1F41BB;
+    box-shadow: 0 0 0 3px rgba(31, 65, 187, 0.1);
+  }
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+`;
+
+const ActionButton = styled.button<{ variant: 'save' | 'cancel' }>`
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid;
+
+  ${props => props.variant === 'save' ? `
+    background: #1F41BB;
+    color: white;
+    border-color: #1F41BB;
+
+    &:hover {
+      background: #1a3aa0;
+      border-color: #1a3aa0;
+    }
+  ` : `
+    background: white;
+    color: #6B7280;
+    border-color: #D1D5DB;
+
+    &:hover {
+      background: #F9FAFB;
+      border-color: #9CA3AF;
+    }
+  `}
+`;
+
 export interface PersonalInfoData {
   name: string;
   farmName: string;
@@ -202,32 +261,54 @@ export interface PersonalInfoData {
 interface PersonalInfoProps {
   data: PersonalInfoData;
   className?: string;
+  isEditing?: boolean;
+  editValues?: PersonalInfoData;
+  onValueChange?: (field: keyof PersonalInfoData, value: string) => void;
+  onSave?: () => void;
+  onCancel?: () => void;
 }
 
 const PersonalInfo: React.FC<PersonalInfoProps> = ({
   data,
   className,
+  isEditing = false,
+  editValues = data,
+  onValueChange,
+  onSave,
+  onCancel,
 }) => {
   const infoItems = [
     {
       icon: iconProfile,
       label: '이름',
       value: data.name,
+      editValue: editValues.name,
+      field: 'name' as keyof PersonalInfoData,
       alt: '프로필'
     },
     {
       icon: iconFarm,
       label: '농가명',
       value: data.farmName,
+      editValue: editValues.farmName,
+      field: 'farmName' as keyof PersonalInfoData,
       alt: '농가'
     },
     {
       icon: iconLocation,
       label: '농가 위치',
       value: data.location,
+      editValue: editValues.location,
+      field: 'location' as keyof PersonalInfoData,
       alt: '위치'
     }
   ];
+
+  const handleInputChange = (field: keyof PersonalInfoData, value: string) => {
+    if (onValueChange) {
+      onValueChange(field, value);
+    }
+  };
 
   return (
     <PersonalInfoCard className={className}>
@@ -240,9 +321,28 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({
             <LabelText>{item.label}</LabelText>
           </LeftSection>
           <Divider>•</Divider>
-          <ValueText>{item.value}</ValueText>
+          {isEditing ? (
+            <EditInput
+              value={item.editValue}
+              onChange={(e) => handleInputChange(item.field, e.target.value)}
+              placeholder={`${item.label}을 입력하세요`}
+            />
+          ) : (
+            <ValueText>{item.value}</ValueText>
+          )}
         </InfoRow>
       ))}
+      
+      {isEditing && (
+        <ButtonGroup>
+          <ActionButton variant="cancel" onClick={onCancel}>
+            취소
+          </ActionButton>
+          <ActionButton variant="save" onClick={onSave}>
+            저장
+          </ActionButton>
+        </ButtonGroup>
+      )}
     </PersonalInfoCard>
   );
 };
