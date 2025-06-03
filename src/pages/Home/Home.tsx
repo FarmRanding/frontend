@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import miniLogo from '../../assets/miniLogo.svg';
 import card1 from '../../assets/card1.svg';
@@ -14,6 +14,7 @@ import SignupModal from '../../components/common/SignupModal';
 import logo from '../../assets/logo.svg';
 import chevronUp from '../../assets/icon-ChevronUp.svg';
 import kakaoLogin from '../../assets/kakaoLogin.svg';
+import { useAuth } from '../../contexts/AuthContext';
 
 // 과일 이미지 import - 최적화된 버전 사용 + 우선순위별로 정렬
 import fruit1 from '../../assets/fruit-optimized/image 13.svg'; // 183KB
@@ -1161,22 +1162,50 @@ const CtaIcon = styled.span`
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
+  const [userInfo, setUserInfo] = useState<any>(null);
 
-  // 테스트용 키보드 단축키 (개발 시에만 사용)
+  // 쿼리스트링 인증 처리 (OAuth2 로그인 후 루트로 리다이렉트된 경우)
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // Ctrl + M 또는 Cmd + M으로 모달 열기/닫기
-      if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
-        e.preventDefault();
-        setIsSignupModalOpen(prev => !prev);
-        console.log('모달 토글:', !isSignupModalOpen);
-      }
-    };
+    const params = new URLSearchParams(location.search);
+    const accessToken = params.get('accessToken');
+    const refreshToken = params.get('refreshToken');
+    const userId = params.get('userId');
+    const email = params.get('email');
+    const nickname = params.get('nickname');
+    const membershipType = params.get('membershipType');
+    const isNewUser = params.get('isNewUser') === 'true';
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isSignupModalOpen]);
+    if (accessToken && refreshToken && userId) {
+      // 토큰 저장
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('userId', userId);
+      localStorage.setItem('email', email || '');
+      localStorage.setItem('nickname', nickname || '');
+      localStorage.setItem('membershipType', membershipType || '');
+
+      // 사용자 정보 설정
+      const currentUserInfo = {
+        userId,
+        email,
+        nickname,
+        membershipType
+      };
+      setUserInfo(currentUserInfo);
+      login(currentUserInfo);
+
+      // 신규 유저인 경우 모달 표시, 기존 유저는 홈으로 이동
+      if (isNewUser) {
+        setIsSignupModalOpen(true);
+      } else {
+        navigate('/home');
+      }
+    }
+    // eslint-disable-next-line
+  }, [location.search, login, navigate]);
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -1191,6 +1220,7 @@ const Home: React.FC = () => {
 
   const handleSignupClose = () => {
     setIsSignupModalOpen(false);
+    navigate('/');
   };
 
   return (
@@ -1357,12 +1387,7 @@ const Home: React.FC = () => {
           setIsSignupModalOpen(false);
           navigate('/home');
         }}
-        userInfo={{
-          userId: '',
-          email: '',
-          nickname: '',
-          membershipType: ''
-        }}
+        userInfo={userInfo || {}}
       />
     </LandingPageWrapper>
   );

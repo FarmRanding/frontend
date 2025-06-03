@@ -8,7 +8,6 @@ import BrandingFlow from './pages/BrandingFlow/BrandingFlow';
 import BrandResult from './pages/BrandResult/BrandResult';
 import MyPage from './pages/MyPage/MyPage';
 import PriceQuoteFlow from './pages/PriceQuoteFlow/PriceQuoteFlow';
-import AuthCallback from './pages/AuthCallback';
 import './App.css';
 
 const AppContainer = styled.div<{ isLanding: boolean }>`
@@ -47,15 +46,13 @@ const ContentWrapper = styled.div<{ isLanding: boolean }>`
 
 function AppContent() {
   const location = useLocation();
-  const isLanding = location.pathname === '/' || location.pathname === '/auth/callback';
+  const isLanding = location.pathname === '/';
 
   return (
     <AppContainer isLanding={isLanding}>
       <ContentWrapper isLanding={isLanding}>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          
           {/* 보호된 라우트들 */}
           <Route path="/home" element={
             <ProtectedRoute>
