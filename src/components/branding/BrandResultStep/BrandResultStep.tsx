@@ -21,6 +21,8 @@ const mapGradeToEnum = (gradeKorean: string): GradeEnum => {
       return 'SECOND';
     case '하':
       return 'THIRD';
+    case '프리미엄':
+      return 'PREMIUM';
     default:
       return 'SECOND'; // 기본값: 중급
   }
@@ -119,17 +121,15 @@ const KeywordGrid = styled.div<{ $showAll: boolean }>`
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   width: 100%;
-  max-height: ${props => props.$showAll ? 'none' : '120px'};
-  overflow: hidden;
-  transition: max-height 0.3s ease;
+  transition: all 0.3s ease;
 `;
 
-const KeywordWrapper = styled.div<{ $index: number }>`
+const KeywordWrapper = styled.div<{ $index: number; $isVisible: boolean }>`
   animation: ${fadeIn} 0.5s ease-out ${props => 0.6 + props.$index * 0.05}s both;
+  display: ${props => props.$isVisible ? 'block' : 'none'};
 `;
 
-const ShowMoreButton = styled.button<{ $hasMore: boolean }>`
-  display: ${props => props.$hasMore ? 'flex' : 'none'};
+const ShowMoreButton = styled.button`
   width: 100%;
   height: 40px;
   background: rgba(31, 65, 187, 0.1);
@@ -140,6 +140,7 @@ const ShowMoreButton = styled.button<{ $hasMore: boolean }>`
   font-weight: 400;
   font-size: 14px;
   cursor: pointer;
+  display: flex;
   align-items: center;
   justify-content: center;
   margin-top: 16px;
@@ -305,9 +306,11 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
   const cropAppealKeywords = allKeywords.slice(keywordCount, keywordCount * 2); // 작물 매력 키워드  
   const logoImageKeywords = allKeywords.slice(keywordCount * 2); // 로고 이미지 키워드
 
-  // 3행(9개)까지만 기본 표시
-  const visibleKeywords = showAllKeywords ? allKeywords : allKeywords.slice(0, 9);
-  const hasMoreKeywords = allKeywords.length > 9;
+  // 키워드 표시 로직
+  const DEFAULT_VISIBLE_COUNT = 9; // 3행 × 3열 = 9개
+  const totalKeywords = allKeywords.length;
+  const shouldShowMoreButton = totalKeywords > DEFAULT_VISIBLE_COUNT;
+  const hiddenCount = Math.max(0, totalKeywords - DEFAULT_VISIBLE_COUNT);
 
   // 동적 제목 결정
   const getTitle = () => {
@@ -544,20 +547,23 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
             <KeywordSectionTitle>선택한 키워드</KeywordSectionTitle>
             <KeywordContainer>
               <KeywordGrid $showAll={showAllKeywords}>
-                {visibleKeywords.map((keyword, index) => (
-                  <KeywordWrapper key={keyword} $index={index}>
-                    <KeywordTag variant="selected">
-                      {getKeywordLabel(keyword)}
-                    </KeywordTag>
-                  </KeywordWrapper>
-                ))}
+                {allKeywords.map((keyword, index) => {
+                  const isVisible = showAllKeywords || index < DEFAULT_VISIBLE_COUNT;
+                  return (
+                    <KeywordWrapper key={keyword} $index={index} $isVisible={isVisible}>
+                      <KeywordTag variant="selected">
+                        {getKeywordLabel(keyword)}
+                      </KeywordTag>
+                    </KeywordWrapper>
+                  );
+                })}
               </KeywordGrid>
-              <ShowMoreButton 
-                $hasMore={hasMoreKeywords} 
-                onClick={handleShowMore}
-              >
-                {showAllKeywords ? '접기' : `더보기 (+${allKeywords.length - 9}개)`}
-              </ShowMoreButton>
+              
+              {shouldShowMoreButton && (
+                <ShowMoreButton onClick={handleShowMore}>
+                  {showAllKeywords ? '접기' : `더보기 (+${hiddenCount}개)`}
+                </ShowMoreButton>
+              )}
             </KeywordContainer>
           </KeywordSection>
 

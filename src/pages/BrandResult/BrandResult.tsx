@@ -280,7 +280,7 @@ const BrandResultPage: React.FC = () => {
   }, [receivedBrandName]);
 
   const handleClose = () => {
-    navigate('/');
+    navigate('/home');
   };
 
   const handleComplete = () => {
@@ -315,7 +315,7 @@ const BrandResultPage: React.FC = () => {
           fontSize: '18px',
           color: '#1F41BB'
         }}>
-          브랜드를 완성하고 있어요...
+          잠시만 기다려 주세요...
         </div>
       </PageContainer>
     );

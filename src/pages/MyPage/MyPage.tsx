@@ -677,7 +677,7 @@ const MyPage: React.FC = () => {
   };
 
   const handleLogoClick = () => {
-    navigate('/');
+    navigate('/home');
   };
 
   const handleMypageClick = () => {

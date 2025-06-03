@@ -160,7 +160,7 @@ const Branding: React.FC = () => {
   };
 
   const handleLogoClick = () => {
-    navigate('/');
+    navigate('/home');
   };
 
   const handleMypageClick = () => {
