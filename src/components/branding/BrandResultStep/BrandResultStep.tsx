@@ -1,10 +1,43 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
 import BrandResult from '../../common/BrandResult/BrandResult';
 import KeywordTag from '../../common/KeywordTag/KeywordTag';
 import { type BrandResultData } from '../../common/BrandResult/BrandResult';
 import { BRAND_IMAGE_KEYWORDS, CROP_APPEAL_KEYWORDS, LOGO_IMAGE_KEYWORDS } from '../../../constants/keywords';
-import { brandingService, type BrandingProjectCreateRequest, mapGradeToEnum } from '../../../api/brandingService';
+import apiClient from '../../../api/axiosConfig';
+import type { BrandingApiResponse, ApiResponse } from '../../../types/branding';
+
+// 백엔드 Grade enum과 일치하는 타입
+type GradeEnum = 'SPECIAL' | 'FIRST' | 'SECOND' | 'THIRD' | 'PREMIUM';
+
+// 한글 등급을 백엔드 enum으로 매핑하는 함수
+const mapGradeToEnum = (gradeKorean: string): GradeEnum => {
+  switch (gradeKorean) {
+    case '특':
+      return 'SPECIAL';
+    case '상':
+      return 'FIRST';
+    case '중':
+      return 'SECOND';
+    case '하':
+      return 'THIRD';
+    default:
+      return 'SECOND'; // 기본값: 중급
+  }
+};
+
+// 브랜딩 프로젝트 생성 요청 타입
+interface BrandingProjectCreateRequest {
+  title: string;
+  cropName: string;
+  variety?: string;
+  cultivationMethod?: string;
+  grade?: GradeEnum;
+  brandingKeywords: string[];
+  cropAppealKeywords: string[];
+  logoImageKeywords: string[];
+  hasGapCertification?: boolean;
+}
 
 // 키워드 ID를 라벨로 변환하는 유틸리티 함수
 const getKeywordLabel = (keywordId: string): string => {
@@ -42,14 +75,14 @@ const Container = styled.div`
   max-width: 320px;
 `;
 
-const Title = styled.h1`
+const Title = styled.h1<{ $isGenerating: boolean }>`
   font-family: 'Jalnan 2', sans-serif;
   font-weight: 400;
   font-size: 24px;
   line-height: 1.67;
   letter-spacing: 4.17%;
   text-align: center;
-  color: #000000;
+  color: ${props => props.$isGenerating ? '#1F41BB' : '#000000'};
   margin: 0 0 64px 0;
   white-space: pre-line !important;
   animation: ${fadeIn} 0.8s ease-out;
@@ -257,6 +290,10 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
   const [isGenerating, setIsGenerating] = useState(true);
   const [error, setError] = useState<string>('');
   const [loadingMessage, setLoadingMessage] = useState('브랜드를 완성하고 있어요...');
+  
+  // API 중복 호출 방지를 위한 ref
+  const hasInitialized = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // 브랜딩 데이터 추출
   const cropName = localStorage.getItem('brandingCropName') || '토마토';
@@ -272,7 +309,24 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
   const visibleKeywords = showAllKeywords ? allKeywords : allKeywords.slice(0, 9);
   const hasMoreKeywords = allKeywords.length > 9;
 
+  // 동적 제목 결정
+  const getTitle = () => {
+    if (isGenerating) {
+      return "브랜드를 완성하고 있어요...";
+    }
+    if (error && !brandData) {
+      return "브랜드 생성에 문제가 있어요";
+    }
+    return "브랜드가 만들어졌어요!";
+  };
+
   useEffect(() => {
+    // StrictMode에서 중복 실행 방지
+    if (hasInitialized.current) {
+      return;
+    }
+    hasInitialized.current = true;
+
     generateCompleteBrand();
     
     // 로딩 메시지 업데이트 (사용자에게 진행 상황 알림)
@@ -286,18 +340,32 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
     
     let messageIndex = 0;
     const messageInterval = setInterval(() => {
-      if (messageIndex < messages.length - 1) {
+      if (messageIndex < messages.length - 1 && isGenerating) {
         messageIndex++;
         setLoadingMessage(messages[messageIndex]);
       }
     }, 10000); // 10초마다 메시지 변경
     
-    return () => clearInterval(messageInterval);
+    // cleanup 함수
+    return () => {
+      clearInterval(messageInterval);
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, []);
 
   const generateCompleteBrand = async () => {
     setIsGenerating(true);
     setError('');
+
+    // 이전 요청이 있다면 취소
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // 새로운 AbortController 생성
+    abortControllerRef.current = new AbortController();
 
     try {
       // localStorage에서 브랜딩 데이터 가져오기
@@ -326,22 +394,33 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
 
       console.log('브랜드 생성 요청 데이터:', request);
 
-      // API 호출 (백엔드에서 프롬프트 자체 생성)
-      const response = await brandingService.createBrandingProjectWithAi(request, brandName);
+      // 쿼리 파라미터는 brandName만 필요 (백엔드에서 프롬프트 자체 생성)
+      const params = new URLSearchParams();
+      params.append('brandName', brandName);
       
-      console.log('브랜드 생성 응답:', response);
-
-      // API 응답이 정상적인지 확인
-      if (!response) {
-        throw new Error('API 응답이 없습니다.');
+      console.log('API 요청 URL:', `/api/v1/branding/ai?${params.toString()}`);
+      console.log('API 요청 Body:', request);
+      
+      const response = await apiClient.post<ApiResponse<BrandingApiResponse>>(
+        `/api/v1/branding/ai?${params.toString()}`,
+        request,
+        {
+          signal: abortControllerRef.current.signal // 요청 취소 기능 추가
+        }
+      );
+      
+      console.log('API 응답:', response.data);
+      
+      if (!response.data.data) {
+        throw new Error(response.data.message || 'API 응답 데이터가 없습니다.');
       }
 
       // API 응답을 BrandResultData로 변환 (실제 저장된 데이터 그대로 사용)
       const resultData: BrandResultData = {
-        brandName: response.generatedBrandName || brandName,
-        promotionText: response.brandConcept || `${brandName}과 함께하는 건강한 삶`,
-        story: response.brandStory || `${brandName}은 정성과 사랑으로 키운 특별한 농산물입니다.`,
-        imageUrl: response.brandImageUrl // 이미지 URL을 바로 설정
+        brandName: response.data.data.generatedBrandName || brandName,
+        promotionText: response.data.data.brandConcept || `${brandName}과 함께하는 건강한 삶`,
+        story: response.data.data.brandStory || `${brandName}은 정성과 사랑으로 키운 특별한 농산물입니다.`,
+        imageUrl: response.data.data.brandImageUrl // 이미지 URL을 바로 설정
       };
 
       console.log('변환된 결과 데이터:', resultData);
@@ -351,6 +430,12 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
       setIsGenerating(false);
 
     } catch (error: any) {
+      // 요청이 취소된 경우는 무시
+      if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
+        console.log('요청이 취소되었습니다.');
+        return;
+      }
+
       console.error('브랜드 생성 실패:', error);
       
       // 타임아웃이나 네트워크 에러 시 실제 저장된 데이터 조회 시도
@@ -359,8 +444,9 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
         
         try {
           // 최근 생성된 브랜딩 프로젝트 목록을 가져와서 현재 브랜드명과 일치하는 것 찾기
-          const projects = await brandingService.getBrandingProjects();
-          const recentProject = projects.find((p: any) => p.generatedBrandName === brandName);
+          const projectsResponse = await apiClient.get<ApiResponse<BrandingApiResponse[]>>('/api/v1/branding');
+          const projects = projectsResponse.data.data || [];
+          const recentProject = projects.find((p: BrandingApiResponse) => p.generatedBrandName === brandName);
           
           if (recentProject) {
             console.log('저장된 브랜딩 데이터 발견:', recentProject);
@@ -423,7 +509,7 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
 
   return (
     <Container>
-      <Title>브랜드가 만들어졌어요!</Title>
+      <Title $isGenerating={isGenerating}>{getTitle()}</Title>
       
       {isGenerating && (
         <LoadingContainer>

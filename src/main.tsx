@@ -9,7 +9,5 @@ import { initJalnanFont } from './utils/fontLoader'
 initJalnanFont();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+  <App />
 )
