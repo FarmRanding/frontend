@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { addressService, LegalDistrictResponse } from '../../../api/addressService';
 
@@ -21,9 +21,18 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [inputValue, setInputValue] = useState(value);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchTimeoutRef = useRef<number | undefined>(undefined);
+
+  // value props가 변경되면 inputValue 동기화 (단, 사용자가 직접 입력 중이 아닐 때만)
+  useEffect(() => {
+    if (value !== inputValue && document.activeElement !== inputRef.current) {
+      setInputValue(value);
+    }
+  }, [value]);
 
   // 외부 클릭 감지
   useEffect(() => {
@@ -40,9 +49,10 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
     };
   }, []);
 
-  // 검색 함수
-  const searchAddresses = async (keyword: string) => {
-    if (keyword.trim().length < 1) {
+  // 검색 함수 (메모이제이션)
+  const searchAddresses = useCallback(async (keyword: string) => {
+    // 빈 문자열이나 너무 짧은 검색어는 제외
+    if (!keyword.trim() || keyword.trim().length < 1) {
       setSuggestions([]);
       setIsOpen(false);
       return;
@@ -50,7 +60,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
 
     setIsLoading(true);
     try {
-      const results = await addressService.searchLegalDistricts(keyword, 10);
+      const results = await addressService.searchLegalDistricts(keyword.trim(), 10);
       setSuggestions(results);
       setIsOpen(results.length > 0);
       setSelectedIndex(-1);
@@ -61,32 +71,47 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  // 디바운스된 검색
+  // 디바운스된 검색 (700ms로 증가)
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      searchAddresses(value);
-    }, 300);
+    // 이전 타이머 클리어
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
 
-    return () => clearTimeout(timeoutId);
-  }, [value]);
+    // 새 타이머 설정
+    searchTimeoutRef.current = setTimeout(() => {
+      searchAddresses(inputValue);
+    }, 700);
+
+    // 클린업
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [inputValue, searchAddresses]);
 
   // 입력 핸들러
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value);
-  };
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setInputValue(newValue);
+    onChange(newValue);
+  }, [onChange]);
 
   // 주소 선택 핸들러
-  const handleSelectAddress = (address: LegalDistrictResponse) => {
-    onChange(address.fullAddress);
+  const handleSelectAddress = useCallback((address: LegalDistrictResponse) => {
+    const selectedAddress = address.fullAddress;
+    setInputValue(selectedAddress);
+    onChange(selectedAddress);
     setIsOpen(false);
     setSelectedIndex(-1);
     inputRef.current?.blur();
-  };
+  }, [onChange]);
 
   // 키보드 네비게이션
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (!isOpen || suggestions.length === 0) return;
 
     switch (e.key) {
@@ -113,7 +138,33 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         setSelectedIndex(-1);
         break;
     }
-  };
+  }, [isOpen, suggestions, selectedIndex, handleSelectAddress]);
+
+  // 포커스 핸들러
+  const handleFocus = useCallback(() => {
+    if (suggestions.length > 0 && inputValue.trim()) {
+      setIsOpen(true);
+    }
+  }, [suggestions.length, inputValue]);
+
+  // 메모이제이션된 suggestion 리스트
+  const suggestionList = useMemo(() => {
+    if (!isOpen || suggestions.length === 0) return null;
+    
+    return (
+      <SuggestionsList>
+        {suggestions.map((suggestion, index) => (
+          <SuggestionItem
+            key={suggestion.code}
+            onClick={() => handleSelectAddress(suggestion)}
+            $isSelected={index === selectedIndex}
+          >
+            <MainAddress>{suggestion.fullAddress}</MainAddress>
+          </SuggestionItem>
+        ))}
+      </SuggestionsList>
+    );
+  }, [isOpen, suggestions, selectedIndex, handleSelectAddress]);
 
   return (
     <Container ref={containerRef} className={className}>
@@ -121,9 +172,10 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         <Input
           ref={inputRef}
           type="text"
-          value={value}
+          value={inputValue}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
+          onFocus={handleFocus}
           placeholder={placeholder}
           disabled={disabled}
           autoComplete="off"
@@ -131,23 +183,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         {isLoading && <LoadingSpinner />}
       </InputContainer>
       
-      {isOpen && suggestions.length > 0 && (
-        <SuggestionsList>
-          {suggestions.map((suggestion, index) => (
-            <SuggestionItem
-              key={suggestion.code}
-              onClick={() => handleSelectAddress(suggestion)}
-              $isSelected={index === selectedIndex}
-            >
-              <MainAddress>{suggestion.fullAddress}</MainAddress>
-              <SubInfo>
-                {suggestion.sido} {suggestion.sigungu} {suggestion.dong}
-                {suggestion.ri && ` ${suggestion.ri}`}
-              </SubInfo>
-            </SuggestionItem>
-          ))}
-        </SuggestionsList>
-      )}
+      {suggestionList}
     </Container>
   );
 };
@@ -174,12 +210,14 @@ const Input = styled.input`
   font-size: 16px;
   line-height: 1.5;
   background-color: #fff;
+  color: #1f2937;
   transition: border-color 0.2s ease;
+  box-sizing: border-box;
   
   &:focus {
     outline: none;
-    border-color: #22c55e;
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+    border-color: #1F41BB;
+    box-shadow: 0 0 0 3px rgba(31, 65, 187, 0.1);
   }
   
   &:disabled {
@@ -200,7 +238,7 @@ const LoadingSpinner = styled.div`
   height: 16px;
   border: 2px solid #e5e7eb;
   border-radius: 50%;
-  border-top-color: #22c55e;
+  border-top-color: #1F41BB;
   animation: spin 1s linear infinite;
   
   @keyframes spin {
@@ -232,11 +270,11 @@ const SuggestionItem = styled.li<{ $isSelected: boolean }>`
   padding: 12px 16px;
   cursor: pointer;
   border-bottom: 1px solid #f3f4f6;
-  background-color: ${props => props.$isSelected ? '#f0fdf4' : 'white'};
+  background-color: ${props => props.$isSelected ? 'rgba(31, 65, 187, 0.05)' : 'white'};
   transition: background-color 0.15s ease;
   
   &:hover {
-    background-color: #f0fdf4;
+    background-color: rgba(31, 65, 187, 0.05);
   }
   
   &:last-child {
@@ -248,10 +286,4 @@ const MainAddress = styled.div`
   font-size: 14px;
   font-weight: 500;
   color: #1f2937;
-  margin-bottom: 2px;
-`;
-
-const SubInfo = styled.div`
-  font-size: 12px;
-  color: #6b7280;
 `; 
