@@ -405,7 +405,7 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
         request,
         {
           signal: abortControllerRef.current.signal,
-          timeout: 10000 // 10초 타임아웃 (텍스트 생성은 빠름)
+          timeout: 30000 // 30초로 증가
         }
       );
       
@@ -447,6 +447,17 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
 
       console.error('점진적 브랜딩 생성 실패:', error);
       
+      // 타임아웃 에러인 경우 폴링으로 결과 확인 시도
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        console.log('타임아웃 발생, 폴링으로 결과 확인 시도...');
+        setError('');
+        setLoadingMessage('브랜드 생성 상태를 확인하고 있습니다...');
+        
+        // 최근 프로젝트 확인 시도
+        await checkRecentProject();
+        return;
+      }
+      
       // 구체적인 에러 메시지 설정
       let errorMessage = '브랜드 생성 중 오류가 발생했습니다.';
       if (error.response?.status === 400) {
@@ -462,6 +473,59 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
       }
       
       setError(errorMessage);
+      setIsGenerating(false);
+      
+      // Fallback 데이터 표시
+      const fallbackData = generateBrandData(brandName);
+      setBrandData(fallbackData);
+      setImageStatus('FAILED');
+    }
+  };
+
+  // 최근 프로젝트 확인 (타임아웃 발생 시)
+  const checkRecentProject = async () => {
+    try {
+      const response = await apiClient.get<ApiResponse<BrandingApiResponse[]>>(
+        '/api/v1/branding?page=0&size=1'
+      );
+      
+      if (response.data.data && response.data.data.length > 0) {
+        const recentProject = response.data.data[0];
+        
+        // 최근 프로젝트가 현재 브랜드명과 일치하는지 확인
+        if (recentProject.generatedBrandName === brandName || 
+            recentProject.title?.includes(brandName)) {
+          
+          console.log('최근 프로젝트 발견:', recentProject);
+          setCurrentProjectId(recentProject.id);
+          
+          const resultData: BrandResultData = {
+            brandName: recentProject.generatedBrandName || brandName,
+            promotionText: recentProject.brandConcept || `${brandName}과 함께하는 건강한 삶`,
+            story: recentProject.brandStory || `${brandName}은 정성과 사랑으로 키운 특별한 농산물입니다.`,
+            imageUrl: recentProject.brandImageUrl
+          };
+
+          setBrandData(resultData);
+          setImageStatus(recentProject.imageGenerationStatus || 'PROCESSING');
+          setIsGenerating(false);
+
+          // 이미지가 아직 생성 중이면 polling 시작
+          if (!recentProject.brandImageUrl || recentProject.imageGenerationStatus === 'PROCESSING') {
+            setLoadingMessage('브랜드 이미지를 생성하고 있습니다...');
+            startImagePolling(recentProject.id);
+          }
+          
+          return;
+        }
+      }
+      
+      // 매칭되는 프로젝트가 없으면 에러 표시
+      throw new Error('생성된 프로젝트를 찾을 수 없습니다.');
+      
+    } catch (error) {
+      console.error('최근 프로젝트 확인 실패:', error);
+      setError('브랜드 생성 상태를 확인할 수 없습니다. 잠시 후 다시 시도해주세요.');
       setIsGenerating(false);
       
       // Fallback 데이터 표시
