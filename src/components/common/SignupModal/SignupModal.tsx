@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { signupUser } from '../../../api/auth';
+import AddressAutocomplete from '../AddressAutocomplete';
 
 interface SignupModalProps {
   isOpen: boolean;
@@ -29,9 +30,6 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onComplete, 
     farmLocation: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [addressSearchResults, setAddressSearchResults] = useState<string[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
 
   const handleInputChange = (field: keyof SignupData) => (
     e: React.ChangeEvent<HTMLInputElement>
@@ -40,67 +38,14 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onComplete, 
       ...prev,
       [field]: e.target.value
     }));
-    
-    // 농가 위치 필드의 경우 입력 시 검색 결과 초기화
-    if (field === 'farmLocation') {
-      setShowDropdown(false);
-      setAddressSearchResults([]);
-    }
   };
 
-  // 주소 검색 함수
-  const searchAddress = async (query: string) => {
-    if (!query.trim()) {
-      setAddressSearchResults([]);
-      setShowDropdown(false);
-      return;
-    }
-
-    setIsSearching(true);
-    
-    try {
-      // 목업 데이터로 시뮬레이션
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const mockResults = [
-        '서울특별시 강남구 역삼동',
-        '서울특별시 서초구 서초동',
-        '경기도 화성시 동탄면',
-        '경기도 화성시 봉담읍',
-        '경기도 화성시 남양읍',
-        '경기도 성남시 분당구 정자동',
-        '경기도 용인시 기흥구 구갈동',
-        '부산광역시 해운대구 우동',
-        '대구광역시 수성구 범어동',
-        '인천광역시 연수구 송도동'
-      ];
-      
-      const filteredResults = mockResults.filter(address => 
-        address.toLowerCase().includes(query.toLowerCase())
-      );
-      
-      setAddressSearchResults(filteredResults);
-      setShowDropdown(true);
-    } catch (error) {
-      console.error('주소 검색 실패:', error);
-      setAddressSearchResults([]);
-      setShowDropdown(false);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleAddressSearch = () => {
-    searchAddress(formData.farmLocation);
-  };
-
-  const handleAddressSelect = (selectedAddress: string) => {
+  // 주소 자동완성 핸들러
+  const handleLocationChange = (location: string) => {
     setFormData(prev => ({
       ...prev,
-      farmLocation: selectedAddress
+      farmLocation: location
     }));
-    setShowDropdown(false);
-    setAddressSearchResults([]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -142,7 +87,6 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onComplete, 
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose();
-      setShowDropdown(false);
     }
   };
 
@@ -196,35 +140,12 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onComplete, 
           
           <FormGroup>
             <FormLabel htmlFor="farmLocation">농가 위치</FormLabel>
-            <AddressSearchContainer>
-              <AddressSearchInput
-                id="farmLocation"
-                type="text"
-                placeholder="화성, 서울, 부산 등 입력 후 검색 버튼 클릭"
-                value={formData.farmLocation}
-                onChange={handleInputChange('farmLocation')}
-                required
-              />
-              <SearchButton onClick={handleAddressSearch} disabled={isSearching} type="button">
-                {isSearching ? '검색중...' : '검색'}
-              </SearchButton>
-            </AddressSearchContainer>
-            
-            {showDropdown && (
-              <SearchResultsDropdown isVisible={showDropdown}>
-                {addressSearchResults.length > 0 ? (
-                  addressSearchResults.map((address, index) => (
-                    <SearchResultItem key={index} onClick={() => handleAddressSelect(address)}>
-                      {address}
-                    </SearchResultItem>
-                  ))
-                ) : (
-                  <NoResultsMessage>
-                    검색 결과가 없습니다.
-                  </NoResultsMessage>
-                )}
-              </SearchResultsDropdown>
-            )}
+            <AddressAutocomplete
+              value={formData.farmLocation}
+              onChange={handleLocationChange}
+              placeholder="부산, 서울, 화성 등 지역명을 입력하세요"
+              disabled={isSubmitting}
+            />
           </FormGroup>
           
           <ButtonGroup>
@@ -578,187 +499,5 @@ const CloseButton = styled.button`
     width: 40px;
     height: 40px;
     font-size: 32px;
-  }
-`;
-
-// 주소 검색 관련 컴포넌트
-const AddressSearchContainer = styled.div`
-  position: relative;
-  width: 100%;
-`;
-
-const AddressSearchInput = styled(FormInput)`
-  padding-right: 70px;
-  
-  @media (min-width: 768px) {
-    padding-right: 80px;
-  }
-  
-  @media (min-width: 1024px) {
-    padding-right: 90px;
-  }
-`;
-
-const SearchButton = styled.button`
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 60px;
-  height: 40px;
-  border: none;
-  background: linear-gradient(135deg, #1F41BB 0%, #4F46E5 100%);
-  color: white;
-  border-radius: 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  
-  &:hover:not(:disabled) {
-    transform: translateY(-50%) scale(1.05);
-    box-shadow: 0 4px 12px rgba(31, 65, 187, 0.3);
-  }
-  
-  &:active:not(:disabled) {
-    transform: translateY(-50%) scale(1.02);
-  }
-  
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: translateY(-50%);
-  }
-  
-  @media (min-width: 768px) {
-    right: 10px;
-    width: 68px;
-    height: 44px;
-    border-radius: 14px;
-    font-size: 13px;
-  }
-  
-  @media (min-width: 1024px) {
-    right: 12px;
-    width: 76px;
-    height: 48px;
-    border-radius: 16px;
-    font-size: 14px;
-  }
-`;
-
-const SearchResultsDropdown = styled.div<{ isVisible: boolean }>`
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: white;
-  border-radius: 16px;
-  border: 2px solid rgba(31, 65, 187, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  z-index: 99999;
-  max-height: 240px;
-  overflow-y: auto;
-  margin-top: 8px;
-  opacity: ${props => props.isVisible ? 1 : 0};
-  visibility: ${props => props.isVisible ? 'visible' : 'hidden'};
-  transform: ${props => props.isVisible ? 'translateY(0)' : 'translateY(-10px)'};
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  
-  @media (min-width: 768px) {
-    border-radius: 18px;
-    margin-top: 10px;
-  }
-  
-  @media (min-width: 1024px) {
-    border-radius: 20px;
-    margin-top: 12px;
-  }
-`;
-
-const SearchResultItem = styled.button`
-  width: 100%;
-  padding: 16px 20px;
-  text-align: left;
-  border: none;
-  background: white;
-  color: #374151;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border-bottom: 1px solid rgba(31, 65, 187, 0.05);
-  
-  &:first-child {
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
-  }
-  
-  &:last-child {
-    border-bottom: none;
-    border-bottom-left-radius: 16px;
-    border-bottom-right-radius: 16px;
-  }
-  
-  &:hover {
-    background: rgba(31, 65, 187, 0.05);
-    color: #1F41BB;
-  }
-  
-  &:active {
-    background: rgba(31, 65, 187, 0.1);
-  }
-  
-  @media (min-width: 768px) {
-    padding: 18px 24px;
-    font-size: 17px;
-    
-    &:first-child {
-      border-top-left-radius: 18px;
-      border-top-right-radius: 18px;
-    }
-    
-    &:last-child {
-      border-bottom-left-radius: 18px;
-      border-bottom-right-radius: 18px;
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    padding: 20px 28px;
-    font-size: 18px;
-    
-    &:first-child {
-      border-top-left-radius: 20px;
-      border-top-right-radius: 20px;
-    }
-    
-    &:last-child {
-      border-bottom-left-radius: 20px;
-      border-bottom-right-radius: 20px;
-    }
-  }
-`;
-
-const NoResultsMessage = styled.div`
-  padding: 20px;
-  text-align: center;
-  color: #9CA3AF;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 14px;
-  
-  @media (min-width: 768px) {
-    padding: 24px;
-    font-size: 15px;
-  }
-  
-  @media (min-width: 1024px) {
-    padding: 28px;
-    font-size: 16px;
   }
 `; 

@@ -132,4 +132,5 @@ const performLogout = () => {
   window.location.href = '/';
 };
 
+export const api = apiClient;
 export default apiClient; 
