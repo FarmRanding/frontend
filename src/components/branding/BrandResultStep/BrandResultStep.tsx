@@ -167,7 +167,7 @@ const KeywordCategoryTitle = styled.h4`
   font-weight: 600;
   font-size: 14px;
   line-height: 1.2;
-  color: #000000;
+  color: #1F41BB;
   margin: 0 0 12px 0;
 `;
 

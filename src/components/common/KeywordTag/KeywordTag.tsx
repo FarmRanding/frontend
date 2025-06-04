@@ -76,12 +76,12 @@ const TagText = styled.span<{ variant: KeywordTagVariant }>`
     switch (props.variant) {
       case 'default':
         return `
-          font-weight: 400 !important;
+          font-weight: 600 !important;
           color: #000000 !important;
         `;
       case 'hover':
         return `
-          font-weight: 600 !important;
+          font-weight: 700 !important;
           color: #000000 !important;
         `;
       case 'selected':
@@ -91,7 +91,7 @@ const TagText = styled.span<{ variant: KeywordTagVariant }>`
         `;
       default:
         return `
-          font-weight: 400 !important;
+          font-weight: 600 !important;
           color: #000000 !important;
         `;
     }

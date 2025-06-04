@@ -279,6 +279,16 @@ const KeywordSection = styled.div`
   margin-top: 24px;
 `;
 
+const KeywordSectionTitle = styled.h3`
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.4;
+  color: #000000;
+  text-align: center;
+  margin: 0 0 24px 0;
+`;
+
 const KeywordCategory = styled.div`
   display: flex;
   flex-direction: column;
@@ -290,7 +300,7 @@ const KeywordCategoryTitle = styled.h4`
   font-weight: 600;
   font-size: 14px;
   line-height: 1.2;
-  color: #000000;
+  color: #1F41BB;
   margin: 0 0 12px 0;
 `;
 
@@ -395,6 +405,7 @@ const BrandingDetailModal: React.FC<BrandingDetailModalProps> = ({
             {/* 키워드 섹션 */}
             {(brandingHistory.brandingKeywords?.length || brandingHistory.cropAppealKeywords?.length || brandingHistory.logoImageKeywords?.length) && (
               <KeywordSection>
+                <KeywordSectionTitle>선택한 키워드</KeywordSectionTitle>
                 {brandingHistory.brandingKeywords && brandingHistory.brandingKeywords.length > 0 && (
                   <KeywordCategory>
                     <KeywordCategoryTitle>브랜드 이미지 키워드</KeywordCategoryTitle>
