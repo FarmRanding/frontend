@@ -97,11 +97,44 @@ const GradeIcon = styled.img`
   }
 `;
 
+const CheckboxContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+`;
+
+const CheckboxInput = styled.input`
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+`;
+
+const CheckboxLabel = styled.label`
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #666;
+  cursor: pointer;
+  user-select: none;
+`;
+
+const CheckboxDescription = styled.div`
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 10px;
+  line-height: 1.4;
+  color: #999;
+  margin-top: 4px;
+`;
+
 interface BasicInfoData {
   cropName: string;
   variety: string;
   cultivationMethod: string;
   grade: string;
+  includeFarmName: boolean;
 }
 
 interface BasicInfoStepProps {
@@ -117,7 +150,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
 }) => {
   const [showGradeSelector, setShowGradeSelector] = useState(false);
 
-  const handleInputChange = (field: keyof BasicInfoData, value: string) => {
+  const handleInputChange = (field: keyof BasicInfoData, value: string | boolean) => {
     const newData = { ...data, [field]: value };
     onChange(newData);
     
@@ -182,6 +215,23 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
             <GradeIcon src={iconGrade} alt="등급" />
           </GradeInput>
         </GradeContainer>
+
+        <div>
+          <CheckboxContainer>
+            <CheckboxInput
+              type="checkbox"
+              id="includeFarmName"
+              checked={data.includeFarmName}
+              onChange={(e) => handleInputChange('includeFarmName', e.target.checked)}
+            />
+            <CheckboxLabel htmlFor="includeFarmName">
+              농가명 포함
+            </CheckboxLabel>
+          </CheckboxContainer>
+          <CheckboxDescription>
+            농가명 정보는 판매글에만 영향됩니다
+          </CheckboxDescription>
+        </div>
       </FormContainer>
 
       {showGradeSelector && (

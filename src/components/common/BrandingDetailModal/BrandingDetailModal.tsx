@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import iconClose from '../../../assets/icon-close.svg';
 import iconBrush from '../../../assets/icon-brush.svg';
+import { BRAND_IMAGE_KEYWORDS, CROP_APPEAL_KEYWORDS, LOGO_IMAGE_KEYWORDS } from '../../../constants/keywords';
 
 // 애니메이션
 const slideUp = keyframes`
@@ -271,6 +272,47 @@ const BrandStory = styled.p`
   white-space: pre-wrap;
 `;
 
+const KeywordSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+`;
+
+const KeywordCategory = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const KeywordCategoryTitle = styled.h4`
+  font-family: 'Jalnan 2', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.2;
+  color: #1F41BB;
+  margin: 0;
+`;
+
+const KeywordList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+`;
+
+const KeywordTag = styled.div`
+  padding: 6px 12px;
+  background: rgba(31, 65, 187, 0.1);
+  border: 1px solid rgba(31, 65, 187, 0.2);
+  border-radius: 20px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.2;
+  color: #1F41BB;
+  white-space: nowrap;
+`;
+
 interface BrandingHistory {
   id: string;
   title: string;
@@ -278,6 +320,9 @@ interface BrandingHistory {
   story: string;
   imageUrl?: string;
   createdAt: string;
+  brandingKeywords?: string[];
+  cropAppealKeywords?: string[];
+  logoImageKeywords?: string[];
 }
 
 interface BrandingDetailModalProps {
@@ -292,6 +337,13 @@ const BrandingDetailModal: React.FC<BrandingDetailModalProps> = ({
   onClose
 }) => {
   const [isClosing, setIsClosing] = useState(false);
+
+  // 키워드 ID를 라벨로 변환하는 함수
+  const getKeywordLabel = (keywordId: string) => {
+    const allKeywords = [...BRAND_IMAGE_KEYWORDS, ...CROP_APPEAL_KEYWORDS, ...LOGO_IMAGE_KEYWORDS];
+    const keyword = allKeywords.find(k => k.id === keywordId);
+    return keyword ? keyword.label : keywordId;
+  };
 
   const handleClose = () => {
     setIsClosing(true);
@@ -345,6 +397,50 @@ const BrandingDetailModal: React.FC<BrandingDetailModalProps> = ({
             <BrandTitle>{brandingHistory.title}</BrandTitle>
             <BrandDescription>{brandingHistory.description}</BrandDescription>
             <BrandStory>{brandingHistory.story}</BrandStory>
+            
+            {/* 키워드 섹션 */}
+            {(brandingHistory.brandingKeywords?.length || brandingHistory.cropAppealKeywords?.length || brandingHistory.logoImageKeywords?.length) && (
+              <KeywordSection>
+                {brandingHistory.brandingKeywords && brandingHistory.brandingKeywords.length > 0 && (
+                  <KeywordCategory>
+                    <KeywordCategoryTitle>브랜드 이미지 키워드</KeywordCategoryTitle>
+                    <KeywordList>
+                      {brandingHistory.brandingKeywords.map((keywordId, index) => (
+                        <KeywordTag key={index}>
+                          {getKeywordLabel(keywordId)}
+                        </KeywordTag>
+                      ))}
+                    </KeywordList>
+                  </KeywordCategory>
+                )}
+                
+                {brandingHistory.cropAppealKeywords && brandingHistory.cropAppealKeywords.length > 0 && (
+                  <KeywordCategory>
+                    <KeywordCategoryTitle>작물 매력 키워드</KeywordCategoryTitle>
+                    <KeywordList>
+                      {brandingHistory.cropAppealKeywords.map((keywordId, index) => (
+                        <KeywordTag key={index}>
+                          {getKeywordLabel(keywordId)}
+                        </KeywordTag>
+                      ))}
+                    </KeywordList>
+                  </KeywordCategory>
+                )}
+                
+                {brandingHistory.logoImageKeywords && brandingHistory.logoImageKeywords.length > 0 && (
+                  <KeywordCategory>
+                    <KeywordCategoryTitle>로고 이미지 키워드</KeywordCategoryTitle>
+                    <KeywordList>
+                      {brandingHistory.logoImageKeywords.map((keywordId, index) => (
+                        <KeywordTag key={index}>
+                          {getKeywordLabel(keywordId)}
+                        </KeywordTag>
+                      ))}
+                    </KeywordList>
+                  </KeywordCategory>
+                )}
+              </KeywordSection>
+            )}
           </BrandSection>
 
         </ModalContent>

@@ -220,7 +220,7 @@ const Home: React.FC<HomeProps> = ({ className }) => {
         </ServiceCardsContainer>
 
         <PriceTrendSection>
-          <SectionTitle>최근 가격 동향</SectionTitle>
+          <SectionTitle>최근 받아본 가격</SectionTitle>
           <ChartScrollContainer 
             ref={scrollContainerRef}
             onScroll={handleScroll}

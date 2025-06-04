@@ -194,6 +194,7 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
   const [displayedName, setDisplayedName] = useState<string>('');
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string>('');
+  const [regenerationCount, setRegenerationCount] = useState(0);
 
   // 브랜딩 데이터에서 작물명과 키워드 추출
   const cropName = localStorage.getItem('brandingCropName') || '토마토'; // 기본값
@@ -293,6 +294,12 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
   }, []);
 
   const handleRegenerate = () => {
+    if (regenerationCount >= 3) {
+      setError('브랜드명 재생성은 무료 회원은 3번까지 가능합니다. 더 많은 재생성을 원하시면 멤버십을 업그레이드해주세요.');
+      return;
+    }
+    
+    setRegenerationCount(prev => prev + 1);
     startGeneration();
   };
 
@@ -346,7 +353,7 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
           className="regen-button"
           style={{ fontFamily: "'Jalnan 2', sans-serif" }}
         >
-          브랜드명 다시 생성하기
+          브랜드명 다시 생성하기 ({3 - regenerationCount}회 남음)
         </RegenerateButton>
       )}
     </Container>

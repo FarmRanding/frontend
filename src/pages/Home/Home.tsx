@@ -1292,10 +1292,10 @@ const Home: React.FC = () => {
           
           {/* 서비스 섹션 헤더 */}
           <SectionHeader>
-            <SectionMainTitle>팜랜딩에서 뭘 할 수 있나요?</SectionMainTitle>
+            <SectionMainTitle>팜랜딩이 당신에게 주는 가치</SectionMainTitle>
             <SectionSubTitle>
-              농산물에 브랜딩과 적정 가격을 제안하여<br />
-              농장주님의 직거래를 성공으로 이끕니다.
+              농장주님이 찾던 브랜드와 가격을 한 번에,<br />
+              농장주님의 직거래가 쉬워집니다.
             </SectionSubTitle>
           </SectionHeader>
           
@@ -1352,8 +1352,7 @@ const Home: React.FC = () => {
           <CtaSection>
             <CtaTitle>직접 사용해보세요!</CtaTitle>
             <CtaSubtitle>
-              농산물에 브랜딩과 적정 가격을 제안하여<br />
-              농장주님의 직거래를 성공으로 이끌어보세요.
+              내 농산물에 딱 맞는 브랜드와 가격을 만나보세요.
             </CtaSubtitle>
             <CtaButton onClick={handleKakaoLogin}>
               <CtaButtonText>

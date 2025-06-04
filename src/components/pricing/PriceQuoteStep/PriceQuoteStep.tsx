@@ -282,14 +282,14 @@ const PriceQuoteStep: React.FC<PriceQuoteStepProps> = ({
         </GradeContainer>
 
         <DateContainer>
-          <Label>수확예정일</Label>
+          <Label>출하 예정일</Label>
           <DateInputContainer>
             <DateInput 
               hasValue={Boolean(data.harvestDate)}
               onClick={() => setIsDatePickerOpen(true)}
             >
               <span>
-                {data.harvestDate ? formatDate(data.harvestDate) : '수확예정일을 선택해주세요'}
+                {data.harvestDate ? formatDate(data.harvestDate) : '출하예정일을 선택해주세요'}
               </span>
               <CalendarIcon src={iconCalendar} alt="달력" />
             </DateInput>
