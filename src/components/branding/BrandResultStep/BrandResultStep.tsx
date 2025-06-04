@@ -173,18 +173,6 @@ const KeywordCategoryTitle = styled.h4`
 
 const KeywordContainer = styled.div`
   position: relative;
-  padding-left: 12px;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: #1F41BB;
-    border-radius: 2px;
-  }
 `;
 
 const KeywordGrid = styled.div<{ $showAll: boolean }>`

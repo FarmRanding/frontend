@@ -299,18 +299,6 @@ const KeywordList = styled.div`
   flex-wrap: wrap;
   gap: 8px;
   position: relative;
-  padding-left: 12px;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: #1F41BB;
-    border-radius: 2px;
-  }
 `;
 
 const KeywordTag = styled.div`
