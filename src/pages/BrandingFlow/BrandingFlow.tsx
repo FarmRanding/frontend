@@ -179,6 +179,7 @@ export interface BrandingData {
   variety: string;
   cultivationMethod: string;
   grade: string;
+  includeFarmName: boolean;
   
   // 키워드들
   brandingKeywords: string[];
@@ -213,6 +214,7 @@ const BrandingFlow: React.FC = () => {
     variety: '',
     cultivationMethod: '',
     grade: '',
+    includeFarmName: false,
     brandingKeywords: [],
     cropAppealKeywords: [],
     logoImageKeywords: [],
@@ -297,7 +299,7 @@ const BrandingFlow: React.FC = () => {
               variety: brandingData.variety,
               cultivationMethod: brandingData.cultivationMethod,
               grade: brandingData.grade,
-              includeFarmName: false
+              includeFarmName: brandingData.includeFarmName
             }}
             onChange={(data) => updateBrandingData(data)}
             onValidationChange={setIsCurrentStepValid}
@@ -361,23 +363,17 @@ const BrandingFlow: React.FC = () => {
           />
         );
       case BrandingStep.RESULT:
-        const allKeywordsForResult = [
-          ...brandingData.brandingKeywords,
-          ...brandingData.cropAppealKeywords,
-          ...brandingData.logoImageKeywords
-        ];
-        
         console.log('BrandingFlow - RESULT 단계 키워드 확인:');
         console.log('- brandingData.brandingKeywords:', brandingData.brandingKeywords);
         console.log('- brandingData.cropAppealKeywords:', brandingData.cropAppealKeywords);
         console.log('- brandingData.logoImageKeywords:', brandingData.logoImageKeywords);
-        console.log('- allKeywordsForResult 총 개수:', allKeywordsForResult.length);
-        console.log('- allKeywordsForResult:', allKeywordsForResult);
         
         return (
           <BrandResultStep
             brandName={brandingData.generatedBrandName}
-            allKeywords={allKeywordsForResult}
+            brandingKeywords={brandingData.brandingKeywords}
+            cropAppealKeywords={brandingData.cropAppealKeywords}
+            logoImageKeywords={brandingData.logoImageKeywords}
             onComplete={() => navigate('/mypage')}
           />
         );

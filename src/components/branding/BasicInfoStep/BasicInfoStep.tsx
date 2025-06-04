@@ -3,6 +3,7 @@ import styled, { keyframes } from 'styled-components';
 import InputField from '../../common/InputField/InputField';
 import GradeSelector from '../../common/GradeSelector/GradeSelector';
 import iconGrade from '../../../assets/icon-grade.svg';
+import iconToggle from '../../../assets/icon-toggle.svg';
 
 const slideInUp = keyframes`
   from {
@@ -97,36 +98,77 @@ const GradeIcon = styled.img`
   }
 `;
 
-const CheckboxContainer = styled.div`
+const ToggleContainer = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
   width: 100%;
+  padding: 12px 0;
 `;
 
-const CheckboxInput = styled.input`
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-`;
-
-const CheckboxLabel = styled.label`
-  font-family: 'Inter', sans-serif;
+const ToggleLabel = styled.span`
+  font-family: 'Jalnan 2', sans-serif;
   font-weight: 400;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #666;
-  cursor: pointer;
-  user-select: none;
+  font-size: 16px;
+  line-height: 1.18;
+  color: #000000;
 `;
 
-const CheckboxDescription = styled.div`
+const ToggleButton = styled.button<{ $isActive: boolean }>`
+  width: 48px;
+  height: 28px;
+  background: ${props => props.$isActive ? '#1F41BB' : '#E5E7EB'};
+  border: none;
+  border-radius: 14px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+  outline: none;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(31, 65, 187, 0.2);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+`;
+
+const ToggleKnob = styled.div<{ $isActive: boolean }>`
+  width: 20px;
+  height: 20px;
+  background: #FFFFFF;
+  border-radius: 50%;
+  position: absolute;
+  top: 4px;
+  left: ${props => props.$isActive ? '24px' : '4px'};
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const ToggleIcon = styled.img<{ $isActive: boolean }>`
+  width: 12px;
+  height: 12px;
+  filter: ${props => props.$isActive 
+    ? 'brightness(0) saturate(100%) invert(25%) sepia(98%) saturate(1653%) hue-rotate(221deg) brightness(96%) contrast(91%)'
+    : 'brightness(0) saturate(100%) invert(60%) sepia(5%) saturate(7%) hue-rotate(4deg) brightness(93%) contrast(87%)'
+  };
+  transition: all 0.3s ease;
+`;
+
+const ToggleDescription = styled.div`
   font-family: 'Inter', sans-serif;
   font-weight: 400;
   font-size: 10px;
   line-height: 1.4;
   color: #999;
   margin-top: 4px;
+  text-align: left;
 `;
 
 interface BasicInfoData {
@@ -217,20 +259,24 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
         </GradeContainer>
 
         <div>
-          <CheckboxContainer>
-            <CheckboxInput
-              type="checkbox"
-              id="includeFarmName"
-              checked={data.includeFarmName}
-              onChange={(e) => handleInputChange('includeFarmName', e.target.checked)}
-            />
-            <CheckboxLabel htmlFor="includeFarmName">
-              농가명 포함
-            </CheckboxLabel>
-          </CheckboxContainer>
-          <CheckboxDescription>
+          <ToggleContainer>
+            <ToggleLabel>농가명 포함</ToggleLabel>
+            <ToggleButton
+              $isActive={data.includeFarmName}
+              onClick={() => handleInputChange('includeFarmName', !data.includeFarmName)}
+            >
+              <ToggleKnob $isActive={data.includeFarmName}>
+                <ToggleIcon 
+                  src={iconToggle} 
+                  alt="토글" 
+                  $isActive={data.includeFarmName}
+                />
+              </ToggleKnob>
+            </ToggleButton>
+          </ToggleContainer>
+          <ToggleDescription>
             농가명 정보는 판매글에만 영향됩니다
-          </CheckboxDescription>
+          </ToggleDescription>
         </div>
       </FormContainer>
 

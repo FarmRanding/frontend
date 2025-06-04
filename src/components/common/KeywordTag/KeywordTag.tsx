@@ -64,35 +64,35 @@ const TagContainer = styled.button<{ variant: KeywordTagVariant }>`
 `;
 
 const TagText = styled.span<{ variant: KeywordTagVariant }>`
-  font-family: 'Inter', sans-serif;
-  font-size: 10px;
-  line-height: 1.21;
-  letter-spacing: -5%;
-  text-align: center;
-  white-space: nowrap;
-  margin: 0;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 10px !important;
+  line-height: 1.21 !important;
+  letter-spacing: -5% !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
 
   ${props => {
     switch (props.variant) {
       case 'default':
         return `
-          font-weight: 400;
-          color: #000000;
+          font-weight: 400 !important;
+          color: #000000 !important;
         `;
       case 'hover':
         return `
-          font-weight: 600;
-          color: #000000;
+          font-weight: 600 !important;
+          color: #000000 !important;
         `;
       case 'selected':
         return `
-          font-weight: 700;
-          color: #1F41BB;
+          font-weight: 700 !important;
+          color: #1F41BB !important;
         `;
       default:
         return `
-          font-weight: 400;
-          color: #000000;
+          font-weight: 400 !important;
+          color: #000000 !important;
         `;
     }
   }}
@@ -129,8 +129,11 @@ const KeywordTag: React.FC<KeywordTagProps> = ({
       className={className}
       type="button"
       aria-pressed={variant === 'selected'}
+      style={{ fontFamily: "'Inter', sans-serif" }}
     >
-      <TagText variant={variant}>{children}</TagText>
+      <TagText variant={variant} style={{ fontFamily: "'Inter', sans-serif" }}>
+        {children}
+      </TagText>
     </TagContainer>
   );
 };

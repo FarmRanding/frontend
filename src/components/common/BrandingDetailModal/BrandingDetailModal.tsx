@@ -275,29 +275,42 @@ const BrandStory = styled.p`
 const KeywordSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
   margin-top: 24px;
 `;
 
 const KeywordCategory = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 `;
 
 const KeywordCategoryTitle = styled.h4`
-  font-family: 'Jalnan 2', sans-serif;
-  font-weight: 400;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
   font-size: 14px;
   line-height: 1.2;
-  color: #1F41BB;
-  margin: 0;
+  color: #000000;
+  margin: 0 0 12px 0;
 `;
 
 const KeywordList = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  position: relative;
+  padding-left: 12px;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #1F41BB;
+    border-radius: 2px;
+  }
 `;
 
 const KeywordTag = styled.div`
@@ -305,7 +318,7 @@ const KeywordTag = styled.div`
   background: rgba(31, 65, 187, 0.1);
   border: 1px solid rgba(31, 65, 187, 0.2);
   border-radius: 20px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', sans-serif !important;
   font-weight: 500;
   font-size: 12px;
   line-height: 1.2;

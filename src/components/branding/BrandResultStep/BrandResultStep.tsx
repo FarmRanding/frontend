@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
 import BrandResult from '../../common/BrandResult/BrandResult';
-import KeywordTag from '../../common/KeywordTag/KeywordTag';
 import { type BrandResultData } from '../../common/BrandResult/BrandResult';
 import { BRAND_IMAGE_KEYWORDS, CROP_APPEAL_KEYWORDS, LOGO_IMAGE_KEYWORDS, getKeywordLabel } from '../../../constants/keywords';
 import apiClient from '../../../api/axiosConfig';
@@ -142,11 +141,14 @@ const KeywordSection = styled.div`
   max-width: 100%;
   margin-bottom: 48px;
   animation: ${fadeInUp} 0.8s ease-out 0.4s both;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 `;
 
 const KeywordSectionTitle = styled.h3`
-  font-family: 'Jalnan 2', sans-serif;
-  font-weight: 400;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
   font-size: 16px;
   line-height: 1.4;
   color: #000000;
@@ -154,15 +156,43 @@ const KeywordSectionTitle = styled.h3`
   margin: 0 0 24px 0;
 `;
 
+const KeywordCategory = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const KeywordCategoryTitle = styled.h4`
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.2;
+  color: #000000;
+  margin: 0 0 12px 0;
+`;
+
 const KeywordContainer = styled.div`
   position: relative;
+  padding-left: 12px;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #1F41BB;
+    border-radius: 2px;
+  }
 `;
 
 const KeywordGrid = styled.div<{ $showAll: boolean }>`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   width: 100%;
+  justify-content: flex-start;
   transition: all 0.3s ease;
 `;
 
@@ -171,26 +201,22 @@ const KeywordWrapper = styled.div<{ $index: number; $isVisible: boolean }>`
   display: ${props => props.$isVisible ? 'block' : 'none'};
 `;
 
-const ShowMoreButton = styled.button`
-  width: 100%;
-  height: 40px;
+const KeywordTag = styled.div`
+  padding: 6px 12px;
   background: rgba(31, 65, 187, 0.1);
-  border: 1px solid #1F41BB;
-  border-radius: 8px;
+  border: 1px solid rgba(31, 65, 187, 0.2);
+  border-radius: 20px;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.2;
   color: #1F41BB;
-  font-family: 'Jalnan 2', sans-serif;
-  font-weight: 400;
-  font-size: 14px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 16px;
+  white-space: nowrap;
   transition: all 0.3s ease;
 
   &:hover {
-    background: #1F41BB;
-    color: white;
+    background: rgba(31, 65, 187, 0.15);
+    transform: translateY(-1px);
   }
 `;
 
@@ -281,8 +307,6 @@ const ErrorText = styled.div`
   line-height: 1.4;
 `;
 
-const DEFAULT_VISIBLE_COUNT = 6;
-
 // Fallback 브랜드 데이터 생성
 const generateBrandData = (brandName: string): BrandResultData => {
   return {
@@ -295,18 +319,21 @@ const generateBrandData = (brandName: string): BrandResultData => {
 
 interface BrandResultStepProps {
   brandName: string;
-  allKeywords: string[];
+  brandingKeywords: string[];
+  cropAppealKeywords: string[];
+  logoImageKeywords: string[];
   onComplete: () => void;
 }
 
 const BrandResultStep: React.FC<BrandResultStepProps> = ({
   brandName,
-  allKeywords,
+  brandingKeywords,
+  cropAppealKeywords,
+  logoImageKeywords,
   onComplete
 }) => {
   const [isGenerating, setIsGenerating] = useState(true);
   const [brandData, setBrandData] = useState<BrandResultData | null>(null);
-  const [showAllKeywords, setShowAllKeywords] = useState(false);
   const [error, setError] = useState<string>('');
   const [loadingMessage, setLoadingMessage] = useState('브랜드를 생성하고 있습니다...');
   const [imageStatus, setImageStatus] = useState<ImageGenerationStatus>('PENDING');
@@ -319,49 +346,20 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
   const cropName = localStorage.getItem('brandingCropName') || '토마토';
   const variety = localStorage.getItem('brandingVariety') || undefined;
   
-  // allKeywords 배열 분할 로직 수정 - 실제 키워드 개수에 따라 동적 분할
-  console.log('전체 키워드 배열:', allKeywords);
-  console.log('전체 키워드 개수:', allKeywords.length);
-  
-  // 키워드 타입별 개수 확인
-  const totalKeywords = allKeywords.length;
-  let brandingKeywords: string[] = [];
-  let cropAppealKeywords: string[] = [];
-  let logoImageKeywords: string[] = [];
-  
-  if (totalKeywords >= 15) {
-    // 15개 이상인 경우: 5개씩 분할
-    brandingKeywords = allKeywords.slice(0, 5);
-    cropAppealKeywords = allKeywords.slice(5, 10);
-    logoImageKeywords = allKeywords.slice(10, 15);
-  } else if (totalKeywords >= 10) {
-    // 10-14개인 경우: 브랜딩 5개, 작물매력 5개, 나머지는 로고 키워드
-    brandingKeywords = allKeywords.slice(0, 5);
-    cropAppealKeywords = allKeywords.slice(5, 10);
-    logoImageKeywords = allKeywords.slice(10);
-  } else if (totalKeywords >= 5) {
-    // 5-9개인 경우: 절반씩 나누고 나머지는 로고 키워드
-    const half = Math.floor(totalKeywords / 2);
-    brandingKeywords = allKeywords.slice(0, half);
-    cropAppealKeywords = allKeywords.slice(half, Math.min(totalKeywords, half * 2));
-    logoImageKeywords = allKeywords.slice(half * 2);
-  } else {
-    // 5개 미만인 경우: 모든 키워드를 각 타입에 복사
-    brandingKeywords = [...allKeywords];
-    cropAppealKeywords = [...allKeywords];
-    logoImageKeywords = [...allKeywords];
-  }
-  
+  console.log('BrandResultStep - 받은 키워드:');
+  console.log('- brandingKeywords:', brandingKeywords);
+  console.log('- cropAppealKeywords:', cropAppealKeywords);
+  console.log('- logoImageKeywords:', logoImageKeywords);
+
   // 로고 이미지 키워드가 빈 배열인 경우 기본값 설정
-  if (logoImageKeywords.length === 0) {
-    console.warn('로고 이미지 키워드가 빈 배열입니다. 기본값을 사용합니다.');
-    logoImageKeywords = ['simple', 'modern', 'natural']; // 기본 키워드
-  }
+  const finalLogoImageKeywords = logoImageKeywords.length > 0 
+    ? logoImageKeywords 
+    : ['simple', 'modern', 'natural'];
   
   console.log('분할된 키워드:');
   console.log('- brandingKeywords:', brandingKeywords);
   console.log('- cropAppealKeywords:', cropAppealKeywords); 
-  console.log('- logoImageKeywords:', logoImageKeywords);
+  console.log('- finalLogoImageKeywords:', finalLogoImageKeywords);
 
   const getTitle = () => {
     if (isGenerating) {
@@ -404,7 +402,7 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
         grade: gradeEnum,
         brandingKeywords,
         cropAppealKeywords,
-        logoImageKeywords,
+        logoImageKeywords: finalLogoImageKeywords,
         hasGapCertification: isGapVerified
       };
 
@@ -587,10 +585,6 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
     console.log('이미지 다운로드:', imageUrl);
   };
 
-  const handleShowMore = () => {
-    setShowAllKeywords(!showAllKeywords);
-  };
-
   // 이미지 상태에 따른 UI 렌더링
   const renderBrandResult = () => {
     if (!brandData) return null;
@@ -637,26 +631,60 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
 
           <KeywordSection>
             <KeywordSectionTitle>선택한 키워드</KeywordSectionTitle>
-            <KeywordContainer>
-              <KeywordGrid $showAll={showAllKeywords}>
-                {allKeywords.map((keyword, index) => {
-                  const isVisible = showAllKeywords || index < DEFAULT_VISIBLE_COUNT;
-                  return (
-                    <KeywordWrapper key={keyword} $index={index} $isVisible={isVisible}>
-                      <KeywordTag variant="selected">
-                        {getKeywordLabel(keyword)}
-                      </KeywordTag>
-                    </KeywordWrapper>
-                  );
-                })}
-              </KeywordGrid>
-              
-              {allKeywords.length > DEFAULT_VISIBLE_COUNT && (
-                <ShowMoreButton onClick={handleShowMore}>
-                  {showAllKeywords ? '키워드 접기' : `키워드 ${allKeywords.length - DEFAULT_VISIBLE_COUNT}개 더보기`}
-                </ShowMoreButton>
-              )}
-            </KeywordContainer>
+            
+            {/* 브랜드 이미지 키워드 */}
+            {brandingKeywords.length > 0 && (
+              <KeywordCategory>
+                <KeywordCategoryTitle>브랜드 이미지 키워드</KeywordCategoryTitle>
+                <KeywordContainer>
+                  <KeywordGrid $showAll={true}>
+                    {brandingKeywords.map((keyword, index) => (
+                      <KeywordWrapper key={keyword} $index={index} $isVisible={true}>
+                        <KeywordTag>
+                          {getKeywordLabel(keyword)}
+                        </KeywordTag>
+                      </KeywordWrapper>
+                    ))}
+                  </KeywordGrid>
+                </KeywordContainer>
+              </KeywordCategory>
+            )}
+            
+            {/* 작물 매력 키워드 */}
+            {cropAppealKeywords.length > 0 && (
+              <KeywordCategory>
+                <KeywordCategoryTitle>작물 매력 키워드</KeywordCategoryTitle>
+                <KeywordContainer>
+                  <KeywordGrid $showAll={true}>
+                    {cropAppealKeywords.map((keyword, index) => (
+                      <KeywordWrapper key={keyword} $index={index} $isVisible={true}>
+                        <KeywordTag>
+                          {getKeywordLabel(keyword)}
+                        </KeywordTag>
+                      </KeywordWrapper>
+                    ))}
+                  </KeywordGrid>
+                </KeywordContainer>
+              </KeywordCategory>
+            )}
+            
+            {/* 로고 이미지 키워드 */}
+            {finalLogoImageKeywords.length > 0 && (
+              <KeywordCategory>
+                <KeywordCategoryTitle>로고 이미지 키워드</KeywordCategoryTitle>
+                <KeywordContainer>
+                  <KeywordGrid $showAll={true}>
+                    {finalLogoImageKeywords.map((keyword, index) => (
+                      <KeywordWrapper key={keyword} $index={index} $isVisible={true}>
+                        <KeywordTag>
+                          {getKeywordLabel(keyword)}
+                        </KeywordTag>
+                      </KeywordWrapper>
+                    ))}
+                  </KeywordGrid>
+                </KeywordContainer>
+              </KeywordCategory>
+            )}
           </KeywordSection>
 
           <CompleteButton 
