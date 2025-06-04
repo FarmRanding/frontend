@@ -365,6 +365,14 @@ const BrandingFlow: React.FC = () => {
           ...brandingData.cropAppealKeywords,
           ...brandingData.logoImageKeywords
         ];
+        
+        console.log('BrandingFlow - RESULT 단계 키워드 확인:');
+        console.log('- brandingData.brandingKeywords:', brandingData.brandingKeywords);
+        console.log('- brandingData.cropAppealKeywords:', brandingData.cropAppealKeywords);
+        console.log('- brandingData.logoImageKeywords:', brandingData.logoImageKeywords);
+        console.log('- allKeywordsForResult 총 개수:', allKeywordsForResult.length);
+        console.log('- allKeywordsForResult:', allKeywordsForResult);
+        
         return (
           <BrandResultStep
             brandName={brandingData.generatedBrandName}

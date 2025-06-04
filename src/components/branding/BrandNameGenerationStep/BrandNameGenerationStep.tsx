@@ -198,8 +198,40 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
   // 브랜딩 데이터에서 작물명과 키워드 추출
   const cropName = localStorage.getItem('brandingCropName') || '토마토'; // 기본값
   const variety = localStorage.getItem('brandingVariety') || undefined; // 품종 정보
-  const brandingKeywords = allKeywords.slice(0, 5); // 처음 5개를 브랜드 이미지 키워드로 사용
-  const cropAppealKeywords = allKeywords.slice(5, 10); // 나머지를 작물 매력 키워드로 사용
+  
+  // 키워드 분할 로직 개선
+  console.log('BrandNameGenerationStep - 전체 키워드:', allKeywords);
+  
+  let brandingKeywords: string[] = [];
+  let cropAppealKeywords: string[] = [];
+  
+  const totalKeywords = allKeywords.length;
+  if (totalKeywords >= 10) {
+    // 10개 이상인 경우: 처음 5개를 브랜드 이미지, 다음 5개를 작물 매력으로 사용
+    brandingKeywords = allKeywords.slice(0, 5);
+    cropAppealKeywords = allKeywords.slice(5, 10);
+  } else if (totalKeywords >= 5) {
+    // 5-9개인 경우: 절반씩 나누기
+    const half = Math.floor(totalKeywords / 2);
+    brandingKeywords = allKeywords.slice(0, half);
+    cropAppealKeywords = allKeywords.slice(half);
+  } else {
+    // 5개 미만인 경우: 모든 키워드를 각 타입에 복사
+    brandingKeywords = [...allKeywords];
+    cropAppealKeywords = [...allKeywords];
+  }
+  
+  // 빈 배열 방지를 위한 기본값 설정
+  if (brandingKeywords.length === 0) {
+    brandingKeywords = ['프리미엄', '신선한', '건강한'];
+  }
+  if (cropAppealKeywords.length === 0) {
+    cropAppealKeywords = ['달콤한', '맛있는', '영양가 높은'];
+  }
+  
+  console.log('BrandNameGenerationStep - 분할된 키워드:');
+  console.log('- brandingKeywords:', brandingKeywords);
+  console.log('- cropAppealKeywords:', cropAppealKeywords);
 
   const startGeneration = async () => {
     setStatus('generating');

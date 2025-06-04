@@ -23,6 +23,7 @@ export interface BrandingApiResponse {
   brandConcept: string;
   brandStory: string;
   brandImageUrl: string;
+  imageGenerationStatus?: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   createdAt: string;
   updatedAt: string;
 }

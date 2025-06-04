@@ -10,6 +10,9 @@ import type { BrandingApiResponse, ApiResponse } from '../../../types/branding';
 // 백엔드 Grade enum과 일치하는 타입
 type GradeEnum = 'SPECIAL' | 'FIRST' | 'SECOND' | 'THIRD' | 'PREMIUM';
 
+// 이미지 생성 상태 타입
+type ImageGenerationStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+
 // 한글 등급을 백엔드 enum으로 매핑하는 함수
 const mapGradeToEnum = (gradeKorean: string): GradeEnum => {
   switch (gradeKorean) {
@@ -26,8 +29,8 @@ const mapGradeToEnum = (gradeKorean: string): GradeEnum => {
   }
 };
 
-// 브랜딩 프로젝트 생성 요청 타입
-interface BrandingProjectCreateRequest {
+// 점진적 브랜딩 프로젝트 생성 요청 타입
+interface ProgressiveBrandingRequest {
   title: string;
   cropName: string;
   variety?: string;
@@ -67,6 +70,15 @@ const fadeInUp = keyframes`
   }
 `;
 
+const pulse = keyframes`
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+`;
+
 const Container = styled.div`
   display: flex;
   flex-direction: column;
@@ -86,6 +98,45 @@ const Title = styled.h1<{ $isGenerating: boolean }>`
   margin: 0 0 64px 0;
   white-space: pre-line !important;
   animation: ${fadeIn} 0.8s ease-out;
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  animation: ${fadeInUp} 0.8s ease-out;
+`;
+
+const LoadingText = styled.div`
+  font-family: 'Jalnan 2', sans-serif;
+  font-size: 18px;
+  color: #1F41BB;
+  text-align: center;
+`;
+
+const LoadingSubText = styled.div`
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+  max-width: 280px;
+  line-height: 1.4;
+`;
+
+const LoadingDots = styled.div`
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+`;
+
+const Dot = styled.div<{ $delay: number }>`
+  width: 8px;
+  height: 8px;
+  background: #1F41BB;
+  border-radius: 50%;
+  animation: ${pulse} 1.5s infinite;
+  animation-delay: ${props => props.$delay}s;
 `;
 
 const BrandResultContainer = styled.div`
@@ -167,12 +218,26 @@ const CompleteButton = styled.button`
   margin-top: 32px;
   animation: ${fadeInUp} 0.8s ease-out 0.6s both;
 
-  &:hover {
+  &:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+    
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
+    
+    &::before {
+      display: none;
+    }
+  }
+
+  &:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(31, 65, 187, 0.4);
   }
 
-  &:active {
+  &:active:not(:disabled) {
     transform: translateY(0);
   }
 
@@ -187,7 +252,7 @@ const CompleteButton = styled.button`
     transition: left 0.5s;
   }
 
-  &:hover::before {
+  &:hover:not(:disabled)::before {
     left: 100%;
   }
 `;
@@ -200,60 +265,19 @@ const ButtonText = styled.span`
   color: #ffffff;
   position: relative;
   z-index: 1;
-`;
-
-const ActionSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  margin-top: 32px;
-`;
-
-const LoadingContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 24px;
-  margin: 48px 0;
-`;
-
-const LoadingText = styled.div`
-  font-family: 'Jalnan 2', sans-serif;
-  font-size: 18px;
-  color: #1F41BB;
-  text-align: center;
-`;
-
-const LoadingSubText = styled.div`
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  color: #666;
-  text-align: center;
-  margin-top: 8px;
-`;
-
-const LoadingDots = styled.div`
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-`;
-
-const Dot = styled.div<{ $delay: number }>`
-  width: 12px;
-  height: 12px;
-  background: #1F41BB;
-  border-radius: 50%;
-  animation: ${fadeInUp} 1.5s infinite;
-  animation-delay: ${props => props.$delay}s;
+  
+  button:disabled & {
+    color: #888888;
+  }
 `;
 
 const ErrorContainer = styled.div`
-  margin: 24px 0;
-  padding: 16px;
   background: rgba(231, 76, 60, 0.1);
   border: 1px solid rgba(231, 76, 60, 0.2);
   border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+  animation: ${fadeIn} 0.5s ease-out;
 `;
 
 const ErrorText = styled.div`
@@ -261,15 +285,18 @@ const ErrorText = styled.div`
   font-family: 'Jalnan 2', sans-serif;
   font-size: 14px;
   text-align: center;
+  line-height: 1.4;
 `;
 
-// 브랜드 데이터 생성 함수
+const DEFAULT_VISIBLE_COUNT = 6;
+
+// Fallback 브랜드 데이터 생성
 const generateBrandData = (brandName: string): BrandResultData => {
   return {
-    brandName: brandName,
+    brandName,
     promotionText: `${brandName}과 함께하는 건강한 삶`,
-    story: `${brandName}은 정성과 사랑으로 키운 특별한 농산물입니다. 자연 그대로의 맛과 영양을 담아, 건강한 식탁을 만들어가는 브랜드입니다.`,
-    imageUrl: "https://source.unsplash.com/200x200/?logo"
+    story: `${brandName}은 정성과 사랑으로 키운 특별한 농산물입니다. 우리의 정직한 재배 방식과 깐깐한 품질 관리를 통해 최고의 맛과 영양을 선사합니다.`,
+    imageUrl: undefined // 이미지는 백그라운드에서 생성
   };
 };
 
@@ -284,81 +311,77 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
   allKeywords,
   onComplete
 }) => {
+  const [isGenerating, setIsGenerating] = useState(true);
   const [brandData, setBrandData] = useState<BrandResultData | null>(null);
   const [showAllKeywords, setShowAllKeywords] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(true);
   const [error, setError] = useState<string>('');
-  const [loadingMessage, setLoadingMessage] = useState('브랜드를 완성하고 있어요...');
+  const [loadingMessage, setLoadingMessage] = useState('브랜드를 생성하고 있습니다...');
+  const [imageStatus, setImageStatus] = useState<ImageGenerationStatus>('PENDING');
+  const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
   
-  // API 중복 호출 방지를 위한 ref
-  const hasInitialized = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // 브랜딩 데이터 추출
+  // localStorage에서 브랜딩 데이터 가져오기
   const cropName = localStorage.getItem('brandingCropName') || '토마토';
-  const variety = localStorage.getItem('brandingVariety') || '';
+  const variety = localStorage.getItem('brandingVariety') || undefined;
   
-  // 키워드 분류 개선 (3등분으로 명확히 분류)
-  const keywordCount = Math.ceil(allKeywords.length / 3);
-  const brandingKeywords = allKeywords.slice(0, keywordCount); // 브랜드 이미지 키워드
-  const cropAppealKeywords = allKeywords.slice(keywordCount, keywordCount * 2); // 작물 매력 키워드  
-  const logoImageKeywords = allKeywords.slice(keywordCount * 2); // 로고 이미지 키워드
-
-  // 키워드 표시 로직
-  const DEFAULT_VISIBLE_COUNT = 9; // 3행 × 3열 = 9개
+  // allKeywords 배열 분할 로직 수정 - 실제 키워드 개수에 따라 동적 분할
+  console.log('전체 키워드 배열:', allKeywords);
+  console.log('전체 키워드 개수:', allKeywords.length);
+  
+  // 키워드 타입별 개수 확인
   const totalKeywords = allKeywords.length;
-  const shouldShowMoreButton = totalKeywords > DEFAULT_VISIBLE_COUNT;
-  const hiddenCount = Math.max(0, totalKeywords - DEFAULT_VISIBLE_COUNT);
+  let brandingKeywords: string[] = [];
+  let cropAppealKeywords: string[] = [];
+  let logoImageKeywords: string[] = [];
+  
+  if (totalKeywords >= 15) {
+    // 15개 이상인 경우: 5개씩 분할
+    brandingKeywords = allKeywords.slice(0, 5);
+    cropAppealKeywords = allKeywords.slice(5, 10);
+    logoImageKeywords = allKeywords.slice(10, 15);
+  } else if (totalKeywords >= 10) {
+    // 10-14개인 경우: 브랜딩 5개, 작물매력 5개, 나머지는 로고 키워드
+    brandingKeywords = allKeywords.slice(0, 5);
+    cropAppealKeywords = allKeywords.slice(5, 10);
+    logoImageKeywords = allKeywords.slice(10);
+  } else if (totalKeywords >= 5) {
+    // 5-9개인 경우: 절반씩 나누고 나머지는 로고 키워드
+    const half = Math.floor(totalKeywords / 2);
+    brandingKeywords = allKeywords.slice(0, half);
+    cropAppealKeywords = allKeywords.slice(half, Math.min(totalKeywords, half * 2));
+    logoImageKeywords = allKeywords.slice(half * 2);
+  } else {
+    // 5개 미만인 경우: 모든 키워드를 각 타입에 복사
+    brandingKeywords = [...allKeywords];
+    cropAppealKeywords = [...allKeywords];
+    logoImageKeywords = [...allKeywords];
+  }
+  
+  // 로고 이미지 키워드가 빈 배열인 경우 기본값 설정
+  if (logoImageKeywords.length === 0) {
+    console.warn('로고 이미지 키워드가 빈 배열입니다. 기본값을 사용합니다.');
+    logoImageKeywords = ['simple', 'modern', 'natural']; // 기본 키워드
+  }
+  
+  console.log('분할된 키워드:');
+  console.log('- brandingKeywords:', brandingKeywords);
+  console.log('- cropAppealKeywords:', cropAppealKeywords); 
+  console.log('- logoImageKeywords:', logoImageKeywords);
 
-  // 동적 제목 결정
   const getTitle = () => {
     if (isGenerating) {
-      return "잠시만 기다려 주세요...";
+      return '브랜드를 생성하고\n있습니다.';
     }
-    if (error && !brandData) {
-      return "브랜드 생성에 문제가 있어요";
-    }
-    return "브랜드가 만들어졌어요!";
+    return '브랜드가 완성되었어요!';
   };
 
-  useEffect(() => {
-    // StrictMode에서 중복 실행 방지
-    if (hasInitialized.current) {
-      return;
-    }
-    hasInitialized.current = true;
-
-    generateCompleteBrand();
-    
-    // 로딩 메시지 업데이트 (사용자에게 진행 상황 알림)
-    const messages = [
-      '브랜드명을 분석하고 있어요...',
-      'AI가 브랜드 컨셉을 생성하고 있어요...',
-      '브랜드 스토리를 작성하고 있어요...',
-      '브랜드 이미지를 생성하고 있어요...',
-      '최종 검토 중이에요...'
-    ];
-    
-    let messageIndex = 0;
-    const messageInterval = setInterval(() => {
-      if (messageIndex < messages.length - 1 && isGenerating) {
-        messageIndex++;
-        setLoadingMessage(messages[messageIndex]);
-      }
-    }, 10000); // 10초마다 메시지 변경
-    
-    // cleanup 함수
-    return () => {
-      clearInterval(messageInterval);
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, []);
-
-  const generateCompleteBrand = async () => {
+  // 점진적 브랜딩 생성
+  const generateProgressiveBrand = async () => {
     setIsGenerating(true);
     setError('');
+    setLoadingMessage('브랜드 텍스트를 생성하고 있습니다...');
 
     // 이전 요청이 있다면 취소
     if (abortControllerRef.current) {
@@ -371,64 +394,70 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
     try {
       // localStorage에서 브랜딩 데이터 가져오기
       const cultivationMethod = localStorage.getItem('brandingCultivationMethod') || '';
-      const gradeKorean = localStorage.getItem('brandingGrade') || '중'; // 기본값: 중급
+      const gradeKorean = localStorage.getItem('brandingGrade') || '중';
       const isGapVerified = localStorage.getItem('brandingIsGapVerified') === 'true';
       
       // 한글 등급을 백엔드 enum으로 변환
       const gradeEnum = mapGradeToEnum(gradeKorean);
       
-      console.log('등급 매핑:', gradeKorean, '->', gradeEnum);
-      console.log('브랜딩 요청 시작:', brandName);
+      console.log('점진적 브랜딩 요청 시작:', brandName);
 
-      // AI 기반 최종 브랜드 생성 API 호출 요청 데이터
-      const request: BrandingProjectCreateRequest = {
+      // 점진적 브랜딩 API 호출 요청 데이터
+      const request: ProgressiveBrandingRequest = {
         title: `${brandName} 브랜딩 프로젝트`,
         cropName,
-        variety: variety || '', // localStorage에서 가져온 품종 정보
-        cultivationMethod: cultivationMethod, // localStorage에서 가져온 재배방식
-        grade: gradeEnum, // 선택한 등급을 백엔드 enum으로 변환
+        variety: variety || '',
+        cultivationMethod: cultivationMethod,
+        grade: gradeEnum,
         brandingKeywords,
         cropAppealKeywords,
         logoImageKeywords,
-        hasGapCertification: isGapVerified // localStorage에서 가져온 GAP 인증 여부
+        hasGapCertification: isGapVerified
       };
 
-      console.log('브랜드 생성 요청 데이터:', request);
+      console.log('점진적 브랜딩 요청 데이터:', request);
 
-      // 쿼리 파라미터는 brandName만 필요 (백엔드에서 프롬프트 자체 생성)
+      // 점진적 브랜딩 API 호출 - 텍스트는 즉시 반환, 이미지는 백그라운드 처리
       const params = new URLSearchParams();
       params.append('brandName', brandName);
       
-      console.log('API 요청 URL:', `/api/v1/branding/ai?${params.toString()}`);
-      console.log('API 요청 Body:', request);
-      
       const response = await apiClient.post<ApiResponse<BrandingApiResponse>>(
-        `/api/v1/branding/ai?${params.toString()}`,
+        `/api/v1/branding/ai/progressive?${params.toString()}`,
         request,
         {
-          signal: abortControllerRef.current.signal // 요청 취소 기능 추가
+          signal: abortControllerRef.current.signal,
+          timeout: 10000 // 10초 타임아웃 (텍스트 생성은 빠름)
         }
       );
       
-      console.log('API 응답:', response.data);
+      console.log('점진적 브랜딩 API 응답:', response.data);
       
       if (!response.data.data) {
         throw new Error(response.data.message || 'API 응답 데이터가 없습니다.');
       }
 
-      // API 응답을 BrandResultData로 변환 (실제 저장된 데이터 그대로 사용)
+      const projectData = response.data.data;
+      setCurrentProjectId(projectData.id);
+      
+      // 텍스트 데이터는 즉시 표시 (5초 내 완료)
       const resultData: BrandResultData = {
-        brandName: response.data.data.generatedBrandName || brandName,
-        promotionText: response.data.data.brandConcept || `${brandName}과 함께하는 건강한 삶`,
-        story: response.data.data.brandStory || `${brandName}은 정성과 사랑으로 키운 특별한 농산물입니다.`,
-        imageUrl: response.data.data.brandImageUrl // 이미지 URL을 바로 설정
+        brandName: projectData.generatedBrandName || brandName,
+        promotionText: projectData.brandConcept || `${brandName}과 함께하는 건강한 삶`,
+        story: projectData.brandStory || `${brandName}은 정성과 사랑으로 키운 특별한 농산물입니다.`,
+        imageUrl: projectData.brandImageUrl // 초기에는 undefined일 수 있음
       };
 
-      console.log('변환된 결과 데이터:', resultData);
+      console.log('점진적 브랜딩 결과 데이터:', resultData);
 
-      // 완성된 데이터를 바로 설정
       setBrandData(resultData);
+      setImageStatus(projectData.imageGenerationStatus || 'PROCESSING');
       setIsGenerating(false);
+
+      // 이미지가 아직 생성 중이면 polling 시작
+      if (!projectData.brandImageUrl || projectData.imageGenerationStatus === 'PROCESSING') {
+        setLoadingMessage('브랜드 이미지를 생성하고 있습니다...');
+        startImagePolling(projectData.id);
+      }
 
     } catch (error: any) {
       // 요청이 취소된 경우는 무시
@@ -437,42 +466,11 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
         return;
       }
 
-      console.error('브랜드 생성 실패:', error);
-      
-      // 타임아웃이나 네트워크 에러 시 실제 저장된 데이터 조회 시도
-      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        console.log('타임아웃 발생, 저장된 브랜딩 데이터 조회 시도...');
-        
-        try {
-          // 최근 생성된 브랜딩 프로젝트 목록을 가져와서 현재 브랜드명과 일치하는 것 찾기
-          const projectsResponse = await apiClient.get<ApiResponse<BrandingApiResponse[]>>('/api/v1/branding');
-          const projects = projectsResponse.data.data || [];
-          const recentProject = projects.find((p: BrandingApiResponse) => p.generatedBrandName === brandName);
-          
-          if (recentProject) {
-            console.log('저장된 브랜딩 데이터 발견:', recentProject);
-            
-            const resultData: BrandResultData = {
-              brandName: recentProject.generatedBrandName,
-              promotionText: recentProject.brandConcept,
-              story: recentProject.brandStory,
-              imageUrl: recentProject.brandImageUrl
-            };
-            
-            setBrandData(resultData);
-            setIsGenerating(false);
-            return; // 성공적으로 데이터를 가져왔으므로 에러 처리 건너뛰기
-          }
-        } catch (fetchError) {
-          console.error('저장된 데이터 조회 실패:', fetchError);
-        }
-      }
+      console.error('점진적 브랜딩 생성 실패:', error);
       
       // 구체적인 에러 메시지 설정
       let errorMessage = '브랜드 생성 중 오류가 발생했습니다.';
-      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        errorMessage = '브랜드 생성이 완료되었지만 응답 시간이 초과되었습니다. 마이페이지에서 확인해주세요.';
-      } else if (error.response?.status === 400) {
+      if (error.response?.status === 400) {
         errorMessage = '요청 데이터에 문제가 있습니다. 입력 정보를 확인해주세요.';
       } else if (error.response?.status === 401) {
         errorMessage = '로그인이 필요합니다. 다시 로그인해주세요.';
@@ -487,13 +485,105 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
       setError(errorMessage);
       setIsGenerating(false);
       
-      // 타임아웃이 아닌 실제 에러인 경우에만 fallback 데이터 표시
-      if (!(error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
-        const fallbackData = generateBrandData(brandName);
-        setBrandData(fallbackData);
-      }
+      // Fallback 데이터 표시
+      const fallbackData = generateBrandData(brandName);
+      setBrandData(fallbackData);
+      setImageStatus('FAILED');
     }
   };
+
+  // 이미지 생성 상태 폴링
+  const startImagePolling = (projectId: number) => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+
+    let attempts = 0;
+    const maxAttempts = 60; // 최대 5분 (5초 간격)
+
+    pollingIntervalRef.current = setInterval(async () => {
+      attempts++;
+      
+      try {
+        console.log(`이미지 상태 확인 중... (${attempts}/${maxAttempts})`);
+        
+        const response = await apiClient.get<ApiResponse<BrandingApiResponse>>(
+          `/api/v1/branding/${projectId}`
+        );
+
+        if (response.data.data) {
+          const projectData = response.data.data;
+          const newImageStatus = projectData.imageGenerationStatus;
+          
+          console.log('이미지 생성 상태:', newImageStatus);
+          setImageStatus(newImageStatus || 'PROCESSING');
+
+          // 이미지 생성 완료 시
+          if (newImageStatus === 'COMPLETED' && projectData.brandImageUrl) {
+            console.log('이미지 생성 완료:', projectData.brandImageUrl);
+            
+            setBrandData(prev => prev ? {
+              ...prev,
+              imageUrl: projectData.brandImageUrl
+            } : null);
+            
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+          }
+          
+          // 이미지 생성 실패 시
+          else if (newImageStatus === 'FAILED') {
+            console.log('이미지 생성 실패');
+            
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+          }
+        }
+
+        // 최대 시도 횟수 초과 시 폴링 중단
+        if (attempts >= maxAttempts) {
+          console.log('이미지 생성 폴링 시간 초과');
+          setImageStatus('FAILED');
+          
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+        }
+
+      } catch (error) {
+        console.error('이미지 상태 확인 실패:', error);
+        
+        // 연속 실패 시 폴링 중단
+        if (attempts >= 5) {
+          setImageStatus('FAILED');
+          
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+        }
+      }
+    }, 5000); // 5초마다 확인
+  };
+
+  useEffect(() => {
+    generateProgressiveBrand();
+    
+    // 컴포넌트 언마운트 시 정리
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handleCopy = (field: string, value: string) => {
     navigator.clipboard.writeText(value);
@@ -508,6 +598,22 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
     setShowAllKeywords(!showAllKeywords);
   };
 
+  // 이미지 상태에 따른 UI 렌더링
+  const renderBrandResult = () => {
+    if (!brandData) return null;
+
+    // 모든 상태에서 BrandResult 컴포넌트만 렌더링
+    // 이미지 로딩/실패 상태는 BrandResult 컴포넌트 내부에서 처리됨
+    return (
+      <BrandResult
+        data={brandData}
+        isPremium={false}
+        onCopy={handleCopy}
+        onDownload={handleDownload}
+      />
+    );
+  };
+
   return (
     <Container>
       <Title $isGenerating={isGenerating}>{getTitle()}</Title>
@@ -515,7 +621,7 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
       {isGenerating && (
         <LoadingContainer>
           <LoadingText>{loadingMessage}</LoadingText>
-          <LoadingSubText>AI가 최고의 브랜딩을 만들어드리고 있어요 (최대 1분 소요)</LoadingSubText>
+          <LoadingSubText>텍스트를 먼저 생성하고, 이미지는 백그라운드에서 처리됩니다</LoadingSubText>
           <LoadingDots>
             <Dot $delay={0} />
             <Dot $delay={0.2} />
@@ -533,12 +639,7 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
       {brandData && !isGenerating && (
         <>
           <BrandResultContainer>
-            <BrandResult
-              data={brandData}
-              isPremium={false}
-              onCopy={handleCopy}
-              onDownload={handleDownload}
-            />
+            {renderBrandResult()}
           </BrandResultContainer>
 
           <KeywordSection>
@@ -557,19 +658,25 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
                 })}
               </KeywordGrid>
               
-              {shouldShowMoreButton && (
+              {allKeywords.length > DEFAULT_VISIBLE_COUNT && (
                 <ShowMoreButton onClick={handleShowMore}>
-                  {showAllKeywords ? '접기' : `더보기 (+${hiddenCount}개)`}
+                  {showAllKeywords ? '키워드 접기' : `키워드 ${allKeywords.length - DEFAULT_VISIBLE_COUNT}개 더보기`}
                 </ShowMoreButton>
               )}
             </KeywordContainer>
           </KeywordSection>
 
-          <ActionSection>
-            <CompleteButton onClick={onComplete}>
-              <ButtonText>완료</ButtonText>
-            </CompleteButton>
-          </ActionSection>
+          <CompleteButton 
+            onClick={onComplete} 
+            disabled={imageStatus === 'PROCESSING' && !brandData?.imageUrl}
+          >
+            <ButtonText>
+              {imageStatus === 'PROCESSING' && !brandData?.imageUrl 
+                ? '이미지 로딩중입니다...' 
+                : '마이페이지로 이동'
+              }
+            </ButtonText>
+          </CompleteButton>
         </>
       )}
     </Container>
