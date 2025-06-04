@@ -35,6 +35,7 @@ interface ProgressiveBrandingRequest {
   variety?: string;
   cultivationMethod?: string;
   grade?: GradeEnum;
+  includeFarmName?: boolean;
   brandingKeywords: string[];
   cropAppealKeywords: string[];
   logoImageKeywords: string[];
@@ -228,8 +229,8 @@ const CompleteButton = styled.button`
   &:disabled {
     background: #cccccc;
     cursor: not-allowed;
-    
-    &:hover {
+
+  &:hover {
       transform: none;
       box-shadow: none;
     }
@@ -358,40 +359,58 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
 
   // 점진적 브랜딩 생성
   const generateProgressiveBrand = async () => {
-    setIsGenerating(true);
-    setError('');
-    setLoadingMessage('브랜드 텍스트를 생성하고 있습니다...');
-
-    // 이전 요청이 있다면 취소
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    // 새로운 AbortController 생성
-    abortControllerRef.current = new AbortController();
-
     try {
-      // localStorage에서 브랜딩 데이터 가져오기
-      const cultivationMethod = localStorage.getItem('brandingCultivationMethod') || '';
-      const gradeKorean = localStorage.getItem('brandingGrade') || '중';
-      const isGapVerified = localStorage.getItem('brandingIsGapVerified') === 'true';
-      
-      // 한글 등급을 백엔드 enum으로 변환
-      const gradeEnum = mapGradeToEnum(gradeKorean);
-      
-      console.log('점진적 브랜딩 요청 시작:', brandName);
+      setIsGenerating(true);
+      setLoadingMessage('브랜드를 생성하고 있습니다...');
+      setError('');
 
-      // 점진적 브랜딩 API 호출 요청 데이터
+      // localStorage에서 브랜딩 정보 가져오기
+      const cropName = localStorage.getItem('brandingCropName') || 'Unknown';
+      const variety = localStorage.getItem('brandingVariety') || '';
+      const cultivationMethod = localStorage.getItem('brandingCultivationMethod') || '';
+      const gradeValue = localStorage.getItem('brandingGrade') || '';
+      const includeFarmNameValue = localStorage.getItem('brandingIncludeFarmName');
+      
+      // includeFarmName 값 처리 (문자열을 boolean으로 변환)
+      const includeFarmName = includeFarmNameValue === 'true';
+      
+      console.log('BrandResultStep - localStorage에서 가져온 정보:');
+      console.log('- cropName:', cropName);
+      console.log('- variety:', variety);
+      console.log('- cultivationMethod:', cultivationMethod);
+      console.log('- gradeValue:', gradeValue);
+      console.log('- includeFarmName:', includeFarmName, '(타입:', typeof includeFarmName, ')');
+
+      // Grade enum 변환
+      let gradeEnum: GradeEnum;
+      switch (gradeValue) {
+        case '특':
+          gradeEnum = 'SPECIAL';
+          break;
+        case '상':
+          gradeEnum = 'FIRST';
+          break;
+        case '중':
+          gradeEnum = 'SECOND';
+          break;
+        case '하':
+          gradeEnum = 'THIRD';
+          break;
+        default:
+          gradeEnum = 'SECOND'; // 기본값: 중급
+      }
+
       const request: ProgressiveBrandingRequest = {
         title: `${brandName} 브랜딩 프로젝트`,
-        cropName,
-        variety: variety || '',
+        cropName: cropName,
+        variety: variety,
         cultivationMethod: cultivationMethod,
         grade: gradeEnum,
+        includeFarmName: includeFarmName,  // 농가명 포함 여부 전달
         brandingKeywords,
         cropAppealKeywords,
-        logoImageKeywords: finalLogoImageKeywords,
-        hasGapCertification: isGapVerified
+        logoImageKeywords,
+        hasGapCertification: false,
       };
 
       console.log('점진적 브랜딩 요청 데이터:', request);
@@ -404,7 +423,7 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
         `/api/v1/branding/ai/progressive?${params.toString()}`,
         request,
         {
-          signal: abortControllerRef.current.signal,
+          signal: abortControllerRef.current?.signal,
           timeout: 30000 // 30초로 증가
         }
       );
@@ -677,12 +696,12 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
 
       {brandData && !isGenerating && (
         <>
-          <BrandResultContainer>
+      <BrandResultContainer>
             {renderBrandResult()}
-          </BrandResultContainer>
+      </BrandResultContainer>
 
-          <KeywordSection>
-            <KeywordSectionTitle>선택한 키워드</KeywordSectionTitle>
+      <KeywordSection>
+        <KeywordSectionTitle>선택한 키워드</KeywordSectionTitle>
             
             {/* 브랜드 이미지 키워드 */}
             {brandingKeywords.length > 0 && (
@@ -724,16 +743,16 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
             {finalLogoImageKeywords.length > 0 && (
               <KeywordCategory>
                 <KeywordCategoryTitle>로고 이미지 키워드</KeywordCategoryTitle>
-                <KeywordContainer>
+        <KeywordContainer>
                   <KeywordGrid $showAll={true}>
                     {finalLogoImageKeywords.map((keyword, index) => (
                       <KeywordWrapper key={keyword} $index={index} $isVisible={true}>
                         <KeywordTag>
-                          {getKeywordLabel(keyword)}
-                        </KeywordTag>
-                      </KeywordWrapper>
-                    ))}
-                  </KeywordGrid>
+                  {getKeywordLabel(keyword)}
+                </KeywordTag>
+              </KeywordWrapper>
+            ))}
+          </KeywordGrid>
                 </KeywordContainer>
               </KeywordCategory>
             )}
@@ -749,7 +768,7 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
                 : '마이페이지로 이동'
               }
             </ButtonText>
-          </CompleteButton>
+      </CompleteButton>
         </>
       )}
     </Container>

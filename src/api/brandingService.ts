@@ -42,6 +42,7 @@ export interface BrandingProjectCreateRequest {
   variety?: string;
   cultivationMethod?: string;
   grade?: GradeEnum;  // 백엔드 enum과 일치
+  includeFarmName?: boolean;  // 농가명 포함 여부 추가
   brandingKeywords: string[];
   cropAppealKeywords: string[];
   logoImageKeywords: string[];
