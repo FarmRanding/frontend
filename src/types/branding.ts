@@ -36,6 +36,9 @@ export interface BrandingHistory {
   story: string;
   imageUrl?: string;
   createdAt: string;
+  brandingKeywords?: string[];
+  cropAppealKeywords?: string[];
+  logoImageKeywords?: string[];
 }
 
 // API 응답을 UI 형식으로 변환하는 유틸 함수
@@ -47,7 +50,10 @@ export const mapBrandingApiToHistory = (apiData: BrandingApiResponse): BrandingH
       description: apiData.brandConcept || '설명 없음',
       story: apiData.brandStory || '스토리 없음',
       imageUrl: apiData.brandImageUrl || undefined,
-      createdAt: formatApiDateToDisplay(apiData.createdAt || new Date().toISOString())
+      createdAt: formatApiDateToDisplay(apiData.createdAt || new Date().toISOString()),
+      brandingKeywords: apiData.brandingKeywords || [],
+      cropAppealKeywords: apiData.cropAppealKeywords || [],
+      logoImageKeywords: apiData.logoImageKeywords || []
     };
   } catch (error) {
     console.error('브랜딩 데이터 매핑 에러:', error, '원본 데이터:', apiData);
@@ -57,7 +63,10 @@ export const mapBrandingApiToHistory = (apiData: BrandingApiResponse): BrandingH
       description: '데이터를 불러올 수 없습니다',
       story: '데이터 오류가 발생했습니다',
       imageUrl: undefined,
-      createdAt: formatApiDateToDisplay(new Date().toISOString())
+      createdAt: formatApiDateToDisplay(new Date().toISOString()),
+      brandingKeywords: [],
+      cropAppealKeywords: [],
+      logoImageKeywords: []
     };
   }
 };

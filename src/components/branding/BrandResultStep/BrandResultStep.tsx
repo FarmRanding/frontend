@@ -3,7 +3,7 @@ import styled, { keyframes } from 'styled-components';
 import BrandResult from '../../common/BrandResult/BrandResult';
 import KeywordTag from '../../common/KeywordTag/KeywordTag';
 import { type BrandResultData } from '../../common/BrandResult/BrandResult';
-import { BRAND_IMAGE_KEYWORDS, CROP_APPEAL_KEYWORDS, LOGO_IMAGE_KEYWORDS } from '../../../constants/keywords';
+import { BRAND_IMAGE_KEYWORDS, CROP_APPEAL_KEYWORDS, LOGO_IMAGE_KEYWORDS, getKeywordLabel } from '../../../constants/keywords';
 import apiClient from '../../../api/axiosConfig';
 import type { BrandingApiResponse, ApiResponse } from '../../../types/branding';
 
@@ -41,13 +41,6 @@ interface ProgressiveBrandingRequest {
   logoImageKeywords: string[];
   hasGapCertification?: boolean;
 }
-
-// 키워드 ID를 라벨로 변환하는 유틸리티 함수
-const getKeywordLabel = (keywordId: string): string => {
-  const allKeywords = [...BRAND_IMAGE_KEYWORDS, ...CROP_APPEAL_KEYWORDS, ...LOGO_IMAGE_KEYWORDS];
-  const keyword = allKeywords.find(k => k.id === keywordId);
-  return keyword ? keyword.label : keywordId;
-};
 
 // 애니메이션
 const fadeIn = keyframes`
@@ -672,7 +665,7 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
           >
             <ButtonText>
               {imageStatus === 'PROCESSING' && !brandData?.imageUrl 
-                ? '이미지 로딩중입니다...' 
+                ? '이미지 생성중입니다...' 
                 : '마이페이지로 이동'
               }
             </ButtonText>

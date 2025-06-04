@@ -296,7 +296,8 @@ const BrandingFlow: React.FC = () => {
               cropName: brandingData.cropName,
               variety: brandingData.variety,
               cultivationMethod: brandingData.cultivationMethod,
-              grade: brandingData.grade
+              grade: brandingData.grade,
+              includeFarmName: false
             }}
             onChange={(data) => updateBrandingData(data)}
             onValidationChange={setIsCurrentStepValid}

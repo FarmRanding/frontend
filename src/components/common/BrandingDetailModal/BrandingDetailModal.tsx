@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import iconClose from '../../../assets/icon-close.svg';
 import iconBrush from '../../../assets/icon-brush.svg';
-import { BRAND_IMAGE_KEYWORDS, CROP_APPEAL_KEYWORDS, LOGO_IMAGE_KEYWORDS } from '../../../constants/keywords';
+import { BRAND_IMAGE_KEYWORDS, CROP_APPEAL_KEYWORDS, LOGO_IMAGE_KEYWORDS, getKeywordLabel } from '../../../constants/keywords';
 
 // 애니메이션
 const slideUp = keyframes`
@@ -337,13 +337,6 @@ const BrandingDetailModal: React.FC<BrandingDetailModalProps> = ({
   onClose
 }) => {
   const [isClosing, setIsClosing] = useState(false);
-
-  // 키워드 ID를 라벨로 변환하는 함수
-  const getKeywordLabel = (keywordId: string) => {
-    const allKeywords = [...BRAND_IMAGE_KEYWORDS, ...CROP_APPEAL_KEYWORDS, ...LOGO_IMAGE_KEYWORDS];
-    const keyword = allKeywords.find(k => k.id === keywordId);
-    return keyword ? keyword.label : keywordId;
-  };
 
   const handleClose = () => {
     setIsClosing(true);

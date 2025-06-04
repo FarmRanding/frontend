@@ -3,7 +3,7 @@ export interface Keyword {
   label: string;
 }
 
-// 브랜드 이미지 키워드 (1단계) - 21개
+// 브랜드 이미지 키워드 (1단계) - 확장
 export const BRAND_IMAGE_KEYWORDS: Keyword[] = [
   { id: 'premium', label: '프리미엄' },
   { id: 'reasonable', label: '합리적인' },
@@ -27,9 +27,20 @@ export const BRAND_IMAGE_KEYWORDS: Keyword[] = [
   { id: 'future-oriented', label: '미래지향적인' },
   { id: 'large-scale', label: '규모가 큰' },
   { id: 'direct-trade', label: '직거래 중심' },
+  { id: 'small-batch', label: '소량생산' },
+  { id: 'artisanal', label: '수제' },
+  { id: 'family-run', label: '가족경영' },
+  { id: 'sustainable', label: '지속가능한' },
+  { id: 'authentic', label: '정통' },
+  { id: 'innovative', label: '혁신적인' },
+  { id: 'female-farmer', label: '여성농부' },
+  { id: 'male-farmer', label: '남성농부' },
+  { id: 'young-farmer', label: '청년농부' },
+  { id: 'children', label: '아이들을 위한' },
+  { id: 'family-friendly', label: '가족친화적' },
 ];
 
-// 작물 매력 키워드 (2단계) - 21개
+// 작물 매력 키워드 (2단계) - 확장
 export const CROP_APPEAL_KEYWORDS: Keyword[] = [
   { id: 'high-sugar', label: '고당도' },
   { id: 'full-flesh', label: '과육 가득' },
@@ -52,9 +63,18 @@ export const CROP_APPEAL_KEYWORDS: Keyword[] = [
   { id: 'easy-prep', label: '손질 간편' },
   { id: 'pesticide-free', label: '무농약' },
   { id: 'farm-direct', label: '산지 직송' },
+  { id: 'juicy', label: '즙이 많은' },
+  { id: 'sweet', label: '단맛' },
+  { id: 'savory', label: '고소한' },
+  { id: 'nutritious', label: '영양가 높은' },
+  { id: 'low-calorie', label: '저칼로리' },
+  { id: 'fiber-rich', label: '식이섬유 풍부' },
+  { id: 'mineral-rich', label: '미네랄 풍부' },
+  { id: 'seasonal', label: '제철' },
+  { id: 'premium-quality', label: '프리미엄 품질' },
 ];
 
-// 로고 이미지 키워드 (3단계) - 11개
+// 로고 이미지 키워드 (3단계) - 확장
 export const LOGO_IMAGE_KEYWORDS: Keyword[] = [
   { id: 'illustration', label: '일러스트' },
   { id: 'simple', label: '심플한' },
@@ -68,4 +88,28 @@ export const LOGO_IMAGE_KEYWORDS: Keyword[] = [
   { id: 'colorful', label: '컬러풀' },
   { id: 'black-white', label: '흑백' },
   { id: 'realistic', label: '실사화' },
-]; 
+  { id: 'minimalist', label: '미니멀' },
+  { id: 'geometric', label: '기하학적' },
+  { id: 'hand-drawn', label: '손그림' },
+  { id: 'natural', label: '자연스러운' },
+];
+
+// 통합 키워드 매핑 함수 - 모든 키워드를 하나의 맵으로 관리
+export const ALL_KEYWORDS_MAP = new Map<string, string>();
+
+// 모든 키워드를 맵에 추가
+[...BRAND_IMAGE_KEYWORDS, ...CROP_APPEAL_KEYWORDS, ...LOGO_IMAGE_KEYWORDS].forEach(keyword => {
+  ALL_KEYWORDS_MAP.set(keyword.id, keyword.label);
+});
+
+// 키워드 ID를 한글 라벨로 변환하는 함수
+export const getKeywordLabel = (keywordId: string): string => {
+  const label = ALL_KEYWORDS_MAP.get(keywordId);
+  if (label) {
+    return label;
+  }
+  
+  // 알 수 없는 키워드인 경우 로그 출력하고 원본 반환 (개발 시 누락된 키워드 확인용)
+  console.warn(`알 수 없는 키워드 ID: ${keywordId}`);
+  return keywordId;
+}; 
