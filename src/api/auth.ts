@@ -55,11 +55,11 @@ export const signupUser = async (signupData: SignupRequest): Promise<UserRespons
   }
 };
 
-// 로그인 상태 확인 함수
+// 토큰 상태 확인
 export const checkAuthStatus = (): boolean => {
-  const token = localStorage.getItem('accessToken');
-  const userId = localStorage.getItem('userId');
-  return !!(token && userId);
+  const accessToken = localStorage.getItem('accessToken');
+  const refreshToken = localStorage.getItem('refreshToken');
+  return !!(accessToken && refreshToken);
 };
 
 // 로그아웃 함수
@@ -74,7 +74,32 @@ export const logout = (): void => {
   window.location.href = '/';
 };
 
-// 현재 사용자 정보 가져오기
+// 현재 사용자 정보 가져오기 (서버에서)
+export const fetchCurrentUserFromServer = async (): Promise<UserResponse | null> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.data) {
+        return data.data;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('서버에서 사용자 정보 조회 실패:', error);
+    return null;
+  }
+};
+
+// 현재 사용자 정보 가져오기 (로컬 스토리지에서)
 export const getCurrentUser = (): UserResponse | null => {
   const userId = localStorage.getItem('userId');
   const email = localStorage.getItem('email');

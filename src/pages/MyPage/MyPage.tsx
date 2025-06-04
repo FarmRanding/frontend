@@ -16,7 +16,7 @@ import iconSort from '../../assets/icon-sort.svg';
 import iconBrush from '../../assets/icon-brush.svg';
 import iconMoney from '../../assets/icon-money.svg';
 import iconPencil from '../../assets/icon-pencil.svg';
-import { fetchMyUser, updateMyUserProfile, type UpdateProfileRequest } from '../../api/userService';
+import { fetchMyUser, updateMyUserProfile, type UpdateProfileRequest, type UserProfileResponse } from '../../api/userService';
 import { fetchBrandingList, fetchBrandingDetail, deleteBranding } from '../../api/brandingService';
 import type { UserResponse } from '../../types/user';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -373,7 +373,7 @@ const MyPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   // 실제 사용자 정보 상태 (서버에서 가져온 최신 정보)
-  const [user, setUser] = useState<UserResponse | null>(null);
+  const [user, setUser] = useState<UserProfileResponse | null>(null);
   
   // 편집 관련 상태
   const [isEditing, setIsEditing] = useState(false);
@@ -414,9 +414,18 @@ const MyPage: React.FC = () => {
         
         // 에러 발생 시 authUser 정보로 폴백
         if (authUser) {
-          setUser(authUser);
+          const fallbackUser: UserProfileResponse = {
+            id: authUser.id,
+            email: authUser.email,
+            name: authUser.name || authUser.nickname,
+            membershipType: authUser.membershipType,
+            farmName: authUser.farmName,
+            location: authUser.location,
+            createdAt: authUser.createdAt
+          };
+          setUser(fallbackUser);
           setEditValues({
-            name: authUser.name || '',
+            name: authUser.name || authUser.nickname || '',
             farmName: authUser.farmName || '',
             location: authUser.location || ''
           });
