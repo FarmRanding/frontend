@@ -1178,6 +1178,9 @@ const Home: React.FC = () => {
     const membershipType = params.get('membershipType');
     const isNewUser = params.get('isNewUser') === 'true';
 
+    // 개발 모드에서 강제 신규 유저 모드 체크
+    const isForceNewUserMode = localStorage.getItem('DEV_FORCE_NEW_USER') === 'true';
+
     if (accessToken && refreshToken && userId) {
       // 토큰 저장
       localStorage.setItem('accessToken', accessToken);
@@ -1203,9 +1206,15 @@ const Home: React.FC = () => {
       setUserInfo(currentUserInfo);
       login(currentUserInfo);
 
-      // 신규 유저인 경우 모달 표시, 기존 유저는 홈으로 이동
-      if (isNewUser) {
+      // 강제 신규 유저 모드이거나 신규 유저인 경우 모달 표시
+      if (isForceNewUserMode || isNewUser) {
+        console.log('🔧 개발 도구: 강제 신규 유저 모드 또는 실제 신규 유저 - 회원가입 모달 표시');
         setIsSignupModalOpen(true);
+        
+        // 강제 신규 유저 모드 플래그 제거 (한 번만 적용)
+        if (isForceNewUserMode) {
+          localStorage.removeItem('DEV_FORCE_NEW_USER');
+        }
       } else {
         navigate('/home');
       }

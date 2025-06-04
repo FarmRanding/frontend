@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import ProtectedRoute from './components/common/ProtectedRoute/ProtectedRoute';
+import DevPanel from './components/common/DevPanel/DevPanel';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard/Home';
 import BrandingFlow from './pages/BrandingFlow/BrandingFlow';
@@ -83,6 +84,9 @@ function AppContent() {
           {/* 추가 페이지 라우트는 여기에 추가 */}
         </Routes>
       </ContentWrapper>
+      
+      {/* 개발 환경에서만 표시되는 개발자 패널 */}
+      <DevPanel />
     </AppContainer>
   );
 }
