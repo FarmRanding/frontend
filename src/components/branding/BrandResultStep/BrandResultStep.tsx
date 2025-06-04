@@ -40,6 +40,9 @@ interface ProgressiveBrandingRequest {
   cropAppealKeywords: string[];
   logoImageKeywords: string[];
   hasGapCertification?: boolean;
+  gapCertificationNumber?: string;
+  gapInstitutionName?: string;
+  gapProductName?: string;
 }
 
 // 애니메이션
@@ -371,6 +374,12 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
       const gradeValue = localStorage.getItem('brandingGrade') || '';
       const includeFarmNameValue = localStorage.getItem('brandingIncludeFarmName');
       
+      // GAP 인증 관련 정보 가져오기
+      const isGapVerified = localStorage.getItem('brandingIsGapVerified') === 'true';
+      const gapNumber = localStorage.getItem('brandingGapNumber') || '';
+      const gapInstitutionName = localStorage.getItem('brandingGapInstitutionName') || '';
+      const gapProductName = localStorage.getItem('brandingGapProductName') || '';
+      
       // includeFarmName 값 처리 (문자열을 boolean으로 변환)
       const includeFarmName = includeFarmNameValue === 'true';
       
@@ -380,6 +389,10 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
       console.log('- cultivationMethod:', cultivationMethod);
       console.log('- gradeValue:', gradeValue);
       console.log('- includeFarmName:', includeFarmName, '(타입:', typeof includeFarmName, ')');
+      console.log('- isGapVerified:', isGapVerified);
+      console.log('- gapNumber:', gapNumber);
+      console.log('- gapInstitutionName:', gapInstitutionName);
+      console.log('- gapProductName:', gapProductName);
 
       // Grade enum 변환
       let gradeEnum: GradeEnum;
@@ -410,7 +423,10 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
         brandingKeywords,
         cropAppealKeywords,
         logoImageKeywords,
-        hasGapCertification: false,
+        hasGapCertification: isGapVerified,
+        gapCertificationNumber: isGapVerified ? gapNumber : undefined,
+        gapInstitutionName: isGapVerified ? gapInstitutionName : undefined,
+        gapProductName: isGapVerified ? gapProductName : undefined,
       };
 
       console.log('점진적 브랜딩 요청 데이터:', request);

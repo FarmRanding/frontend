@@ -8,6 +8,7 @@ import GapVerificationStep from '../../components/branding/GapVerificationStep';
 import BrandNameGenerationStep from '../../components/branding/BrandNameGenerationStep';
 import BrandResultStep from '../../components/branding/BrandResultStep';
 import { BRAND_IMAGE_KEYWORDS, CROP_APPEAL_KEYWORDS, LOGO_IMAGE_KEYWORDS } from '../../constants/keywords';
+import type { GapCertificationResponse } from '../../api/gapCertificationService';
 
 // 애니메이션
 const fadeIn = keyframes`
@@ -189,6 +190,7 @@ export interface BrandingData {
   // GAP 인증
   gapNumber: string;
   isGapVerified: boolean;
+  gapCertificationInfo?: GapCertificationResponse;
   
   // 생성된 브랜드명
   generatedBrandName: string;
@@ -220,6 +222,7 @@ const BrandingFlow: React.FC = () => {
     logoImageKeywords: [],
     gapNumber: '',
     isGapVerified: false,
+    gapCertificationInfo: undefined,
     generatedBrandName: ''
   });
 
@@ -281,6 +284,12 @@ const BrandingFlow: React.FC = () => {
         localStorage.setItem('brandingGapNumber', newData.gapNumber);
       }
       
+      // GAP 상세 정보가 있으면 localStorage에 저장
+      if (newData.gapCertificationInfo) {
+        localStorage.setItem('brandingGapInstitutionName', newData.gapCertificationInfo.certificationInstitution);
+        localStorage.setItem('brandingGapProductName', newData.gapCertificationInfo.productName);
+      }
+      
       return updated;
     });
   };
@@ -310,11 +319,13 @@ const BrandingFlow: React.FC = () => {
           <GapVerificationStep
             data={{
               gapNumber: brandingData.gapNumber,
-              isVerified: brandingData.isGapVerified
+              isVerified: brandingData.isGapVerified,
+              certificationInfo: brandingData.gapCertificationInfo
             }}
             onChange={(data) => updateBrandingData({ 
               gapNumber: data.gapNumber, 
-              isGapVerified: data.isVerified 
+              isGapVerified: data.isVerified,
+              gapCertificationInfo: data.certificationInfo
             })}
             onValidationChange={setIsCurrentStepValid}
           />

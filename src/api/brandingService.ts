@@ -46,7 +46,10 @@ export interface BrandingProjectCreateRequest {
   brandingKeywords: string[];
   cropAppealKeywords: string[];
   logoImageKeywords: string[];
-  hasGapCertification?: boolean;  // 백엔드 DTO에 맞춤
+  hasGapCertification?: boolean;  // GAP 인증 여부
+  gapCertificationNumber?: string;  // GAP 인증번호
+  gapInstitutionName?: string;  // GAP 인증기관명
+  gapProductName?: string;  // GAP 인증 품목명
 }
 
 // 브랜딩 목록 조회 API

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
+import { gapCertificationService, type GapCertificationResponse } from '../../../api/gapCertificationService';
 
 const slideInUp = keyframes`
   from {
@@ -155,6 +156,38 @@ const StatusText = styled.p<{ $isSuccess: boolean }>`
   text-align: center;
 `;
 
+const CertificationInfo = styled.div`
+  margin-top: 16px;
+  padding: 16px;
+  background: #F8F9FA;
+  border-radius: 8px;
+  border: 1px solid #E9ECEF;
+`;
+
+const InfoRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+`;
+
+const InfoLabel = styled.span`
+  font-family: 'Jalnan 2', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  color: #666;
+`;
+
+const InfoValue = styled.span`
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  color: #333;
+`;
+
 const SkipButton = styled.button`
   width: 100%;
   padding: 12px;
@@ -177,6 +210,7 @@ const SkipButton = styled.button`
 interface GapVerificationData {
   gapNumber: string;
   isVerified: boolean;
+  certificationInfo?: GapCertificationResponse;
 }
 
 interface GapVerificationStepProps {
@@ -196,7 +230,12 @@ const GapVerificationStep: React.FC<GapVerificationStepProps> = ({
   const [verificationMessage, setVerificationMessage] = useState('');
 
   const handleInputChange = (value: string) => {
-    const newData = { ...data, gapNumber: value, isVerified: false };
+    const newData = { 
+      ...data, 
+      gapNumber: value, 
+      isVerified: false,
+      certificationInfo: undefined 
+    };
     onChange(newData);
     
     if (verificationStatus !== 'idle') {
@@ -212,43 +251,76 @@ const GapVerificationStep: React.FC<GapVerificationStepProps> = ({
       return;
     }
 
+    if (!gapCertificationService.validateCertificationFormat(data.gapNumber.trim())) {
+      setVerificationStatus('error');
+      setVerificationMessage('GAP 인증번호는 7-15자리 숫자여야 합니다.');
+      onValidationChange(false);
+      return;
+    }
+
     setVerificationStatus('loading');
     
     try {
-      await simulateApiCall(data.gapNumber);
-      setVerificationStatus('success');
-      setVerificationMessage('GAP 인증번호가 확인되었습니다.');
+      const result = await gapCertificationService.validateCertificationNumber(data.gapNumber.trim());
       
-      const newData = { ...data, isVerified: true };
+      if (result.isValid && result.certificationInfo) {
+      setVerificationStatus('success');
+        setVerificationMessage(result.message);
+      
+        const newData = { 
+          ...data, 
+          isVerified: true,
+          certificationInfo: result.certificationInfo
+        };
       onChange(newData);
       onValidationChange(true);
+      } else {
+        setVerificationStatus('error');
+        setVerificationMessage(result.message);
+        
+        const newData = { 
+          ...data, 
+          isVerified: false,
+          certificationInfo: undefined
+        };
+        onChange(newData);
+        onValidationChange(false);
+      }
     } catch (error) {
       setVerificationStatus('error');
-      setVerificationMessage('GAP 인증번호를 찾을 수 없습니다. 다시 확인해 주세요.');
+      setVerificationMessage('GAP 인증 확인 중 오류가 발생했습니다. 다시 시도해 주세요.');
       
-      const newData = { ...data, isVerified: false };
+      const newData = { 
+        ...data, 
+        isVerified: false,
+        certificationInfo: undefined
+      };
       onChange(newData);
       onValidationChange(false);
     }
   };
 
-  const simulateApiCall = async (gapNumber: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        // 간단한 시뮬레이션: 숫자가 8자리 이상이면 성공
-        if (gapNumber.length >= 8) {
-          resolve();
-        } else {
-          reject(new Error('Invalid GAP number'));
-        }
-      }, 1500);
-    });
+  const handleSkip = () => {
+    const newData = { 
+      gapNumber: '', 
+      isVerified: false,
+      certificationInfo: undefined
+    };
+    onChange(newData);
+    onValidationChange(true);
   };
 
-  const handleSkip = () => {
-    const newData = { gapNumber: '', isVerified: false };
-    onChange(newData);
-    onValidationChange(true); // 건너뛰기는 항상 유효
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).replace(/\./g, '-').replace(/ /g, '').slice(0, -1);
+    } catch {
+      return dateString;
+    }
   };
 
   return (
@@ -288,6 +360,31 @@ const GapVerificationStep: React.FC<GapVerificationStepProps> = ({
               {verificationMessage}
             </StatusText>
           </VerificationStatus>
+
+          {verificationStatus === 'success' && data.certificationInfo && (
+            <CertificationInfo>
+              <InfoRow>
+                <InfoLabel>인증기관:</InfoLabel>
+                <InfoValue>{data.certificationInfo.certificationInstitution}</InfoValue>
+              </InfoRow>
+              <InfoRow>
+                <InfoLabel>품목명:</InfoLabel>
+                <InfoValue>{data.certificationInfo.productName}</InfoValue>
+              </InfoRow>
+              <InfoRow>
+                <InfoLabel>생산자:</InfoLabel>
+                <InfoValue>{data.certificationInfo.producerGroupName}</InfoValue>
+              </InfoRow>
+              <InfoRow>
+                <InfoLabel>유효기간:</InfoLabel>
+                <InfoValue>{formatDate(data.certificationInfo.validPeriodEnd)}</InfoValue>
+              </InfoRow>
+              <InfoRow>
+                <InfoLabel>재배면적:</InfoLabel>
+                <InfoValue>{data.certificationInfo.cultivationArea?.toLocaleString() || '정보없음'}㎡</InfoValue>
+              </InfoRow>
+            </CertificationInfo>
+          )}
         </GapContainer>
 
         <SkipButton onClick={handleSkip}>
