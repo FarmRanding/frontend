@@ -75,11 +75,29 @@ export const logout = (): void => {
 };
 
 // 현재 사용자 정보 가져오기
-export const getCurrentUser = () => {
+export const getCurrentUser = (): UserResponse | null => {
+  const userId = localStorage.getItem('userId');
+  const email = localStorage.getItem('email');
+  const nickname = localStorage.getItem('nickname');
+  const membershipType = localStorage.getItem('membershipType');
+  const name = localStorage.getItem('name');
+  const farmName = localStorage.getItem('farmName');
+  const location = localStorage.getItem('location');
+  
+  if (!userId || !email || !nickname) {
+    return null;
+  }
+  
   return {
-    userId: localStorage.getItem('userId'),
-    email: localStorage.getItem('email'),
-    nickname: localStorage.getItem('nickname'),
-    membershipType: localStorage.getItem('membershipType'),
+    id: parseInt(userId),
+    email,
+    nickname,
+    name: name || undefined,
+    profileImage: undefined,
+    provider: 'kakao', // 기본값
+    membershipType: membershipType || 'FREE',
+    farmName: farmName || undefined,
+    location: location || undefined,
+    createdAt: new Date().toISOString()
   };
 }; 

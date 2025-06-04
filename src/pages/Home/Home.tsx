@@ -1189,10 +1189,16 @@ const Home: React.FC = () => {
 
       // 사용자 정보 설정
       const currentUserInfo = {
-        userId,
-        email,
-        nickname,
-        membershipType
+        id: parseInt(userId),
+        email: email || '',
+        nickname: nickname || '',
+        name: undefined,
+        profileImage: undefined,
+        provider: 'kakao',
+        membershipType: membershipType || 'FREE',
+        farmName: undefined,
+        location: undefined,
+        createdAt: new Date().toISOString()
       };
       setUserInfo(currentUserInfo);
       login(currentUserInfo);

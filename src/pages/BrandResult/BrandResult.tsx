@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
+import { useNotification } from '../../contexts/NotificationContext';
 import BrandResult from '../../components/common/BrandResult/BrandResult';
 import KeywordTag from '../../components/common/KeywordTag/KeywordTag';
 import iconCancel from '../../assets/icon-cancel.svg';
@@ -256,6 +257,7 @@ ${brandName}은 화학비료 대신 미생물 퇴비,
 const BrandResultPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { showSuccess, showError, showInfo, showWarning } = useNotification();
   const [brandData, setBrandData] = useState<BrandResultData | null>(null);
   const [showAllKeywords, setShowAllKeywords] = useState(false);
 
@@ -284,11 +286,7 @@ const BrandResultPage: React.FC = () => {
   };
 
   const handleComplete = () => {
-    console.log('브랜드 생성 완료!');
-    console.log('브랜드명:', receivedBrandName);
-    console.log('선택된 키워드:', receivedKeywords);
-    
-    alert('브랜드가 성공적으로 생성되었습니다!');
+    showSuccess('브랜드 생성 완료', '브랜드가 성공적으로 생성되었습니다!');
     navigate('/mypage');
   };
 

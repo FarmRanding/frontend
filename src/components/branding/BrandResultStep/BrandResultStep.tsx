@@ -21,8 +21,6 @@ const mapGradeToEnum = (gradeKorean: string): GradeEnum => {
       return 'SECOND';
     case '하':
       return 'THIRD';
-    case '프리미엄':
-      return 'PREMIUM';
     default:
       return 'SECOND'; // 기본값: 중급
   }
@@ -315,7 +313,7 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
   // 동적 제목 결정
   const getTitle = () => {
     if (isGenerating) {
-      return "브랜드를 완성하고 있어요...";
+      return "잠시만 기다려 주세요...";
     }
     if (error && !brandData) {
       return "브랜드 생성에 문제가 있어요";

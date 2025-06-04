@@ -19,6 +19,8 @@ import iconPencil from '../../assets/icon-pencil.svg';
 import { fetchMyUser, updateMyUserProfile, type UpdateProfileRequest } from '../../api/userService';
 import { fetchBrandingList, fetchBrandingDetail, deleteBranding } from '../../api/brandingService';
 import type { UserResponse } from '../../types/user';
+import { useNotification } from '../../contexts/NotificationContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 // 애니메이션
 const fadeIn = keyframes`
@@ -357,6 +359,8 @@ type SortType = 'latest' | 'oldest' | 'name';
 const MyPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user: authUser } = useAuth();
+  const { showSuccess, showError, showConfirm, showInfo, showWarning } = useNotification();
   const [selectedTab, setSelectedTab] = useState<MyPageTabOption>(
     location.state?.initialTab || 'branding'
   );
@@ -365,9 +369,11 @@ const MyPage: React.FC = () => {
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [selectedBrandingHistory, setSelectedBrandingHistory] = useState<BrandingHistory | null>(null);
   const [isBrandingDetailVisible, setIsBrandingDetailVisible] = useState(false);
-  const [user, setUser] = useState<UserResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // 실제 사용자 정보 상태 (서버에서 가져온 최신 정보)
+  const [user, setUser] = useState<UserResponse | null>(null);
   
   // 편집 관련 상태
   const [isEditing, setIsEditing] = useState(false);
@@ -383,22 +389,45 @@ const MyPage: React.FC = () => {
   const [brandingLoading, setBrandingLoading] = useState(false);
   const [brandingError, setBrandingError] = useState<string | null>(null);
 
+  // 사용자 정보 조회
   useEffect(() => {
-    fetchMyUser()
-      .then((data) => {
-        setUser(data);
+    const loadUserData = async () => {
+      if (!authUser) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const userData = await fetchMyUser();
+        setUser(userData);
         setEditValues({
-          name: data.name || '',
-          farmName: data.farmName || '',
-          location: data.location || ''
+          name: userData.name || '',
+          farmName: userData.farmName || '',
+          location: userData.location || ''
         });
-        setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err: any) {
+        console.error('사용자 정보 조회 실패:', err);
         setError(err.message || '사용자 정보를 불러오지 못했습니다.');
+        
+        // 에러 발생 시 authUser 정보로 폴백
+        if (authUser) {
+          setUser(authUser);
+          setEditValues({
+            name: authUser.name || '',
+            farmName: authUser.farmName || '',
+            location: authUser.location || ''
+          });
+        }
+      } finally {
         setLoading(false);
-      });
-  }, []);
+      }
+    };
+
+    loadUserData();
+  }, [authUser]);
 
   // 브랜딩 목록 조회
   useEffect(() => {
@@ -450,8 +479,10 @@ const MyPage: React.FC = () => {
       setUser(updatedUser);
       setIsEditing(false);
       setError(null);
+      showSuccess('프로필 수정', '프로필이 성공적으로 수정되었습니다.');
     } catch (err: any) {
       setError(err.message || '프로필 수정에 실패했습니다.');
+      showError('수정 실패', err.message || '프로필 수정에 실패했습니다.');
     } finally {
       setUpdateLoading(false);
     }
@@ -686,7 +717,15 @@ const MyPage: React.FC = () => {
   };
 
   const handleDeleteBranding = async (id: string) => {
-    if (!confirm('정말로 이 브랜딩을 삭제하시겠습니까?')) {
+    const confirmed = await showConfirm({
+      type: 'confirm',
+      title: '브랜딩 삭제',
+      message: '정말로 이 브랜딩을 삭제하시겠습니까?',
+      confirmText: '삭제',
+      cancelText: '취소'
+    });
+
+    if (!confirmed) {
       return;
     }
 
@@ -703,14 +742,16 @@ const MyPage: React.FC = () => {
         const updatedData = await fetchBrandingList();
         const mappedData = updatedData.map(mapBrandingApiToHistory);
         setBrandingHistory(mappedData);
+        showSuccess('삭제 완료', '브랜딩이 성공적으로 삭제되었습니다.');
       } catch (refreshErr: any) {
         console.error('목록 새로고침 실패:', refreshErr);
         // 새로고침 실패해도 기존 목록에서 해당 항목만 제거
         setBrandingHistory(prev => prev.filter(item => item.id !== id));
+        showSuccess('삭제 완료', '브랜딩이 삭제되었습니다.');
       }
     } catch (err: any) {
       console.error('브랜딩 삭제 실패:', err);
-      alert(err.message || '브랜딩 삭제에 실패했습니다.');
+      showError('삭제 실패', err.message || '브랜딩 삭제에 실패했습니다.');
     }
   };
 
@@ -761,7 +802,7 @@ const MyPage: React.FC = () => {
   const handleSelectPlan = (planId: string) => {
     console.log(`플랜 선택됨: ${planId}`);
     // TODO: 실제 플랜 구독 로직 구현
-    alert(`${planId} 플랜이 선택되었습니다!`);
+    showSuccess('플랜 선택', `${planId} 플랜이 선택되었습니다!`);
   };
 
   const renderBrandingContent = () => {

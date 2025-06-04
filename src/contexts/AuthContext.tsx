@@ -1,17 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { checkAuthStatus, getCurrentUser, logout } from '../api/auth';
-
-interface User {
-  userId: string | null;
-  email: string | null;
-  nickname: string | null;
-  membershipType: string | null;
-}
+import type { UserResponse } from '../types/user';
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: User | null;
-  login: (userInfo: User) => void;
+  user: UserResponse | null;
+  login: (userInfo: UserResponse) => void;
   logout: () => void;
   loading: boolean;
 }
@@ -32,11 +26,11 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   // useCallback으로 함수들을 메모이제이션
-  const handleLogin = useCallback((userInfo: User) => {
+  const handleLogin = useCallback((userInfo: UserResponse) => {
     setUser(userInfo);
     setIsAuthenticated(true);
   }, []);
@@ -54,8 +48,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const authStatus = checkAuthStatus();
         if (authStatus) {
           const currentUser = getCurrentUser();
-          setUser(currentUser);
-          setIsAuthenticated(true);
+          if (currentUser) {
+            setUser(currentUser);
+            setIsAuthenticated(true);
+          }
         }
       } catch (error) {
         console.error('인증 상태 확인 중 오류:', error);

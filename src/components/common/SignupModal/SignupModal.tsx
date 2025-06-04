@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
+import { useNotification } from '../../../contexts/NotificationContext';
 import { signupUser } from '../../../api/auth';
 
 interface SignupModalProps {
@@ -21,12 +22,12 @@ interface SignupData {
 }
 
 const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onComplete, userInfo }) => {
+  const { showSuccess, showError, showWarning } = useNotification();
   const [formData, setFormData] = useState<SignupData>({
     name: '',
     farmName: '',
     farmLocation: ''
   });
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [addressSearchResults, setAddressSearchResults] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -106,7 +107,7 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onComplete, 
     e.preventDefault();
     
     if (!formData.name.trim() || !formData.farmName.trim() || !formData.farmLocation.trim()) {
-      alert('모든 필드를 입력해주세요.');
+      showWarning('입력 확인', '모든 필드를 입력해주세요.');
       return;
     }
 
@@ -120,7 +121,7 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onComplete, 
       });
       
       console.log('회원가입 성공:', result);
-      alert('회원가입이 완료되었습니다!');
+      showSuccess('회원가입 완료', '회원가입이 완료되었습니다!');
       onComplete();
     } catch (error: any) {
       console.error('회원가입 실패:', error);
@@ -128,10 +129,10 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onComplete, 
       // 에러 메시지가 "성공"인 경우 실제로는 성공으로 처리
       if (error?.message === '성공' || error?.toString().includes('성공')) {
         console.log('실제로는 성공');
-        alert('회원가입이 완료되었습니다!');
+        showSuccess('회원가입 완료', '회원가입이 완료되었습니다!');
         onComplete();
       } else {
-        alert('회원가입에 실패했습니다. 다시 시도해주세요.');
+        showError('회원가입 실패', '회원가입에 실패했습니다. 다시 시도해주세요.');
       }
     } finally {
       setIsSubmitting(false);
