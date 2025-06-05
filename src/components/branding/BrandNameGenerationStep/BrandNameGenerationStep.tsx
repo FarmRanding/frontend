@@ -259,13 +259,15 @@ const generateBrandName = (selectedKeywords: string[]): string => {
 type GenerationStatus = 'generating' | 'complete' | 'error';
 
 interface BrandNameGenerationStepProps {
-  allKeywords: string[];
+  brandingKeywords: string[];
+  cropAppealKeywords: string[];
   onBrandNameGenerated: (brandName: string) => void;
   onValidationChange: (isValid: boolean) => void;
 }
 
 const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
-  allKeywords,
+  brandingKeywords,
+  cropAppealKeywords,
   onBrandNameGenerated,
   onValidationChange
 }) => {
@@ -279,55 +281,18 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
   // 🔥 NEW: 편집 기능을 위한 상태들
   const [isEditing, setIsEditing] = useState(false);
   const [editingValue, setEditingValue] = useState<string>('');
-  
-  // 🔥 NEW: 분할된 키워드들을 상태로 관리 (한 번만 계산)
-  const [brandingKeywords, setBrandingKeywords] = useState<string[]>([]);
-  const [cropAppealKeywords, setCropAppealKeywords] = useState<string[]>([]);
 
   // 브랜딩 데이터에서 작물명과 키워드 추출
   const cropName = localStorage.getItem('brandingCropName') || '토마토'; // 기본값
   const variety = localStorage.getItem('brandingVariety') || undefined; // 품종 정보
-  
-  // 🔥 키워드 분할 로직을 useEffect로 이동 (한 번만 실행)
-  useEffect(() => {
-    console.log('BrandNameGenerationStep - 전체 키워드:', allKeywords);
-    
-    let newBrandingKeywords: string[] = [];
-    let newCropAppealKeywords: string[] = [];
-    
-    const totalKeywords = allKeywords.length;
-    if (totalKeywords >= 10) {
-      // 10개 이상인 경우: 처음 5개를 브랜드 이미지, 다음 5개를 작물 매력으로 사용
-      newBrandingKeywords = allKeywords.slice(0, 5);
-      newCropAppealKeywords = allKeywords.slice(5, 10);
-    } else if (totalKeywords >= 5) {
-      // 5-9개인 경우: 절반씩 나누기
-      const half = Math.floor(totalKeywords / 2);
-      newBrandingKeywords = allKeywords.slice(0, half);
-      newCropAppealKeywords = allKeywords.slice(half);
-    } else {
-      // 5개 미만인 경우: 모든 키워드를 각 타입에 복사
-      newBrandingKeywords = [...allKeywords];
-      newCropAppealKeywords = [...allKeywords];
-    }
-    
-    // 빈 배열 방지를 위한 기본값 설정
-    if (newBrandingKeywords.length === 0) {
-      newBrandingKeywords = ['프리미엄', '신선한', '건강한'];
-    }
-    if (newCropAppealKeywords.length === 0) {
-      newCropAppealKeywords = ['달콤한', '맛있는', '영양가 높은'];
-    }
-    
-    setBrandingKeywords(newBrandingKeywords);
-    setCropAppealKeywords(newCropAppealKeywords);
-    
-    console.log('BrandNameGenerationStep - 분할된 키워드:');
-    console.log('- brandingKeywords:', newBrandingKeywords);
-    console.log('- cropAppealKeywords:', newCropAppealKeywords);
-  }, [allKeywords]); // allKeywords가 변경될 때만 실행
 
   const startGeneration = async () => {
+    // 🔥 키워드 검증
+    if (brandingKeywords.length === 0) {
+      console.log('⏳ 브랜딩 키워드가 없음, 대기 중...');
+      return;
+    }
+    
     setStatus('generating');
     setDisplayedName('');
     setIsTyping(false);
@@ -335,18 +300,18 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
     onValidationChange(false);
     
     try {
-      // 실제 API 호출로 브랜드명 생성 - 새로운 프롬프트 구조에 맞춤
+      // 실제 API 호출로 브랜드명 생성
       const request: BrandNameRequest = {
         cropName,
-        variety,  // 품종 정보 추가
-        brandingKeywords,  // 브랜드 이미지 키워드
-        cropAppealKeywords,  // 작물의 매력 키워드
-        previousBrandNames: previousBrandNames // 🔥 NEW: 중복 방지용 이전 브랜드명 목록 추가
+        variety,
+        brandingKeywords,
+        cropAppealKeywords,
+        previousBrandNames
       };
       
       console.log('브랜드명 생성 요청 데이터:', request);
       
-      // 🔥 NEW: 중복 방지를 위한 재시도 로직 (최대 5번 시도)
+      // 🔥 중복 방지를 위한 재시도 로직 (최대 5번 시도)
       let attempts = 0;
       let newBrandName = '';
       const maxAttempts = 5;
@@ -358,7 +323,7 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
         const response = await brandingService.generateBrandName(request);
         const candidateBrandName = response.brandName;
         
-        // 🔥 NEW: 이전 결과와 동일한지 체크
+        // 🔥 이전 결과와 동일한지 체크
         if (!previousBrandNames.includes(candidateBrandName)) {
           newBrandName = candidateBrandName;
           console.log('✅ 새로운 브랜드명 생성 성공:', newBrandName);
@@ -368,15 +333,14 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
         }
       }
       
-      // 🔥 NEW: 모든 시도에서 중복이면 마지막 결과 사용 (조용히 처리)
+      // 🔥 모든 시도에서 중복이면 마지막 결과 사용
       if (!newBrandName) {
         const finalResponse = await brandingService.generateBrandName(request);
         newBrandName = finalResponse.brandName;
         console.log('⚠️ 모든 시도에서 중복, 마지막 결과 사용:', newBrandName);
-        // 사용자에게는 알리지 않고 조용히 처리
       }
       
-      // 🔥 NEW: 생성된 브랜드명을 이전 결과에 추가
+      // 🔥 생성된 브랜드명을 이전 결과에 추가
       setPreviousBrandNames(prev => [...prev, newBrandName]);
       
       setBrandName(newBrandName);
@@ -405,7 +369,7 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
       setStatus('error');
       
       // 에러 시 fallback 브랜드명 사용
-      const fallbackBrandName = generateBrandName(allKeywords);
+      const fallbackBrandName = generateBrandName(brandingKeywords.concat(cropAppealKeywords));
       setBrandName(fallbackBrandName);
       setStatus('complete');
       onBrandNameGenerated(fallbackBrandName);
@@ -414,8 +378,14 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
   };
 
   useEffect(() => {
-    startGeneration();
-  }, []);
+    // 🔥 키워드가 있으면 바로 브랜드명 생성 시작
+    if (brandingKeywords.length > 0) {
+      console.log('✅ 키워드 준비 완료, 브랜드명 생성 시작');
+      console.log('- brandingKeywords:', brandingKeywords);
+      console.log('- cropAppealKeywords:', cropAppealKeywords);
+      startGeneration();
+    }
+  }, []); // 마운트 시 한 번만 실행
 
   const handleRegenerate = () => {
     if (regenerationCount >= 3) {

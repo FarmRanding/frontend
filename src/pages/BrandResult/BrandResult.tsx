@@ -295,7 +295,21 @@ const BrandResultPage: React.FC = () => {
   };
 
   const handleDownload = (imageUrl: string) => {
-    console.log('이미지 다운로드:', imageUrl);
+    try {
+      // 이미지 다운로드 로직
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = `${brandData?.brandName || 'brand'}_logo.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showSuccess('다운로드 시작', '브랜드 로고 이미지 다운로드가 시작되었습니다.');
+      console.log('다운로드 시작:', imageUrl);
+    } catch (error) {
+      console.error('이미지 다운로드 실패:', error);
+      showError('다운로드 실패', '이미지 다운로드에 실패했습니다.');
+    }
   };
 
   const handleShowMore = () => {

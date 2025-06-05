@@ -366,14 +366,10 @@ const BrandingFlow: React.FC = () => {
           />
         );
       case BrandingStep.BRAND_NAME_GENERATION:
-        const allKeywords = [
-          ...brandingData.brandingKeywords,
-          ...brandingData.cropAppealKeywords,
-          ...brandingData.logoImageKeywords
-        ];
         return (
           <BrandNameGenerationStep
-            allKeywords={allKeywords}
+            brandingKeywords={brandingData.brandingKeywords}
+            cropAppealKeywords={brandingData.cropAppealKeywords}
             onBrandNameGenerated={(name) => updateBrandingData({ generatedBrandName: name })}
             onValidationChange={setIsCurrentStepValid}
           />

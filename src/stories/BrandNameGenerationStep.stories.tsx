@@ -14,9 +14,13 @@ const meta: Meta<typeof BrandNameGenerationStep> = {
   },
   tags: ['autodocs'],
   argTypes: {
-    allKeywords: {
+    brandingKeywords: {
       control: 'object',
-      description: '선택된 모든 키워드 배열',
+      description: '브랜드명에 포함될 키워드 배열',
+    },
+    cropAppealKeywords: {
+      control: 'object',
+      description: '브랜드명에 포함될 작물의 특성 키워드 배열',
     },
     onBrandNameGenerated: {
       action: 'brandNameGenerated',
@@ -27,6 +31,12 @@ const meta: Meta<typeof BrandNameGenerationStep> = {
       description: '유효성 상태가 변경되었을 때 호출되는 콜백',
     },
   },
+  args: {
+    brandingKeywords: ['프리미엄', '신선한', '건강한'],
+    cropAppealKeywords: ['달콤한', '아삭한', '과즙이 풍부한'],
+    onBrandNameGenerated: (brandName: string) => console.log('Generated brand name:', brandName),
+    onValidationChange: (isValid: boolean) => console.log('Validation changed:', isValid),
+  },
 };
 
 export default meta;
@@ -35,16 +45,8 @@ type Story = StoryObj<typeof meta>;
 // 기본 스토리
 export const Default: Story = {
   args: {
-    allKeywords: [
-      'premium', 'fresh', 'organic', 'natural', 'healthy',
-      'sweet', 'juicy', 'colorful', 'nutritious', 'delicious'
-    ],
-    onBrandNameGenerated: (brandName: string) => {
-      console.log('생성된 브랜드명:', brandName);
-    },
-    onValidationChange: (isValid: boolean) => {
-      console.log('유효성 변경:', isValid);
-    },
+    brandingKeywords: ['프리미엄', '신선한', '건강한', '자연적인'],
+    cropAppealKeywords: ['달콤한', '아삭한', '과즙이 풍부한'],
   },
   parameters: {
     docs: {
@@ -58,13 +60,8 @@ export const Default: Story = {
 // 적은 키워드로 테스트
 export const FewKeywords: Story = {
   args: {
-    allKeywords: ['fresh', 'organic', 'sweet'],
-    onBrandNameGenerated: (brandName: string) => {
-      console.log('생성된 브랜드명:', brandName);
-    },
-    onValidationChange: (isValid: boolean) => {
-      console.log('유효성 변경:', isValid);
-    },
+    brandingKeywords: ['fresh', 'organic', 'sweet'],
+    cropAppealKeywords: ['달콤한', '아삭한', '과즙이 풍부한'],
   },
   parameters: {
     docs: {
@@ -76,19 +73,10 @@ export const FewKeywords: Story = {
 };
 
 // 많은 키워드로 테스트
-export const ManyKeywords: Story = {
+export const WithManyKeywords: Story = {
   args: {
-    allKeywords: [
-      'premium', 'fresh', 'organic', 'natural', 'healthy',
-      'sweet', 'juicy', 'colorful', 'nutritious', 'delicious',
-      'artisanal', 'sustainable', 'local', 'seasonal', 'authentic'
-    ],
-    onBrandNameGenerated: (brandName: string) => {
-      console.log('생성된 브랜드명:', brandName);
-    },
-    onValidationChange: (isValid: boolean) => {
-      console.log('유효성 변경:', isValid);
-    },
+    brandingKeywords: ['프리미엄', '신선한', '건강한', '자연적인', '고품질'],
+    cropAppealKeywords: ['달콤한', '아삭한', '과즙이 풍부한', '영양가 높은', '맛있는'],
   },
   parameters: {
     docs: {
@@ -102,16 +90,14 @@ export const ManyKeywords: Story = {
 // 토마토 예시
 export const TomatoExample: Story = {
   args: {
-    allKeywords: [
+    brandingKeywords: [
       'professional', 'smart-farm', 'unique', 'digestible', 'premium',
       'water-rich', 'uniform-size', 'easy-storage', 'black-white', 'sweet'
     ],
-    onBrandNameGenerated: (brandName: string) => {
-      console.log('생성된 브랜드명:', brandName);
-    },
-    onValidationChange: (isValid: boolean) => {
-      console.log('유효성 변경:', isValid);
-    },
+    cropAppealKeywords: [
+      'professional', 'smart-farm', 'unique', 'digestible', 'premium',
+      'water-rich', 'uniform-size', 'easy-storage', 'black-white', 'sweet'
+    ],
   },
   parameters: {
     docs: {

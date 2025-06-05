@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
-import BrandResult from '../../common/BrandResult/BrandResult';
+import BrandResult from '../../common/BrandResult';
 import { type BrandResultData } from '../../common/BrandResult/BrandResult';
 import { BRAND_IMAGE_KEYWORDS, CROP_APPEAL_KEYWORDS, LOGO_IMAGE_KEYWORDS, getKeywordLabel } from '../../../constants/keywords';
 import apiClient from '../../../api/axiosConfig';
 import type { BrandingApiResponse, ApiResponse } from '../../../types/branding';
+import { brandingService } from '../../../api/brandingService';
 
 // 백엔드 Grade enum과 일치하는 타입
 type GradeEnum = 'SPECIAL' | 'FIRST' | 'SECOND' | 'THIRD' | 'PREMIUM';
@@ -661,7 +662,19 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
   };
 
   const handleDownload = (imageUrl: string) => {
-    console.log('이미지 다운로드:', imageUrl);
+    try {
+      // 이미지 다운로드 로직
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = `${brandName || 'brand'}_logo.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('다운로드 시작:', imageUrl);
+    } catch (error) {
+      console.error('이미지 다운로드 실패:', error);
+    }
   };
 
   // 이미지 상태에 따른 UI 렌더링
