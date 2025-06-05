@@ -5,6 +5,7 @@ import Header from '../../components/common/Header';
 import InputField from '../../components/common/InputField/InputField';
 import Button from '../../components/common/Button/Button';
 import GradeSelector from '../../components/common/GradeSelector/GradeSelector';
+import CropVarietyInput from '../../components/common/CropVarietyInput/CropVarietyInput';
 import iconGrade from '../../assets/icon-grade.svg';
 
 // 애니메이션
@@ -145,6 +146,13 @@ interface BrandingFormData {
   grade: string;
 }
 
+interface CropVarietyData {
+  cropCode: string;
+  cropName: string;
+  varietyCode: string;
+  varietyName: string;
+}
+
 const Branding: React.FC = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<BrandingFormData>({
@@ -171,6 +179,14 @@ const Branding: React.FC = () => {
     setFormData(prev => ({
       ...prev,
       [field]: value
+    }));
+  };
+
+  const handleCropVarietyChange = (data: CropVarietyData) => {
+    setFormData(prev => ({
+      ...prev,
+      cropName: data.cropName,
+      variety: data.varietyName
     }));
   };
 
@@ -214,20 +230,10 @@ const Branding: React.FC = () => {
           <Title>{`당신의 정성이 담긴 작물을\n멋지게 꾸며드릴게요.`}</Title>
           
           <FormContainer>
-            <InputField
-              label="작물명"
-              placeholder="예 : 토마토"
-              value={formData.cropName}
-              onChange={(value) => handleInputChange('cropName', value)}
-              variant="default"
-            />
-            
-            <InputField
-              label="품종"
-              placeholder="예 : 스테비아 토마토"
-              value={formData.variety}
-              onChange={(value) => handleInputChange('variety', value)}
-              variant="default"
+            <CropVarietyInput
+              cropValue={formData.cropName}
+              varietyValue={formData.variety}
+              onChange={handleCropVarietyChange}
             />
             
             <InputField
