@@ -4,6 +4,7 @@ import iconProfile from '../../../assets/icon-profile.svg';
 import iconFarm from '../../../assets/icon_farm.svg';
 import iconLocation from '../../../assets/icon-location.png';
 import iconMypage from '../../../assets/icon-mypage.svg';
+import AddressAutocomplete from '../AddressAutocomplete';
 
 // 애니메이션
 const fadeInUp = keyframes`
@@ -32,7 +33,7 @@ const PersonalInfoCard = styled.div`
   border: 1px solid rgba(31, 65, 187, 0.08);
   box-sizing: border-box;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   transition: all 0.3s ease;
   animation: ${fadeInUp} 0.6s ease-out;
 
@@ -214,6 +215,83 @@ const EditInput = styled.input`
   }
 `;
 
+// AddressAutocomplete용 스타일드 컴포넌트
+const AddressAutocompleteWrapper = styled.div`
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  
+  // AddressAutocomplete 내부 스타일 조정
+  .address-autocomplete-container {
+    position: relative;
+    z-index: 100;
+  }
+  
+  input {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #334155;
+    border: 1px solid rgba(31, 65, 187, 0.3);
+    border-radius: 8px;
+    padding: 8px 12px;
+    width: 100%;
+    background: white;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+
+    &:focus {
+      outline: none;
+      border-color: #1F41BB;
+      box-shadow: 0 0 0 3px rgba(31, 65, 187, 0.1);
+    }
+    
+    &::placeholder {
+      color: #9CA3AF;
+    }
+  }
+  
+  // 드롭다운 리스트 스타일 조정
+  ul {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid rgba(31, 65, 187, 0.2);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-top: 4px;
+    
+    li {
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #334155;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      
+      &:hover, &[aria-selected="true"] {
+        background-color: rgba(31, 65, 187, 0.08);
+        color: #1F41BB;
+      }
+      
+      &:first-child {
+        border-top-left-radius: 7px;
+        border-top-right-radius: 7px;
+      }
+      
+      &:last-child {
+        border-bottom-left-radius: 7px;
+        border-bottom-right-radius: 7px;
+      }
+    }
+  }
+`;
+
 const ButtonGroup = styled.div`
   display: flex;
   gap: 8px;
@@ -310,6 +388,10 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({
     }
   };
 
+  const handleLocationChange = (location: string) => {
+    handleInputChange('location', location);
+  };
+
   return (
     <PersonalInfoCard className={className}>
       {infoItems.map((item, index) => (
@@ -322,11 +404,22 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({
           </LeftSection>
           <Divider>•</Divider>
           {isEditing ? (
-            <EditInput
-              value={item.editValue}
-              onChange={(e) => handleInputChange(item.field, e.target.value)}
-              placeholder={`${item.label}을 입력하세요`}
-            />
+            item.field === 'location' ? (
+              <AddressAutocompleteWrapper>
+                <AddressAutocomplete
+                  value={item.editValue}
+                  onChange={handleLocationChange}
+                  placeholder="부산, 서울, 화성 등 지역명을 입력하세요"
+                  className="address-autocomplete-container"
+                />
+              </AddressAutocompleteWrapper>
+            ) : (
+              <EditInput
+                value={item.editValue}
+                onChange={(e) => handleInputChange(item.field, e.target.value)}
+                placeholder={`${item.label}을 입력하세요`}
+              />
+            )
           ) : (
             <ValueText>{item.value}</ValueText>
           )}

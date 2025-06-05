@@ -124,6 +124,8 @@ const PersonalInfoContainer = styled.div`
   margin-bottom: 48px;
   animation: ${fadeIn} 0.6s ease-out 0.1s both;
   box-sizing: border-box;
+  overflow: visible;
+  position: relative;
 `;
 
 const TabContainer = styled.div`
