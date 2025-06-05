@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import iconClose from '../../../assets/icon-close.svg';
 import iconBrush from '../../../assets/icon-brush.svg';
-import { BRAND_IMAGE_KEYWORDS, CROP_APPEAL_KEYWORDS, LOGO_IMAGE_KEYWORDS, getKeywordLabel } from '../../../constants/keywords';
+import iconCopy from '../../../assets/icon-copy.svg';
+import { getKeywordLabel } from '../../../constants/keywords';
+import { useNotification } from '../../../contexts/NotificationContext';
 
 // 애니메이션
 const slideUp = keyframes`
@@ -324,6 +326,91 @@ const KeywordTag = styled.div`
   white-space: nowrap;
 `;
 
+const LabelContainer = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-self: stretch;
+  gap: 8px;
+  width: 100%;
+  align-items: center;
+`;
+
+const FieldLabel = styled.span`
+  font-family: 'Jalnan 2', sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: left;
+  color: #1a1a1a;
+  flex: 1;
+`;
+
+const CopyButton = styled.button`
+  width: 20px;
+  height: 20px;
+  background: rgba(31, 65, 187, 0.1);
+  border: none;
+  border-radius: 6px;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(31, 65, 187, 0.2);
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+`;
+
+const CopyIcon = styled.img`
+  width: 12px;
+  height: 12px;
+  opacity: 0.7;
+`;
+
+const FieldContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  gap: 8px;
+  width: 100%;
+`;
+
+const InputField = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  width: 100%;
+  min-height: 44px;
+  background: #fafbff;
+  border-radius: 12px;
+  border: 1px solid rgba(31, 65, 187, 0.1);
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: rgba(31, 65, 187, 0.2);
+    background: #f7f9ff;
+  }
+`;
+
+const InputText = styled.span`
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+  color: #2d2d2d;
+  width: 100%;
+  word-break: keep-all;
+`;
+
 interface BrandingHistory {
   id: string;
   title: string;
@@ -348,6 +435,7 @@ const BrandingDetailModal: React.FC<BrandingDetailModalProps> = ({
   onClose
 }) => {
   const [isClosing, setIsClosing] = useState(false);
+  const { showSuccess } = useNotification();
 
   const handleClose = () => {
     setIsClosing(true);
@@ -360,6 +448,23 @@ const BrandingDetailModal: React.FC<BrandingDetailModalProps> = ({
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       handleClose();
+    }
+  };
+
+  const handleCopy = async (field: 'brandName' | 'promotionText' | 'story', value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      
+      const fieldNames = {
+        brandName: '브랜드명',
+        promotionText: '홍보 문구',
+        story: '스토리'
+      };
+      
+      showSuccess('복사 완료', `${fieldNames[field]}이(가) 클립보드에 복사되었습니다.`);
+    } catch (error) {
+      console.error('클립보드 복사 실패:', error);
+      showSuccess('복사 완료', '텍스트가 복사되었습니다.');
     }
   };
 
@@ -385,6 +490,19 @@ const BrandingDetailModal: React.FC<BrandingDetailModalProps> = ({
               <BrandingDateSection>{brandingHistory.createdAt}</BrandingDateSection>
             </BrandingHeader>
 
+            {/* 브랜드명 필드 */}
+            <FieldContainer>
+              <LabelContainer>
+                <FieldLabel>브랜드명</FieldLabel>
+                <CopyButton onClick={() => handleCopy('brandName', brandingHistory.title)}>
+                  <CopyIcon src={iconCopy} alt="복사" />
+                </CopyButton>
+              </LabelContainer>
+              <InputField>
+                <InputText>{brandingHistory.title}</InputText>
+              </InputField>
+            </FieldContainer>
+
             <ImageSection>
               <BrandImageContainer>
                 <BrandImage 
@@ -398,9 +516,29 @@ const BrandingDetailModal: React.FC<BrandingDetailModalProps> = ({
               </BrandImageContainer>
             </ImageSection>
 
-            <BrandTitle>{brandingHistory.title}</BrandTitle>
-            <BrandDescription>{brandingHistory.description}</BrandDescription>
-            <BrandStory>{brandingHistory.story}</BrandStory>
+            {/* 홍보 문구 필드 */}
+            <FieldContainer>
+              <LabelContainer>
+                <FieldLabel>홍보 문구</FieldLabel>
+                <CopyButton onClick={() => handleCopy('promotionText', brandingHistory.description)}>
+                  <CopyIcon src={iconCopy} alt="복사" />
+                </CopyButton>
+              </LabelContainer>
+              <InputField>
+                <InputText>{brandingHistory.description}</InputText>
+              </InputField>
+            </FieldContainer>
+
+            {/* 스토리 필드 */}
+            <FieldContainer>
+              <LabelContainer>
+                <FieldLabel>스토리</FieldLabel>
+                <CopyButton onClick={() => handleCopy('story', brandingHistory.story)}>
+                  <CopyIcon src={iconCopy} alt="복사" />
+                </CopyButton>
+              </LabelContainer>
+              <BrandStory>{brandingHistory.story}</BrandStory>
+            </FieldContainer>
             
             {/* 키워드 섹션 */}
             {(brandingHistory.brandingKeywords?.length || brandingHistory.cropAppealKeywords?.length || brandingHistory.logoImageKeywords?.length) && (

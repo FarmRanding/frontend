@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { action } from '@storybook/addon-actions';
 import BrandingDetailModal from '../components/common/BrandingDetailModal/BrandingDetailModal';
+import { NotificationProvider } from '../contexts/NotificationContext';
 
 // Mock 브랜딩 이력 데이터
 const mockBrandingHistory = {
@@ -9,7 +10,10 @@ const mockBrandingHistory = {
   description: '한 입에 쏙, 귀여움이 톡!',
   story: '아이들이 좋아하는 작고 귀여운 사과를 만들고 싶었어요. 기존 사과보다 크기는 작지만, 당도는 더 높고 아삭한 식감이 매력적입니다.\n\n매일 새벽 5시에 일어나 과수원을 돌보며, 하나하나 정성스럽게 키운 사과들입니다. 농약 사용을 최소화하고, 자연 친화적인 방법으로 재배했습니다.\n\n\'뽀사과\'라는 이름은 손녀가 지어줬는데, 정말 사과처럼 볼이 뽀얗고 귀엽다고 해서 붙인 이름이에요.',
   imageUrl: 'https://placehold.co/120x120/ff6b6b/ffffff?text=🍎',
-  createdAt: '2025.05.15'
+  createdAt: '2025.05.15',
+  brandingKeywords: ['premium', 'cute', 'healthy'],
+  cropAppealKeywords: ['high-sugar', 'crispy', 'small-batch'],
+  logoImageKeywords: ['simple', 'cute', 'colorful'],
 };
 
 const longDescriptionHistory = {
@@ -46,52 +50,32 @@ const meta: Meta<typeof BrandingDetailModal> = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: `
-브랜딩 상세 정보를 표시하는 모달 컴포넌트입니다.
-
-## 주요 기능
-- **하단 슬라이드업**: 모바일 친화적인 하단에서 올라오는 모달
-- **브랜드 정보 표시**: 브랜드명, 홍보문구, 스토리, 이미지
-- **생성일 표시**: 모달 헤더에 생성일 표시
-- **이미지 호버 효과**: 샤머 애니메이션과 스케일 효과
-- **그라데이션 타이틀**: 브랜드 컬러를 활용한 그라데이션 텍스트
-
-## 콘텐츠 구성
-- **브랜드명**: 그라데이션 효과가 적용된 타이틀
-- **홍보문구**: 간단한 브랜드 소개 문구
-- **브랜드 스토리**: 농부의 진심이 담긴 상세한 이야기
-
-## 디자인 특징
-- **중앙 정렬 레이아웃**: 브랜드 이미지와 정보를 중앙에 배치
-- **카드 스타일**: 홍보문구와 스토리를 각각 카드 형태로 표시
-- **완료 상태 표시**: 하단에 브랜딩 완료 상태 표시
-
-## 애니메이션
-- 모달 오버레이 페이드 인/아웃
-- 모달 컨테이너 슬라이드 업/다운
-- 이미지 호버 시 샤머 효과
-
-## 반응형 디자인
-- 최대 402px 너비로 모바일 최적화
-- 75vh 높이로 적절한 콘텐츠 영역 확보
-        `
+        component: '브랜딩 이력의 상세 정보를 보여주는 모달 컴포넌트입니다. 복사하기 버튼으로 브랜드명, 홍보 문구, 스토리를 복사할 수 있습니다.'
       }
     }
   },
+  decorators: [
+    (Story) => (
+      <NotificationProvider>
+        <Story />
+      </NotificationProvider>
+    ),
+  ],
   argTypes: {
     isVisible: {
       control: 'boolean',
-      description: '모달 표시 여부'
+      description: '모달의 표시 여부를 결정합니다.',
     },
     brandingHistory: {
-      control: false,
-      description: '브랜딩 이력 데이터'
+      control: 'object',
+      description: '브랜딩 이력 데이터 객체입니다.',
     },
     onClose: {
       action: 'closed',
-      description: '모달 닫기 이벤트'
-    }
-  }
+      description: '모달을 닫을 때 호출되는 함수입니다.',
+    },
+  },
+  tags: ['autodocs'],
 };
 
 export default meta;
@@ -101,7 +85,71 @@ export const Default: Story = {
   args: {
     isVisible: true,
     brandingHistory: mockBrandingHistory,
-    onClose: action('modal-closed')
+    onClose: () => console.log('모달 닫기'),
+  },
+  name: '기본 상태',
+  parameters: {
+    docs: {
+      description: {
+        story: '브랜딩 상세 모달의 기본 상태입니다. 브랜드명, 홍보 문구, 스토리 각각에 복사하기 버튼이 있습니다.'
+      }
+    }
+  }
+};
+
+export const WithoutKeywords: Story = {
+  args: {
+    isVisible: true,
+    brandingHistory: {
+      ...mockBrandingHistory,
+      brandingKeywords: undefined,
+      cropAppealKeywords: undefined,
+      logoImageKeywords: undefined,
+    },
+    onClose: () => console.log('모달 닫기'),
+  },
+  name: '키워드 없는 상태',
+  parameters: {
+    docs: {
+      description: {
+        story: '키워드가 없는 브랜딩 상세 모달입니다. 키워드 섹션이 표시되지 않습니다.'
+      }
+    }
+  }
+};
+
+export const WithoutImage: Story = {
+  args: {
+    isVisible: true,
+    brandingHistory: {
+      ...mockBrandingHistory,
+      imageUrl: undefined,
+    },
+    onClose: () => console.log('모달 닫기'),
+  },
+  name: '이미지 없는 상태',
+  parameters: {
+    docs: {
+      description: {
+        story: '이미지가 없는 브랜딩 상세 모달입니다. 기본 플레이스홀더 이미지가 표시됩니다.'
+      }
+    }
+  }
+};
+
+export const Closed: Story = {
+  args: {
+    isVisible: false,
+    brandingHistory: mockBrandingHistory,
+    onClose: () => console.log('모달 닫기'),
+  },
+  name: '닫힌 상태',
+  parameters: {
+    docs: {
+      description: {
+        story: '모달이 닫힌 상태입니다. 아무것도 렌더링되지 않습니다.'
+      }
+    }
   }
 };
 
