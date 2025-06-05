@@ -15,6 +15,11 @@ const meta: Meta<typeof BrandResult> = {
         { name: 'white', value: '#ffffff' },
       ],
     },
+    docs: {
+      description: {
+        component: '브랜딩 완료 후 결과를 보여주는 컴포넌트입니다. 브랜드명, 홍보 문구, 스토리를 복사할 수 있고, 로고 이미지에 마우스를 올리면 다운로드 버튼이 나타납니다.'
+      }
+    }
   },
   argTypes: {
     isPremium: { control: 'boolean' },
@@ -52,6 +57,13 @@ export const Default: Story = {
     data: mockData,
     isPremium: false,
   },
+  parameters: {
+    docs: {
+      description: {
+        story: '기본 브랜딩 결과 화면입니다. 로고 이미지에 마우스를 올리면 우측 하단에서 다운로드 버튼이 슬라이드업 애니메이션으로 나타납니다.'
+      }
+    }
+  }
 };
 
 export const Premium: Story = {
@@ -59,6 +71,13 @@ export const Premium: Story = {
     data: mockData,
     isPremium: true,
   },
+  parameters: {
+    docs: {
+      description: {
+        story: '프리미엄 사용자의 브랜딩 결과입니다. 스토리 더보기 버튼이 표시되지 않습니다.'
+      }
+    }
+  }
 };
 
 export const ShortStory: Story = {
@@ -69,6 +88,13 @@ export const ShortStory: Story = {
     },
     isPremium: false,
   },
+  parameters: {
+    docs: {
+      description: {
+        story: '짧은 스토리가 있는 브랜딩 결과입니다.'
+      }
+    }
+  }
 };
 
 export const LongBrandName: Story = {
@@ -79,4 +105,11 @@ export const LongBrandName: Story = {
     },
     isPremium: false,
   },
+  parameters: {
+    docs: {
+      description: {
+        story: '긴 브랜드명이 있는 경우의 레이아웃을 테스트합니다.'
+      }
+    }
+  }
 }; 

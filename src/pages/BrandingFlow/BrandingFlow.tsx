@@ -274,6 +274,11 @@ const BrandingFlow: React.FC = () => {
         localStorage.setItem('brandingGrade', newData.grade);
       }
       
+      // 농가명 포함 여부가 변경되면 localStorage에 저장
+      if (newData.includeFarmName !== undefined) {
+        localStorage.setItem('brandingIncludeFarmName', newData.includeFarmName.toString());
+      }
+      
       // GAP 인증 정보가 변경되면 localStorage에 저장
       if (newData.isGapVerified !== undefined) {
         localStorage.setItem('brandingIsGapVerified', newData.isGapVerified.toString());

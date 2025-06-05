@@ -275,7 +275,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
             </ToggleButton>
           </ToggleContainer>
           <ToggleDescription>
-            농가명 정보는 판매글에만 영향됩니다
+            농가명 정보는 판매글에만 반영됩니다
           </ToggleDescription>
         </div>
       </FormContainer>

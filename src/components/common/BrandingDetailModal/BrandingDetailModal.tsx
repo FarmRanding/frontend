@@ -3,6 +3,7 @@ import styled, { keyframes } from 'styled-components';
 import iconClose from '../../../assets/icon-close.svg';
 import iconBrush from '../../../assets/icon-brush.svg';
 import iconCopy from '../../../assets/icon-copy.svg';
+import iconDownload from '../../../assets/icon-download.svg';
 import { getKeywordLabel } from '../../../constants/keywords';
 import { useNotification } from '../../../contexts/NotificationContext';
 
@@ -192,8 +193,8 @@ const ImageSection = styled.div`
 
 const BrandImageContainer = styled.div`
   position: relative;
-  width: 120px;
-  height: 120px;
+  width: 200px;
+  height: 200px;
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 12px 32px rgba(31, 65, 187, 0.15);
@@ -411,6 +412,47 @@ const InputText = styled.span`
   word-break: keep-all;
 `;
 
+const DownloadButton = styled.button`
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+
+  ${BrandImageContainer}:hover & {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+const DownloadIcon = styled.img`
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) saturate(100%) invert(25%) sepia(98%) saturate(1653%) hue-rotate(221deg) brightness(96%) contrast(91%);
+`;
+
 interface BrandingHistory {
   id: string;
   title: string;
@@ -468,6 +510,23 @@ const BrandingDetailModal: React.FC<BrandingDetailModalProps> = ({
     }
   };
 
+  const handleDownload = (imageUrl: string) => {
+    try {
+      // 이미지 다운로드 로직
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = `${brandingHistory?.title || 'brand'}_logo.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showSuccess('다운로드 시작', '브랜드 로고 이미지 다운로드가 시작되었습니다.');
+    } catch (error) {
+      console.error('이미지 다운로드 실패:', error);
+      showSuccess('다운로드 실패', '이미지 다운로드에 실패했습니다.');
+    }
+  };
+
   if (!isVisible || !brandingHistory) return null;
 
   return (
@@ -506,13 +565,18 @@ const BrandingDetailModal: React.FC<BrandingDetailModalProps> = ({
             <ImageSection>
               <BrandImageContainer>
                 <BrandImage 
-                  src={brandingHistory.imageUrl || 'https://placehold.co/120x120/E8F4FF/1F41BB?text=🌱'} 
+                  src={brandingHistory.imageUrl || 'https://placehold.co/200x200/E8F4FF/1F41BB?text=🌱'} 
                   alt={brandingHistory.title}
                   onError={(e) => {
-                    e.currentTarget.src = 'https://placehold.co/120x120/E8F4FF/1F41BB?text=🌱';
+                    e.currentTarget.src = 'https://placehold.co/200x200/E8F4FF/1F41BB?text=🌱';
                   }}
                 />
                 <ImageOverlay />
+                {brandingHistory.imageUrl && (
+                  <DownloadButton onClick={() => handleDownload(brandingHistory.imageUrl!)}>
+                    <DownloadIcon src={iconDownload} alt="다운로드" />
+                  </DownloadButton>
+                )}
               </BrandImageContainer>
             </ImageSection>
 

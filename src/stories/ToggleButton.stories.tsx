@@ -169,7 +169,7 @@ export const Default: Story = {
   render: (args) => <InteractiveToggle {...args} />,
   args: {
     label: '농가명 포함',
-    description: '농가명 정보는 판매글에만 영향됩니다',
+    description: '농가명 정보는 판매글에만 반영됩니다',
   },
 };
 
@@ -177,7 +177,7 @@ export const Default: Story = {
 export const Active: Story = {
   args: {
     label: '농가명 포함',
-    description: '농가명 정보는 판매글에만 영향됩니다',
+    description: '농가명 정보는 판매글에만 반영됩니다',
     isActive: true,
     onChange: () => {},
   },
@@ -187,7 +187,7 @@ export const Active: Story = {
 export const Inactive: Story = {
   args: {
     label: '농가명 포함',
-    description: '농가명 정보는 판매글에만 영향됩니다',
+    description: '농가명 정보는 판매글에만 반영됩니다',
     isActive: false,
     onChange: () => {},
   },
@@ -207,7 +207,7 @@ export const DifferentLabels: Story = {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '300px' }}>
       <InteractiveToggle 
         label="농가명 포함" 
-        description="농가명 정보는 판매글에만 영향됩니다" 
+        description="농가명 정보는 판매글에만 반영됩니다" 
       />
       <InteractiveToggle 
         label="알림 받기" 

@@ -210,35 +210,43 @@ const PlaceholderImage = styled.div`
 
 const DownloadButton = styled.button`
   position: absolute;
-  top: 12px;
+  bottom: 12px;
   right: 12px;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(8px);
   border: none;
-  border-radius: 8px;
-  padding: 0;
+  border-radius: 20px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  box-shadow: 0px 2px 8px 0px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+
+  ${ImageContainer}:hover & {
+    opacity: 1;
+    transform: translateY(0);
+  }
 
   &:hover {
     background: rgba(255, 255, 255, 1);
-    transform: scale(1.05);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   }
 
   &:active {
-    transform: scale(0.95);
+    transform: translateY(0);
   }
 `;
 
 const DownloadIcon = styled.img`
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) saturate(100%) invert(25%) sepia(98%) saturate(1653%) hue-rotate(221deg) brightness(96%) contrast(91%);
 `;
 
 const StoryField = styled.div<{ isExpanded: boolean; isPremium: boolean }>`

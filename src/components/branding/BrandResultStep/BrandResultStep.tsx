@@ -335,13 +335,32 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // localStorage에서 브랜딩 데이터 가져오기
-  const cropName = localStorage.getItem('brandingCropName') || '토마토';
-  const variety = localStorage.getItem('brandingVariety') || undefined;
+  const cropName = localStorage.getItem('brandingCropName') || 'Unknown';
+  const variety = localStorage.getItem('brandingVariety') || '';
+  const cultivationMethod = localStorage.getItem('brandingCultivationMethod') || '';
+  const gradeValue = localStorage.getItem('brandingGrade') || '';
+  const includeFarmNameValue = localStorage.getItem('brandingIncludeFarmName');
   
-  console.log('BrandResultStep - 받은 키워드:');
-  console.log('- brandingKeywords:', brandingKeywords);
-  console.log('- cropAppealKeywords:', cropAppealKeywords);
-  console.log('- logoImageKeywords:', logoImageKeywords);
+  // GAP 인증 관련 정보 가져오기
+  const isGapVerified = localStorage.getItem('brandingIsGapVerified') === 'true';
+  const gapNumber = localStorage.getItem('brandingGapNumber') || '';
+  const gapInstitutionName = localStorage.getItem('brandingGapInstitutionName') || '';
+  const gapProductName = localStorage.getItem('brandingGapProductName') || '';
+  
+  // includeFarmName 값 처리 (문자열을 boolean으로 변환)
+  const includeFarmName = includeFarmNameValue === 'true';
+  
+  console.log('BrandResultStep - localStorage에서 가져온 정보:');
+  console.log('- cropName:', cropName);
+  console.log('- variety:', variety);
+  console.log('- cultivationMethod:', cultivationMethod);
+  console.log('- gradeValue:', gradeValue);
+  console.log('- includeFarmNameValue (raw):', includeFarmNameValue);
+  console.log('- includeFarmName (processed):', includeFarmName, '(타입:', typeof includeFarmName, ')');
+  console.log('- isGapVerified:', isGapVerified);
+  console.log('- gapNumber:', gapNumber);
+  console.log('- gapInstitutionName:', gapInstitutionName);
+  console.log('- gapProductName:', gapProductName);
 
   // 로고 이미지 키워드가 빈 배열인 경우 기본값 설정
   const finalLogoImageKeywords = logoImageKeywords.length > 0 
@@ -366,33 +385,6 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
       setIsGenerating(true);
       setLoadingMessage('브랜드를 생성하고 있습니다...');
       setError('');
-
-      // localStorage에서 브랜딩 정보 가져오기
-      const cropName = localStorage.getItem('brandingCropName') || 'Unknown';
-      const variety = localStorage.getItem('brandingVariety') || '';
-      const cultivationMethod = localStorage.getItem('brandingCultivationMethod') || '';
-      const gradeValue = localStorage.getItem('brandingGrade') || '';
-      const includeFarmNameValue = localStorage.getItem('brandingIncludeFarmName');
-      
-      // GAP 인증 관련 정보 가져오기
-      const isGapVerified = localStorage.getItem('brandingIsGapVerified') === 'true';
-      const gapNumber = localStorage.getItem('brandingGapNumber') || '';
-      const gapInstitutionName = localStorage.getItem('brandingGapInstitutionName') || '';
-      const gapProductName = localStorage.getItem('brandingGapProductName') || '';
-      
-      // includeFarmName 값 처리 (문자열을 boolean으로 변환)
-      const includeFarmName = includeFarmNameValue === 'true';
-      
-      console.log('BrandResultStep - localStorage에서 가져온 정보:');
-      console.log('- cropName:', cropName);
-      console.log('- variety:', variety);
-      console.log('- cultivationMethod:', cultivationMethod);
-      console.log('- gradeValue:', gradeValue);
-      console.log('- includeFarmName:', includeFarmName, '(타입:', typeof includeFarmName, ')');
-      console.log('- isGapVerified:', isGapVerified);
-      console.log('- gapNumber:', gapNumber);
-      console.log('- gapInstitutionName:', gapInstitutionName);
-      console.log('- gapProductName:', gapProductName);
 
       // Grade enum 변환
       let gradeEnum: GradeEnum;
