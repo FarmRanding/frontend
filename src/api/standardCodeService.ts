@@ -1,11 +1,5 @@
 import apiClient from './axiosConfig';
 
-console.log('🌍 환경변수 확인:', {
-  VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
-  NODE_ENV: import.meta.env.NODE_ENV,
-  환경변수전체: import.meta.env
-});
-
 export interface CropItem {
   cropCode: string;
   cropName: string;

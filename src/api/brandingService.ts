@@ -88,23 +88,18 @@ export const brandingService = {
   },
 
   // AI 기반 최종 브랜드 생성
-  async createBrandingProjectWithAi(
-    request: BrandingProjectCreateRequest, 
+  async generateAiBranding(
+    request: BrandingProjectCreateRequest,
     brandName: string
   ): Promise<BrandingApiResponse> {
     // 쿼리 파라미터는 brandName만 필요 (백엔드에서 프롬프트 자체 생성)
     const params = new URLSearchParams();
     params.append('brandName', brandName);
     
-    console.log('API 요청 URL:', `/api/v1/branding/ai?${params.toString()}`);
-    console.log('API 요청 Body:', request);
-    
     const response = await apiClient.post<ApiResponse<BrandingApiResponse>>(
       `/api/v1/branding/ai?${params.toString()}`,
       request
     );
-    
-    console.log('API 응답:', response.data);
     
     if (!response.data.data) {
       throw new Error(response.data.message || 'API 응답 데이터가 없습니다.');

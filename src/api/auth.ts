@@ -34,8 +34,6 @@ export const signupUser = async (signupData: SignupRequest): Promise<UserRespons
     
     const result: ApiResponse<UserResponse> = response.data;
     
-    console.log('서버 응답:', result);
-    
     // 성공 케이스 (success가 true이거나 message가 "성공"인 경우)
     if (result.success || result.message === '성공') {
       return result.data;
@@ -125,4 +123,30 @@ export const getCurrentUser = (): UserResponse | null => {
     location: location || undefined,
     createdAt: new Date().toISOString()
   };
+};
+
+export const login = async (provider: string, code: string, redirectUri: string): Promise<UserResponse> => {
+  try {
+    const response = await apiClient.post('/api/auth/oauth/login', {
+      provider,
+      code,
+      redirectUri
+    });
+
+    const result = response.data;
+    
+    if (result.success && result.data) {
+      return result.data;
+    }
+    
+    throw new Error(result.message || '로그인에 실패했습니다.');
+  } catch (error: any) {
+    console.error('login 에러:', error);
+    
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    
+    throw error;
+  }
 }; 
