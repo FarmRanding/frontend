@@ -149,4 +149,90 @@ export const login = async (provider: string, code: string, redirectUri: string)
     
     throw error;
   }
+};
+
+// 🔥 멤버십 업그레이드 API
+export const upgradeToPremium = async (): Promise<UserResponse> => {
+  try {
+    const response = await apiClient.post('/api/v1/users/upgrade/premium');
+    const result: ApiResponse<UserResponse> = response.data;
+    
+    if (result.success && result.data) {
+      return result.data;
+    }
+    
+    throw new Error(result.message || '프리미엄 업그레이드에 실패했습니다.');
+  } catch (error: any) {
+    console.error('upgradeToPremium 에러:', error);
+    
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    
+    throw error;
+  }
+};
+
+export const upgradeToPremiumPlus = async (): Promise<UserResponse> => {
+  try {
+    const response = await apiClient.post('/api/v1/users/upgrade/premium-plus');
+    const result: ApiResponse<UserResponse> = response.data;
+    
+    if (result.success && result.data) {
+      return result.data;
+    }
+    
+    throw new Error(result.message || '프리미엄 플러스 업그레이드에 실패했습니다.');
+  } catch (error: any) {
+    console.error('upgradeToPremiumPlus 에러:', error);
+    
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    
+    throw error;
+  }
+};
+
+// 🔥 멤버십 다운그레이드 API
+export const downgradeToPremium = async (): Promise<UserResponse> => {
+  try {
+    const response = await apiClient.post('/api/v1/users/downgrade/premium');
+    const result: ApiResponse<UserResponse> = response.data;
+    
+    if (result.success && result.data) {
+      return result.data;
+    }
+    
+    throw new Error(result.message || '프리미엄 다운그레이드에 실패했습니다.');
+  } catch (error: any) {
+    console.error('downgradeToPremium 에러:', error);
+    
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    
+    throw error;
+  }
+};
+
+export const downgradeToFree = async (): Promise<UserResponse> => {
+  try {
+    const response = await apiClient.post('/api/v1/users/downgrade/free');
+    const result: ApiResponse<UserResponse> = response.data;
+    
+    if (result.success && result.data) {
+      return result.data;
+    }
+    
+    throw new Error(result.message || '무료 다운그레이드에 실패했습니다.');
+  } catch (error: any) {
+    console.error('downgradeToFree 에러:', error);
+    
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    
+    throw error;
+  }
 }; 

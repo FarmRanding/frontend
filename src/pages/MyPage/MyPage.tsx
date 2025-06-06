@@ -17,6 +17,7 @@ import iconBrush from '../../assets/icon-brush.svg';
 import iconMoney from '../../assets/icon-money.svg';
 import iconPencil from '../../assets/icon-pencil.svg';
 import { fetchMyUser, updateMyUserProfile, upgradeToPremium, upgradeToPremiumPlus, type UpdateProfileRequest, type UserProfileResponse } from '../../api/userService';
+import { downgradeToPremium, downgradeToFree } from '../../api/auth';
 import { fetchBrandingList, fetchBrandingDetail, deleteBranding } from '../../api/brandingService';
 import type { UserResponse } from '../../types/user';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -124,7 +125,7 @@ const PersonalInfoContainer = styled.div`
   margin-bottom: 48px;
   animation: ${fadeIn} 0.6s ease-out 0.1s both;
   box-sizing: border-box;
-  overflow: visible;
+  overflow: hidden;
   position: relative;
   z-index: 10;
 `;
@@ -405,12 +406,27 @@ const MyPage: React.FC = () => {
       
       try {
         const userData = await fetchMyUser();
-        setUser(userData);
+        
+        // 멤버십 타입 정규화
+        let normalizedMembershipType = userData.membershipType;
+        if (typeof userData.membershipType === 'object' && userData.membershipType && (userData.membershipType as any)?.name) {
+          normalizedMembershipType = (userData.membershipType as any).name;
+        } else if (typeof userData.membershipType === 'string') {
+          normalizedMembershipType = userData.membershipType.toUpperCase();
+        }
+        
+        const processedUserData = {
+          ...userData,
+          membershipType: normalizedMembershipType
+        };
+        
+        setUser(processedUserData);
         setEditValues({
           name: userData.name || '',
           farmName: userData.farmName || '',
           location: userData.location || ''
         });
+        
       } catch (err: any) {
         console.error('사용자 정보 조회 실패:', err);
         setError(err.message || '사용자 정보를 불러오지 못했습니다.');
@@ -810,59 +826,110 @@ const MyPage: React.FC = () => {
 
   const handleSelectPlan = async (planId: string) => {
     try {
-      // 무료 플랜 선택 시 업그레이드 불필요
-      if (planId === 'free') {
-        showInfo('현재 플랜', '이미 무료 플랜을 사용 중입니다.');
+      if (!user) {
+        showError('오류', '사용자 정보를 찾을 수 없습니다.');
         return;
       }
 
-      // 현재 사용자 멤버십 확인
-      if (user) {
-        if (planId === 'premium' && (user.membershipType === 'PREMIUM' || user.membershipType === 'PREMIUM_PLUS')) {
-          showInfo('이미 사용 중', '이미 프리미엄 이상 멤버십을 사용 중입니다.');
-          return;
-        }
-        if (planId === 'premium-plus' && user.membershipType === 'PREMIUM_PLUS') {
-          showInfo('이미 사용 중', '이미 프리미엄 플러스 멤버십을 사용 중입니다.');
-          return;
-        }
-      }
+      const currentMembership = user.membershipType;
       
-      showInfo('업그레이드 진행 중', '멤버십 업그레이드를 진행하고 있습니다...');
+      // 🔥 현재와 동일한 플랜 선택 시 안내
+      if ((planId === 'free' && currentMembership === 'FREE') ||
+          (planId === 'premium' && currentMembership === 'PREMIUM') ||
+          (planId === 'premium-plus' && currentMembership === 'PREMIUM_PLUS')) {
+        showInfo('동일한 플랜', '이미 해당 멤버십을 사용 중입니다.');
+        return;
+      }
+
+      // 🔥 변경 확인 다이얼로그
+      const isUpgrade = (planId === 'premium' && currentMembership === 'FREE') ||
+                       (planId === 'premium-plus' && (currentMembership === 'FREE' || currentMembership === 'PREMIUM'));
+      const isDowngrade = !isUpgrade;
+
+      let confirmMessage = '';
+      if (planId === 'free') {
+        confirmMessage = '무료 멤버십으로 다운그레이드하시겠습니까?\n일부 기능이 제한됩니다.';
+      } else if (planId === 'premium') {
+        if (currentMembership === 'FREE') {
+          confirmMessage = '프리미엄 멤버십으로 업그레이드하시겠습니까?';
+        } else {
+          confirmMessage = '프리미엄 멤버십으로 다운그레이드하시겠습니까?\n프리미엄 플러스 기능이 제한됩니다.';
+        }
+      } else if (planId === 'premium-plus') {
+        confirmMessage = '프리미엄 플러스 멤버십으로 업그레이드하시겠습니까?';
+      }
+
+      const confirmed = await showConfirm({
+        type: 'confirm',
+        title: isUpgrade ? '멤버십 업그레이드' : '멤버십 다운그레이드',
+        message: confirmMessage,
+        confirmText: '확인',
+        cancelText: '취소'
+      });
+
+      if (!confirmed) return;
+
+      // 🔥 변경 진행 토스트 (1.5초 표시)
+      showInfo(
+        isUpgrade ? '업그레이드 진행 중' : '다운그레이드 진행 중', 
+        isUpgrade ? '멤버십 업그레이드를 진행하고 있습니다...' : '멤버십 다운그레이드를 진행하고 있습니다...'
+      );
       
       let updatedUser: UserProfileResponse;
+      let successMessage = '';
+      let newMembershipType = '';
       
-      if (planId === 'premium') {
-        updatedUser = await upgradeToPremium();
-        showSuccess('업그레이드 완료', '프리미엄 멤버십으로 업그레이드되었습니다!');
+      // 🔥 API 호출
+      if (planId === 'free') {
+        updatedUser = await downgradeToFree();
+        successMessage = '무료 멤버십으로 다운그레이드되었습니다!';
+        newMembershipType = 'FREE';
+      } else if (planId === 'premium') {
+        if (currentMembership === 'FREE') {
+          updatedUser = await upgradeToPremium();
+          successMessage = '프리미엄 멤버십으로 업그레이드되었습니다!';
+        } else {
+          updatedUser = await downgradeToPremium();
+          successMessage = '프리미엄 멤버십으로 다운그레이드되었습니다!';
+        }
+        newMembershipType = 'PREMIUM';
       } else if (planId === 'premium-plus') {
         updatedUser = await upgradeToPremiumPlus();
-        showSuccess('업그레이드 완료', '프리미엄 플러스 멤버십으로 업그레이드되었습니다!');
+        successMessage = '프리미엄 플러스 멤버십으로 업그레이드되었습니다!';
+        newMembershipType = 'PREMIUM_PLUS';
       } else {
         showError('잘못된 요청', '올바르지 않은 멤버십 플랜입니다.');
         return;
       }
       
-      // 사용자 정보 업데이트
+      // 🚀 즉시 UI 업데이트 (실시간 반영)
       setUser(prev => prev ? {
         ...prev,
-        name: updatedUser.name || '',
-        farmName: updatedUser.farmName || '',
-        location: updatedUser.location || '',
-        membershipType: updatedUser.membershipType
+        membershipType: newMembershipType,
+        name: updatedUser.name || prev.name || '',
+        farmName: updatedUser.farmName || prev.farmName || '',
+        location: updatedUser.location || prev.location || '',
+        id: updatedUser.id || prev.id,
+        email: updatedUser.email || prev.email,
+        createdAt: updatedUser.createdAt || prev.createdAt
       } : null);
       
-      // 편집된 값도 업데이트
+      // 편집된 값도 업데이트  
       setEditValues(prev => ({
         ...prev,
-        name: updatedUser.name || '',
-        farmName: updatedUser.farmName || '',
-        location: updatedUser.location || ''
+        name: updatedUser.name || prev.name,
+        farmName: updatedUser.farmName || prev.farmName,
+        location: updatedUser.location || prev.location
       }));
       
+      // 🔥 성공 토스트는 1.5초 딜레이 후 표시 (진행중 토스트 끝난 후)
+      setTimeout(() => {
+        showSuccess('변경 완료', successMessage);
+      }, 1500);
+      
     } catch (error: any) {
-      console.error('멤버십 업그레이드 실패:', error);
-      showError('업그레이드 실패', error.message || '멤버십 업그레이드에 실패했습니다.');
+      console.error('멤버십 변경 실패:', error);
+      showError('변경 실패', error.message || '멤버십 변경에 실패했습니다.');
     }
   };
 

@@ -322,7 +322,7 @@ const BrandResultPage: React.FC = () => {
         }
       } catch (error) {
         console.error('❌ 브랜드 결과 페이지 - 데이터 로드 실패:', error);
-        setBrandData(generateBrandData(receivedBrandName));
+    setBrandData(generateBrandData(receivedBrandName));
         setUserMembershipType('FREE');
         setCanAccessStory(false);
       }
