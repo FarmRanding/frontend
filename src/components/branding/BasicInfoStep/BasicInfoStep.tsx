@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
 import CropVarietyInput from '../../common/CropVarietyInput';
 import InputField from '../../common/InputField/InputField';
@@ -199,6 +199,9 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
   onValidationChange 
 }) => {
   const [showGradeSelector, setShowGradeSelector] = useState(false);
+  
+  // 재배 방식 필드 ref
+  const cultivationMethodRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (field: keyof BasicInfoData, value: string | boolean) => {
     const newData = { ...data, [field]: value };
@@ -258,6 +261,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
           cropValue={data.cropName}
           varietyValue={data.variety}
           onChange={handleCropVarietyChange}
+          nextFieldRef={cultivationMethodRef}
         />
         
         <InputField
@@ -266,6 +270,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
           value={data.cultivationMethod}
           onChange={(value) => handleInputChange('cultivationMethod', value)}
           variant="default"
+          inputRef={cultivationMethodRef}
         />
 
         <GradeContainer>

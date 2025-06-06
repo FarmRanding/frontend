@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import Header from '../../components/common/Header';
@@ -162,6 +162,9 @@ const Branding: React.FC = () => {
     grade: '',
   });
   const [showGradeSelector, setShowGradeSelector] = useState(false);
+  
+  // 재배 방식 필드 ref
+  const cultivationMethodRef = useRef<HTMLInputElement>(null);
 
   const handleClose = () => {
     navigate('/');
@@ -234,6 +237,7 @@ const Branding: React.FC = () => {
               cropValue={formData.cropName}
               varietyValue={formData.variety}
               onChange={handleCropVarietyChange}
+              nextFieldRef={cultivationMethodRef}
             />
             
             <InputField
@@ -242,6 +246,7 @@ const Branding: React.FC = () => {
               value={formData.cultivationMethod}
               onChange={(value) => handleInputChange('cultivationMethod', value)}
               variant="default"
+              inputRef={cultivationMethodRef}
             />
 
             <GradeContainer>

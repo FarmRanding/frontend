@@ -17,6 +17,7 @@ interface CropVarietyInputProps {
   onChange: (data: CropVarietyData) => void;
   className?: string;
   disabled?: boolean;
+  nextFieldRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 const CropVarietyInput: React.FC<CropVarietyInputProps> = ({
@@ -25,6 +26,7 @@ const CropVarietyInput: React.FC<CropVarietyInputProps> = ({
   onChange,
   className,
   disabled = false,
+  nextFieldRef,
 }) => {
   const { searchCrops, searchVarieties, isLoading, error } = useCropData();
   
@@ -123,7 +125,14 @@ const CropVarietyInput: React.FC<CropVarietyInputProps> = ({
       varietyCode: variety.varietyCode,
       varietyName: variety.varietyName
     });
-  }, [onChange]);
+
+    // 재배 방식 필드로 포커스 이동 (약간의 지연 후)
+    if (nextFieldRef?.current) {
+      setTimeout(() => {
+        nextFieldRef.current?.focus();
+      }, 100);
+    }
+  }, [onChange, nextFieldRef]);
 
   // 품종 입력 활성화 여부
   const isVarietyEnabled = !disabled && selectedCrop !== null;

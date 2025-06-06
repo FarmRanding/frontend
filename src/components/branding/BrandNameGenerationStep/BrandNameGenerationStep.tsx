@@ -294,14 +294,24 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
   // 🔥 NEW: 멤버십별 제한 설정
   useEffect(() => {
     const currentUser = getCurrentUser();
+    console.log('🔍 현재 사용자 정보:', currentUser);
+    
     if (currentUser) {
+      console.log('🔍 멤버십 타입:', currentUser.membershipType);
       setUserMembershipType(currentUser.membershipType);
+      
       // 멤버십별 재생성 제한 설정
       if (currentUser.membershipType === 'PRO') {
+        console.log('✅ PRO 멤버십: 10회 제한 설정');
         setMaxRegenerations(10);
       } else {
+        console.log('✅ FREE 멤버십: 3회 제한 설정');
         setMaxRegenerations(3);
       }
+    } else {
+      console.log('⚠️ 사용자 정보가 없습니다. 기본값 FREE로 설정');
+      setUserMembershipType('FREE');
+      setMaxRegenerations(3);
     }
   }, []);
 
@@ -329,7 +339,10 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
         regenerationCount // 🔥 NEW: 재생성 횟수 전달
       };
       
-      console.log('브랜드명 생성 요청 데이터:', request);
+      console.log('🚀 브랜드명 생성 요청 데이터:', request);
+      console.log('🔍 현재 재생성 횟수:', regenerationCount);
+      console.log('🔍 최대 재생성 횟수:', maxRegenerations);
+      console.log('🔍 사용자 멤버십:', userMembershipType);
       
       // 🔥 중복 방지를 위한 재시도 로직 (최대 5번 시도)
       let attempts = 0;
