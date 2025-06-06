@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import AutoCompleteInput from '../AutoCompleteInput';
 import { useCropData } from '../../../hooks/useCropData';
@@ -34,6 +34,9 @@ const CropVarietyInput: React.FC<CropVarietyInputProps> = ({
   const [cropOptions, setCropOptions] = useState<CropItem[]>([]);
   const [varietyOptions, setVarietyOptions] = useState<VarietyItem[]>([]);
   const [isLoadingVarieties, setIsLoadingVarieties] = useState(false);
+
+  // 품종 필드 ref
+  const varietyInputRef = useRef<HTMLInputElement>(null);
 
   // 외부에서 값이 변경될 때 내부 상태 업데이트
   useEffect(() => {
@@ -102,6 +105,11 @@ const CropVarietyInput: React.FC<CropVarietyInputProps> = ({
       varietyCode: '',
       varietyName: ''
     });
+
+    // 품종 필드로 포커스 이동 (약간의 지연 후)
+    setTimeout(() => {
+      varietyInputRef.current?.focus();
+    }, 100);
   }, [onChange, preloadVarieties]);
 
   // 품종 선택 처리
@@ -164,6 +172,7 @@ const CropVarietyInput: React.FC<CropVarietyInputProps> = ({
           emptyText={selectedCrop ? `${selectedCrop.cropName} 품종을 검색해보세요` : "품종을 검색해보세요"}
           minChars={0}
           debounceMs={300}
+          inputRef={varietyInputRef}
         />
         {!isVarietyEnabled && (
           <HelpText>먼저 작물을 선택해주세요.</HelpText>

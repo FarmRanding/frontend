@@ -21,6 +21,7 @@ interface AutoCompleteInputProps<T> {
   noResultsText?: string;
   emptyText?: string;
   onFilter?: (items: T[], query: string) => T[];
+  inputRef?: React.RefObject<HTMLInputElement>;
 }
 
 const AutoCompleteInput = <T,>({
@@ -42,6 +43,7 @@ const AutoCompleteInput = <T,>({
   noResultsText = "검색 결과가 없습니다",
   emptyText = "검색어를 입력해주세요",
   onFilter,
+  inputRef,
 }: AutoCompleteInputProps<T>) => {
   
   const {
@@ -97,6 +99,7 @@ const AutoCompleteInput = <T,>({
     <Container ref={containerRef} className={className}>
       <InputWrapper $hasError={!!error} $disabled={disabled}>
         <Input
+          ref={inputRef}
           type="text"
           value={query}
           onChange={handleInputChangeWithCallback}

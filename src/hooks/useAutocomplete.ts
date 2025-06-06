@@ -143,8 +143,11 @@ export function useAutocomplete<T>(
     setIsOpen(true);
     if (query && query.trim().length >= minChars) {
       filterItems(query);
+    } else if (items.length > 0 && minChars === 0) {
+      // minChars가 0이고 기존 아이템이 있으면 모든 아이템 표시 (품종 필드용)
+      setFilteredItems(items);
     }
-  }, [query, filterItems, minChars]);
+  }, [query, filterItems, minChars, items]);
 
   // 블러 처리
   const handleBlur = useCallback((e: React.FocusEvent) => {
