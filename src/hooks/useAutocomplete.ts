@@ -118,6 +118,9 @@ export function useAutocomplete<T>(
         e.preventDefault();
         if (selectedIndex >= 0 && filteredItems[selectedIndex]) {
           handleItemSelect(filteredItems[selectedIndex]);
+        } else if (filteredItems.length > 0) {
+          // 선택된 인덱스가 없지만 검색 결과가 있으면 첫 번째 항목 선택
+          handleItemSelect(filteredItems[0]);
         }
         break;
       case 'Escape':

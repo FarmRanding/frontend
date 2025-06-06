@@ -240,4 +240,141 @@ export const KeyboardNavigation: Story = {
     await userEvent.keyboard('{ArrowDown}');
     await userEvent.keyboard('{Enter}');
   },
+};
+
+// 엔터키 자동 선택 기능 테스트
+export const EnterKeyAutoSelect: Story = {
+  args: {
+    cropValue: '',
+    varietyValue: '',
+    disabled: false,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: `
+**엔터키 자동 선택 기능**
+
+작물명을 입력하고 검색 결과가 있을 때 엔터키를 누르면 목록의 첫 번째 항목이 자동으로 선택됩니다.
+
+**사용법:**
+1. 작물 입력 필드에 '토마' 또는 '오이' 등을 입력
+2. 검색 결과가 나타나면 방향키로 선택하거나
+3. **엔터키만 눌러도 첫 번째 결과가 자동 선택됨**
+4. 품종 필드가 자동으로 활성화됨
+
+이 기능으로 더 빠른 입력이 가능합니다.
+        `,
+      },
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    
+    // 작물 입력 필드에 포커스
+    const cropInput = canvas.getByPlaceholderText('예: 토마토');
+    await userEvent.click(cropInput);
+    
+    // '토마'라고 입력 (토마토가 검색될 것)
+    await userEvent.type(cropInput, '토마');
+    
+    // 디바운스 대기
+    await new Promise(resolve => setTimeout(resolve, 400));
+    
+    // 엔터키를 눌러서 첫 번째 결과 자동 선택
+    await userEvent.keyboard('{Enter}');
+    
+    // 잠시 대기
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // onChange가 호출되었는지 확인
+    await expect(args.onChange).toHaveBeenCalled();
+    
+    // 품종 입력 필드가 활성화되었는지 확인
+    const varietyInput = canvas.getByPlaceholderText(/스테비아 토마토/);
+    await expect(varietyInput).toBeEnabled();
+  },
+};
+
+// 실제 사용 예시 (Controlled Component)
+export const ControlledExample: Story = {
+  render: () => {
+    const [data, setData] = useState({
+      cropCode: '',
+      cropName: '',
+      varietyCode: '',
+      varietyName: ''
+    });
+
+    return (
+      <div style={{ width: '320px', padding: '20px' }}>
+        <h3 style={{ marginBottom: '20px', color: '#1F41BB' }}>
+          🌱 작물/품종 선택 (엔터키 자동 선택 지원)
+        </h3>
+        
+        <CropVarietyInput
+          cropValue={data.cropName}
+          varietyValue={data.varietyName}
+          onChange={setData}
+        />
+        
+        <div style={{ 
+          marginTop: '24px', 
+          padding: '16px', 
+          backgroundColor: '#F4FAFF', 
+          borderRadius: '8px',
+          fontSize: '14px' 
+        }}>
+          <h4 style={{ margin: '0 0 8px 0', color: '#1F41BB' }}>
+            💡 사용 팁
+          </h4>
+          <p style={{ margin: '0 0 8px 0', color: '#64748B' }}>
+            • 작물명 입력 후 <strong>엔터키</strong>로 첫 번째 결과 자동 선택
+          </p>
+          <p style={{ margin: '0 0 8px 0', color: '#64748B' }}>
+            • 방향키(↑↓)로 원하는 항목 선택 후 엔터키
+          </p>
+          <p style={{ margin: '0', color: '#64748B' }}>
+            • ESC 키로 드롭다운 닫기
+          </p>
+        </div>
+
+        {data.cropName && (
+          <div style={{ 
+            marginTop: '16px', 
+            padding: '12px', 
+            backgroundColor: '#F0F9FF', 
+            borderRadius: '8px',
+            border: '1px solid #BAE6FD'
+          }}>
+            <h4 style={{ margin: '0 0 8px 0', color: '#0369A1' }}>선택 결과</h4>
+            <p style={{ margin: '0 0 4px 0', fontSize: '13px', color: '#64748B' }}>
+              <strong>작물:</strong> {data.cropName} ({data.cropCode})
+            </p>
+            {data.varietyName && (
+              <p style={{ margin: '0', fontSize: '13px', color: '#64748B' }}>
+                <strong>품종:</strong> {data.varietyName} ({data.varietyCode})
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: `
+실제 사용 예시입니다. 
+
+**테스트해보세요:**
+1. 작물명에 '토마', '오이', '사과' 등을 입력
+2. 검색 결과가 나타나면 **엔터키** 또는 방향키로 선택
+3. 품종 필드가 활성화되면 품종도 선택해보세요
+
+새로운 엔터키 자동 선택 기능으로 더 빠른 입력이 가능합니다!
+        `,
+      },
+    },
+  },
 }; 
