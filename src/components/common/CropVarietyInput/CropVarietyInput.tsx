@@ -168,9 +168,6 @@ const CropVarietyInput: React.FC<CropVarietyInputProps> = ({
         {!isVarietyEnabled && (
           <HelpText>먼저 작물을 선택해주세요.</HelpText>
         )}
-        {isVarietyEnabled && varietyOptions.length > 0 && (
-          <HelpText>{selectedCrop?.cropName}의 {varietyOptions.length}개 품종이 준비되었습니다.</HelpText>
-        )}
       </InputGroup>
     </Container>
   );
