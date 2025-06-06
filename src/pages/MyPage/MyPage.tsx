@@ -16,7 +16,7 @@ import iconSort from '../../assets/icon-sort.svg';
 import iconBrush from '../../assets/icon-brush.svg';
 import iconMoney from '../../assets/icon-money.svg';
 import iconPencil from '../../assets/icon-pencil.svg';
-import { fetchMyUser, updateMyUserProfile, type UpdateProfileRequest, type UserProfileResponse } from '../../api/userService';
+import { fetchMyUser, updateMyUserProfile, upgradeToPremium, upgradeToPremiumPlus, type UpdateProfileRequest, type UserProfileResponse } from '../../api/userService';
 import { fetchBrandingList, fetchBrandingDetail, deleteBranding } from '../../api/brandingService';
 import type { UserResponse } from '../../types/user';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -808,10 +808,62 @@ const MyPage: React.FC = () => {
     setSelectedPriceHistory(null);
   };
 
-  const handleSelectPlan = (planId: string) => {
-    console.log(`플랜 선택됨: ${planId}`);
-    // TODO: 실제 플랜 구독 로직 구현
-    showSuccess('플랜 선택', `${planId} 플랜이 선택되었습니다!`);
+  const handleSelectPlan = async (planId: string) => {
+    try {
+      // 무료 플랜 선택 시 업그레이드 불필요
+      if (planId === 'free') {
+        showInfo('현재 플랜', '이미 무료 플랜을 사용 중입니다.');
+        return;
+      }
+
+      // 현재 사용자 멤버십 확인
+      if (user) {
+        if (planId === 'premium' && (user.membershipType === 'PREMIUM' || user.membershipType === 'PREMIUM_PLUS')) {
+          showInfo('이미 사용 중', '이미 프리미엄 이상 멤버십을 사용 중입니다.');
+          return;
+        }
+        if (planId === 'premium-plus' && user.membershipType === 'PREMIUM_PLUS') {
+          showInfo('이미 사용 중', '이미 프리미엄 플러스 멤버십을 사용 중입니다.');
+          return;
+        }
+      }
+      
+      showInfo('업그레이드 진행 중', '멤버십 업그레이드를 진행하고 있습니다...');
+      
+      let updatedUser: UserProfileResponse;
+      
+      if (planId === 'premium') {
+        updatedUser = await upgradeToPremium();
+        showSuccess('업그레이드 완료', '프리미엄 멤버십으로 업그레이드되었습니다!');
+      } else if (planId === 'premium-plus') {
+        updatedUser = await upgradeToPremiumPlus();
+        showSuccess('업그레이드 완료', '프리미엄 플러스 멤버십으로 업그레이드되었습니다!');
+      } else {
+        showError('잘못된 요청', '올바르지 않은 멤버십 플랜입니다.');
+        return;
+      }
+      
+      // 사용자 정보 업데이트
+      setUser(prev => prev ? {
+        ...prev,
+        name: updatedUser.name || '',
+        farmName: updatedUser.farmName || '',
+        location: updatedUser.location || '',
+        membershipType: updatedUser.membershipType
+      } : null);
+      
+      // 편집된 값도 업데이트
+      setEditValues(prev => ({
+        ...prev,
+        name: updatedUser.name || '',
+        farmName: updatedUser.farmName || '',
+        location: updatedUser.location || ''
+      }));
+      
+    } catch (error: any) {
+      console.error('멤버십 업그레이드 실패:', error);
+      showError('업그레이드 실패', error.message || '멤버십 업그레이드에 실패했습니다.');
+    }
   };
 
   const renderBrandingContent = () => {
@@ -983,6 +1035,7 @@ const MyPage: React.FC = () => {
               <MembershipList
                 plans={membershipPlans}
                 onSelectPlan={handleSelectPlan}
+                currentMembershipType={user?.membershipType || 'FREE'}
                 className="membership-list"
               />
             </MembershipContainer>

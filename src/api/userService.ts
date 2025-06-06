@@ -40,4 +40,22 @@ export const updateMyUserProfile = async (profileData: UpdateProfileRequest): Pr
     return response.data.data;
   }
   throw new Error(response.data.message || '사용자 정보 수정에 실패했습니다.');
+};
+
+// 프리미엄 멤버십 업그레이드 API
+export const upgradeToPremium = async (): Promise<UserProfileResponse> => {
+  const response = await apiClient.post<ApiResponse<UserProfileResponse>>('/api/v1/users/upgrade/premium');
+  if (response.data.data) {
+    return response.data.data;
+  }
+  throw new Error(response.data.message || '프리미엄 멤버십 업그레이드에 실패했습니다.');
+};
+
+// 프리미엄 플러스 멤버십 업그레이드 API
+export const upgradeToPremiumPlus = async (): Promise<UserProfileResponse> => {
+  const response = await apiClient.post<ApiResponse<UserProfileResponse>>('/api/v1/users/upgrade/premium-plus');
+  if (response.data.data) {
+    return response.data.data;
+  }
+  throw new Error(response.data.message || '프리미엄 플러스 멤버십 업그레이드에 실패했습니다.');
 }; 
