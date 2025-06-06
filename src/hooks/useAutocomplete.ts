@@ -47,7 +47,12 @@ export function useAutocomplete<T>(
 
   // 필터링 로직
   const filterItems = useCallback(async (searchQuery: string) => {
-    // 외부 검색 함수가 있으면 사용 (빈 쿼리도 허용)
+    if (!searchQuery || searchQuery.length < minChars) {
+      setFilteredItems([]);
+      return;
+    }
+
+    // 외부 검색 함수가 있으면 사용
     if (onSearch) {
       try {
         const searchResults = await onSearch(searchQuery);
@@ -56,12 +61,6 @@ export function useAutocomplete<T>(
         console.error('검색 중 오류 발생:', error);
         setFilteredItems([]);
       }
-      return;
-    }
-
-    // 내부 필터링의 경우 최소 문자 수 체크
-    if (!searchQuery || searchQuery.length < minChars) {
-      setFilteredItems([]);
       return;
     }
 
@@ -136,16 +135,13 @@ export function useAutocomplete<T>(
     onSelect(item);
   }, [onSelect]);
 
-  // 포커스 처리 - 빈 쿼리에 대해서도 검색 수행
+  // 포커스 처리
   const handleFocus = useCallback(() => {
     setIsOpen(true);
-    // 외부 검색 함수가 있으면 빈 쿼리에 대해서도 검색 수행
-    if (onSearch) {
-      filterItems(query);
-    } else if (query && query.trim().length >= minChars) {
+    if (query && query.trim().length >= minChars) {
       filterItems(query);
     }
-  }, [query, filterItems, minChars, onSearch]);
+  }, [query, filterItems, minChars]);
 
   // 블러 처리
   const handleBlur = useCallback((e: React.FocusEvent) => {
