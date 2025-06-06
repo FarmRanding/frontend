@@ -20,8 +20,8 @@ interface UseAutocompleteReturn<T> {
   handleItemSelect: (item: T) => void;
   handleFocus: () => void;
   handleBlur: (e: React.FocusEvent) => void;
-  containerRef: React.RefObject<HTMLDivElement>;
-  listRef: React.RefObject<HTMLUListElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  listRef: React.RefObject<HTMLUListElement | null>;
 }
 
 export function useAutocomplete<T>(
@@ -43,10 +43,10 @@ export function useAutocomplete<T>(
   
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
-  const debounceTimerRef = useRef<NodeJS.Timeout>();
+  const debounceTimerRef = useRef<number | undefined>(undefined);
 
   // 필터링 로직
-  const filterItems = useCallback(async (searchQuery: string) => {
+  const filterItems = useCallback(async (searchQuery: string = '') => {
     if (!searchQuery || searchQuery.length < minChars) {
       setFilteredItems([]);
       return;
@@ -79,10 +79,10 @@ export function useAutocomplete<T>(
   // 디바운스된 필터링
   const debouncedFilter = useCallback((searchQuery: string) => {
     if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
+      window.clearTimeout(debounceTimerRef.current);
     }
     
-    debounceTimerRef.current = setTimeout(() => {
+    debounceTimerRef.current = window.setTimeout(() => {
       filterItems(searchQuery);
     }, debounceMs);
   }, [filterItems, debounceMs]);
@@ -96,6 +96,14 @@ export function useAutocomplete<T>(
     
     debouncedFilter(newQuery);
   }, [debouncedFilter]);
+
+  // 아이템 선택
+  const handleItemSelect = useCallback((item: T) => {
+    setQuery((item as any).name || (item as any).cropName || (item as any).varietyName || '');
+    setIsOpen(false);
+    setSelectedIndex(-1);
+    onSelect(item);
+  }, [onSelect]);
 
   // 키보드 네비게이션
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -128,15 +136,7 @@ export function useAutocomplete<T>(
         setSelectedIndex(-1);
         break;
     }
-  }, [isOpen, filteredItems, selectedIndex]);
-
-  // 아이템 선택
-  const handleItemSelect = useCallback((item: T) => {
-    setQuery((item as any).name || (item as any).cropName || (item as any).varietyName || '');
-    setIsOpen(false);
-    setSelectedIndex(-1);
-    onSelect(item);
-  }, [onSelect]);
+  }, [isOpen, filteredItems, selectedIndex, handleItemSelect]);
 
   // 포커스 처리
   const handleFocus = useCallback(() => {
@@ -175,7 +175,7 @@ export function useAutocomplete<T>(
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
+        window.clearTimeout(debounceTimerRef.current);
       }
     };
   }, []);

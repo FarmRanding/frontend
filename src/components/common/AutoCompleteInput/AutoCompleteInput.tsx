@@ -21,7 +21,7 @@ interface AutoCompleteInputProps<T> {
   noResultsText?: string;
   emptyText?: string;
   onFilter?: (items: T[], query: string) => T[];
-  inputRef?: React.RefObject<HTMLInputElement>;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 const AutoCompleteInput = <T,>({
