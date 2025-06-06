@@ -259,7 +259,7 @@ const SuggestionsList = styled.ul`
   margin-top: 4px;
   max-height: 300px;
   overflow-y: auto;
-  z-index: 1000;
+  z-index: 10000;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   padding: 0;
   margin: 4px 0 0 0;

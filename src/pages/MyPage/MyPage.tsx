@@ -126,6 +126,7 @@ const PersonalInfoContainer = styled.div`
   box-sizing: border-box;
   overflow: visible;
   position: relative;
+  z-index: 10;
 `;
 
 const TabContainer = styled.div`

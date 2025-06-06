@@ -220,11 +220,12 @@ const AddressAutocompleteWrapper = styled.div`
   flex: 1;
   min-width: 0;
   position: relative;
+  z-index: 1000;
   
   // AddressAutocomplete 내부 스타일 조정
   .address-autocomplete-container {
     position: relative;
-    z-index: 100;
+    z-index: 1000;
   }
   
   input {
@@ -258,7 +259,7 @@ const AddressAutocompleteWrapper = styled.div`
     top: 100%;
     left: 0;
     right: 0;
-    z-index: 1000;
+    z-index: 9999;
     max-height: 200px;
     overflow-y: auto;
     background: white;
