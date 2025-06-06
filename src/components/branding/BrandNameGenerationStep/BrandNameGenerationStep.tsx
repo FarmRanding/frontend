@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { brandingService, BrandNameRequest } from '../../../api/brandingService';
 import iconPencil from '../../../assets/icon-pencil.svg'; // 🔥 NEW: 프로젝트 아이콘 import
-import { getCurrentUser } from '../../../api/auth';
+import { getCurrentUser, fetchCurrentUserFromServer } from '../../../api/auth';
 
 // 애니메이션들
 const fadeIn = keyframes`
@@ -293,26 +293,77 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
 
   // 🔥 NEW: 멤버십별 제한 설정
   useEffect(() => {
-    const currentUser = getCurrentUser();
-    console.log('🔍 현재 사용자 정보:', currentUser);
-    
-    if (currentUser) {
-      console.log('🔍 멤버십 타입:', currentUser.membershipType);
-      setUserMembershipType(currentUser.membershipType);
-      
-      // 멤버십별 재생성 제한 설정
-      if (currentUser.membershipType === 'PRO') {
-        console.log('✅ PRO 멤버십: 10회 제한 설정');
-        setMaxRegenerations(10);
-      } else {
-        console.log('✅ FREE 멤버십: 3회 제한 설정');
-        setMaxRegenerations(3);
+    const loadUserMembershipInfo = async () => {
+      try {
+        // 서버에서 최신 사용자 정보 가져오기
+        const currentUser = await fetchCurrentUserFromServer();
+        console.log('🔍 서버에서 가져온 현재 사용자 정보:', currentUser);
+        
+        if (currentUser) {
+          console.log('🔍 멤버십 타입:', currentUser.membershipType);
+          
+          // 🔥 백엔드에서 enum으로 올 수 있으므로 문자열로 변환
+          const membershipTypeStr = typeof currentUser.membershipType === 'string' 
+            ? currentUser.membershipType 
+            : currentUser.membershipType?.toString() || 'FREE';
+          
+          console.log('🔍 변환된 멤버십 타입:', membershipTypeStr);
+          setUserMembershipType(membershipTypeStr);
+          
+          // 멤버십별 재생성 제한 설정
+          if (membershipTypeStr === 'PREMIUM_PLUS' || membershipTypeStr === 'PREMIUM') {
+            console.log('✅ 프리미엄/프리미엄 플러스 멤버십: 10회 제한 설정');
+            setMaxRegenerations(10);
+          } else {
+            console.log('✅ 일반 멤버십: 3회 제한 설정');
+            setMaxRegenerations(3);
+          }
+        } else {
+          console.log('⚠️ 서버에서 사용자 정보를 가져올 수 없습니다. 로컬 스토리지 정보 사용');
+          // 에러 시 로컬 스토리지 정보 사용
+          const localUser = getCurrentUser();
+          if (localUser) {
+            console.log('🔍 로컬 멤버십 타입:', localUser.membershipType);
+            
+            const membershipTypeStr = typeof localUser.membershipType === 'string' 
+              ? localUser.membershipType 
+              : localUser.membershipType?.toString() || 'FREE';
+              
+            setUserMembershipType(membershipTypeStr);
+            if (membershipTypeStr === 'PREMIUM_PLUS' || membershipTypeStr === 'PREMIUM') {
+              setMaxRegenerations(10);
+            } else {
+              setMaxRegenerations(3);
+            }
+          } else {
+            console.log('⚠️ 사용자 정보가 없습니다. 기본값 FREE로 설정');
+            setUserMembershipType('FREE');
+            setMaxRegenerations(3);
+          }
+        }
+      } catch (error) {
+        console.error('❌ 사용자 정보 로드 실패:', error);
+        // 에러 시 로컬 스토리지 정보 사용
+        const localUser = getCurrentUser();
+        if (localUser) {
+          const membershipTypeStr = typeof localUser.membershipType === 'string' 
+            ? localUser.membershipType 
+            : localUser.membershipType?.toString() || 'FREE';
+            
+          setUserMembershipType(membershipTypeStr);
+          if (membershipTypeStr === 'PREMIUM_PLUS' || membershipTypeStr === 'PREMIUM') {
+            setMaxRegenerations(10);
+          } else {
+            setMaxRegenerations(3);
+          }
+        } else {
+          setUserMembershipType('FREE');
+          setMaxRegenerations(3);
+        }
       }
-    } else {
-      console.log('⚠️ 사용자 정보가 없습니다. 기본값 FREE로 설정');
-      setUserMembershipType('FREE');
-      setMaxRegenerations(3);
-    }
+    };
+    
+    loadUserMembershipInfo();
   }, []);
 
   const startGeneration = async () => {
@@ -401,7 +452,7 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
       
       // 🔥 NEW: 멤버십별 제한 초과 에러 처리
       if (error.response?.data?.code === 'FR404') {
-        const membershipName = userMembershipType === 'PRO' ? '프로' : '무료';
+        const membershipName = userMembershipType === 'PREMIUM_PLUS' || userMembershipType === 'PREMIUM' ? '프리미엄/프리미엄 플러스' : '일반';
         setError(`브랜드명 재생성은 ${membershipName} 멤버십은 ${maxRegenerations}번까지 가능합니다. ${userMembershipType === 'FREE' ? '더 많은 재생성을 원하시면 멤버십을 업그레이드해주세요.' : ''}`);
       } else {
         setError('브랜드명 생성에 실패했습니다. 다시 시도해주세요.');
@@ -433,7 +484,7 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
   const handleRegenerate = () => {
     // 🔥 NEW: 멤버십별 재생성 제한 체크
     if (regenerationCount >= maxRegenerations) {
-      const membershipName = userMembershipType === 'PRO' ? '프로' : '무료';
+      const membershipName = userMembershipType === 'PREMIUM_PLUS' || userMembershipType === 'PREMIUM' ? '프리미엄/프리미엄 플러스' : '일반';
       setError(`브랜드명 재생성은 ${membershipName} 멤버십은 ${maxRegenerations}번까지 가능합니다. ${userMembershipType === 'FREE' ? '더 많은 재생성을 원하시면 멤버십을 업그레이드해주세요.' : ''}`);
       return;
     }
@@ -480,7 +531,7 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
   // 🔥 NEW: 동적 버튼 텍스트 생성
   const getRegenerateButtonText = () => {
     const remaining = maxRegenerations - regenerationCount;
-    const membershipName = userMembershipType === 'PRO' ? '프로' : '무료';
+    const membershipName = userMembershipType === 'PREMIUM_PLUS' || userMembershipType === 'PREMIUM' ? '프리미엄/프리미엄 플러스' : '일반';
     return `브랜드명 다시 생성하기 (${remaining}회 남음)`;
   };
 
@@ -577,7 +628,7 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
           borderRadius: '8px',
           border: '1px solid rgba(31, 65, 187, 0.2)'
         }}>
-          💡 프로 멤버십으로 업그레이드하면 브랜드명을 10번까지 재생성할 수 있어요!
+          💡 프리미엄/프리미엄 플러스 멤버십으로 업그레이드하면 브랜드명을 10번까지 재생성할 수 있어요!
         </div>
       )}
       

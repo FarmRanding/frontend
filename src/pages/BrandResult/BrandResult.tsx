@@ -227,29 +227,7 @@ const generateBrandData = (brandName: string): BrandResultData => {
   return {
     brandName: brandName,
     promotionText: "자연이 키운 진심의 맛",
-    story: `한 줄기 햇살이 강원도의 붉은 흙을 비추던 어느 봄날,
-하은 농장의 밭 한가운데 작은 씨감자가 심어졌습니다.
-그 씨감자는 아무 말 없이, 하지만 누구보다 단단한 마음으로 뿌리를 내렸습니다.
-
-${brandName}은 화학비료 대신 미생물 퇴비,
-물 맑고 공기 좋은 고랭지 토양에서 천천히 자랍니다.
-더디지만 자연의 속도에 맞춘 그 기다림은,
-감자의 속살을 더 단단하고 촉촉하게,
-맛은 더 달콤하게 만들어줍니다.
-
-이 감자를 키운 사람은,
-도시에서 내려와 흙을 배우기 시작한 청년 농부.
-바로 '하은'이라는 이름을 가진 농부는
-감자 한 알 한 알에 "정직한 먹거리, 건강한 식탁"이라는 신념을 담습니다.
-
-감자는 감자지만, ${brandName}은 다릅니다.
-껍질째 쪄먹어도 고소하고, 튀겨도 물이 덜 생깁니다.
-아이들에게 안심하고 줄 수 있는,
-그래서 도시의 젊은 부모들이 먼저 찾는 감자입니다.
-
-지금 당신의 식탁 위에 올라올
-그 작은 감자 하나에도,
-흙의 시간과 사람의 진심이 고스란히 담겨 있습니다.`,
+    story: `경기도 화성시 동탄면에서 자란 밤양갱 큐트케어는 특등급의 프리미엄 양갱입니다. 우리의 양갱은 최상의 품질을 위해 신선한 밤을 엄선하여 사용하며, 양갱공장에서 정성스럽게 만들어집니다. 부드럽고 쫄깃한 식감은 물론, 달콤한 맛이 입안을 가득 채워줍니다. 건강과 다이어트를 생각하는 여러분을 위해 설계된 이 양갱은, 고품질의 재료만을 사용하여 고객님의 건강을 최우선으로 생각합니다. 따뜻한 순간에 함께하고 싶은 밤양갱 큐트케어, 지금 바로 만나보세요!`,
     imageUrl: "https://placehold.co/200x200/E8F4FF/1F41BB?text=Brand+Logo"
   };
 };
@@ -288,6 +266,11 @@ const BrandResultPage: React.FC = () => {
   const handleComplete = () => {
     showSuccess('브랜드 생성 완료', '브랜드가 성공적으로 생성되었습니다!');
     navigate('/mypage');
+  };
+
+  const handleUpgradeClick = () => {
+    // 마이페이지 멤버십 탭으로 이동
+    navigate('/mypage', { state: { initialTab: 'membership' } });
   };
 
   const handleCopy = (field: string, value: string) => {
@@ -347,9 +330,8 @@ const BrandResultPage: React.FC = () => {
         <BrandResultContainer>
           <BrandResult
             data={brandData}
-            isPremium={false}
-            onCopy={handleCopy}
-            onDownload={handleDownload}
+            canAccessStory={false}
+            onUpgrade={handleUpgradeClick}
           />
         </BrandResultContainer>
 

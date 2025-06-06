@@ -24,6 +24,7 @@ export interface BrandingApiResponse {
   brandStory: string;
   brandImageUrl: string;
   imageGenerationStatus?: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  canAccessBrandStory: boolean;
   createdAt: string;
   updatedAt: string;
 }

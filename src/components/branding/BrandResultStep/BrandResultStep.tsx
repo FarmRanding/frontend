@@ -6,6 +6,8 @@ import { BRAND_IMAGE_KEYWORDS, CROP_APPEAL_KEYWORDS, LOGO_IMAGE_KEYWORDS, getKey
 import apiClient from '../../../api/axiosConfig';
 import type { BrandingApiResponse, ApiResponse } from '../../../types/branding';
 import { brandingService } from '../../../api/brandingService';
+import { fetchCurrentUserFromServer, getCurrentUser } from '../../../api/auth';
+import { useNavigate } from 'react-router-dom';
 
 // 백엔드 Grade enum과 일치하는 타입
 type GradeEnum = 'SPECIAL' | 'FIRST' | 'SECOND' | 'THIRD' | 'PREMIUM';
@@ -325,19 +327,27 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
   logoImageKeywords,
   onComplete
 }) => {
-  const [isGenerating, setIsGenerating] = useState(true);
   const [brandData, setBrandData] = useState<BrandResultData | null>(null);
+  const [isGenerating, setIsGenerating] = useState<boolean>(true);
+  const [loadingMessage, setLoadingMessage] = useState<string>('브랜드를 생성하고 있습니다...');
   const [error, setError] = useState<string>('');
-  const [loadingMessage, setLoadingMessage] = useState('브랜드를 생성하고 있습니다...');
-  const [imageStatus, setImageStatus] = useState<ImageGenerationStatus>('PENDING');
   const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
-  
+  const [imageStatus, setImageStatus] = useState<'PROCESSING' | 'COMPLETED' | 'FAILED'>('PROCESSING');
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
+  // 🔥 NEW: 멤버십 정보 상태
+  const [userMembershipType, setUserMembershipType] = useState<string>('FREE');
+  const [canAccessStory, setCanAccessStory] = useState<boolean>(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const navigate = useNavigate();
 
   // localStorage에서 브랜딩 데이터 가져오기
-  const cropName = localStorage.getItem('brandingCropName') || 'Unknown';
-  const variety = localStorage.getItem('brandingVariety') || '';
+  const cropName = localStorage.getItem('brandingCropName') || '토마토';
+  const variety = localStorage.getItem('brandingVariety') || undefined;
   const cultivationMethod = localStorage.getItem('brandingCultivationMethod') || '';
   const gradeValue = localStorage.getItem('brandingGrade') || '';
   const includeFarmNameValue = localStorage.getItem('brandingIncludeFarmName');
@@ -447,18 +457,19 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
       setCurrentProjectId(projectData.id);
       
       // 텍스트 데이터는 즉시 표시 (5초 내 완료)
-      const resultData: BrandResultData = {
+      const convertedData: BrandResultData = {
         brandName: projectData.generatedBrandName || brandName,
-        promotionText: projectData.brandConcept || `${brandName}과 함께하는 건강한 삶`,
-        story: projectData.brandStory || `${brandName}은 정성과 사랑으로 키운 특별한 농산물입니다.`,
-        imageUrl: projectData.brandImageUrl // 초기에는 undefined일 수 있음
+        promotionText: projectData.brandConcept || `${projectData.generatedBrandName || brandName}과 함께하는 건강한 삶`,
+        story: projectData.brandStory || `${projectData.generatedBrandName || brandName}은 정성과 사랑으로 키운 특별한 농산물입니다. 우리의 정직한 재배 방식과 깐깐한 품질 관리를 통해 최고의 맛과 영양을 선사합니다.`,
+        imageUrl: projectData.brandImageUrl
       };
 
-      console.log('점진적 브랜딩 결과 데이터:', resultData);
+      console.log('점진적 브랜딩 결과 데이터:', convertedData);
 
-      setBrandData(resultData);
+      setBrandData(convertedData);
       setImageStatus(projectData.imageGenerationStatus || 'PROCESSING');
       setIsGenerating(false);
+      setCanAccessStory(projectData.canAccessBrandStory);
 
       // 이미지가 아직 생성 중이면 polling 시작
       if (!projectData.brandImageUrl || projectData.imageGenerationStatus === 'PROCESSING') {
@@ -527,16 +538,17 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
           console.log('최근 프로젝트 발견:', recentProject);
           setCurrentProjectId(recentProject.id);
           
-          const resultData: BrandResultData = {
+          const convertedData: BrandResultData = {
             brandName: recentProject.generatedBrandName || brandName,
-            promotionText: recentProject.brandConcept || `${brandName}과 함께하는 건강한 삶`,
-            story: recentProject.brandStory || `${brandName}은 정성과 사랑으로 키운 특별한 농산물입니다.`,
+            promotionText: recentProject.brandConcept || `${recentProject.generatedBrandName || brandName}과 함께하는 건강한 삶`,
+            story: recentProject.brandStory || `${recentProject.generatedBrandName || brandName}은 정성과 사랑으로 키운 특별한 농산물입니다. 우리의 정직한 재배 방식과 깐깐한 품질 관리를 통해 최고의 맛과 영양을 선사합니다.`,
             imageUrl: recentProject.brandImageUrl
           };
 
-          setBrandData(resultData);
+          setBrandData(convertedData);
           setImageStatus(recentProject.imageGenerationStatus || 'PROCESSING');
           setIsGenerating(false);
+          setCanAccessStory(recentProject.canAccessBrandStory);
 
           // 이미지가 아직 생성 중이면 polling 시작
           if (!recentProject.brandImageUrl || recentProject.imageGenerationStatus === 'PROCESSING') {
@@ -642,6 +654,43 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
     }, 5000); // 5초마다 확인
   };
 
+  // 🔥 사용자 멤버십 정보 로드
+  useEffect(() => {
+    const loadUserMembershipInfo = async () => {
+      try {
+        const currentUser = await fetchCurrentUserFromServer();
+        if (currentUser) {
+          const membershipTypeStr = typeof currentUser.membershipType === 'string' 
+            ? currentUser.membershipType 
+            : currentUser.membershipType?.toString() || 'FREE';
+          
+          setUserMembershipType(membershipTypeStr);
+          setCanAccessStory(membershipTypeStr === 'PREMIUM_PLUS'); // 🔥 PREMIUM_PLUS만 접근 가능
+          
+          console.log('🔍 브랜딩 완성 - 사용자 멤버십 정보 로드:', membershipTypeStr);
+          console.log('🔍 브랜딩 완성 - 브랜드 스토리 접근 권한:', membershipTypeStr === 'PREMIUM_PLUS');
+        } else {
+          // 로컬 정보 사용
+          const localUser = getCurrentUser();
+          if (localUser) {
+            const membershipTypeStr = typeof localUser.membershipType === 'string' 
+              ? localUser.membershipType 
+              : localUser.membershipType?.toString() || 'FREE';
+            
+            setUserMembershipType(membershipTypeStr);
+            setCanAccessStory(membershipTypeStr === 'PREMIUM_PLUS'); // 🔥 PREMIUM_PLUS만 접근 가능
+          }
+        }
+      } catch (error) {
+        console.error('❌ 브랜딩 완성 - 사용자 정보 로드 실패:', error);
+        setUserMembershipType('FREE');
+        setCanAccessStory(false);
+      }
+    };
+    
+    loadUserMembershipInfo();
+  }, []);
+
   useEffect(() => {
     generateProgressiveBrand();
     
@@ -677,6 +726,12 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
     }
   };
 
+  // 🔥 업그레이드 유도 핸들러
+  const handleUpgradeClick = () => {
+    // 마이페이지 멤버십 탭으로 이동
+    navigate('/mypage', { state: { initialTab: 'membership' } });
+  };
+
   // 이미지 상태에 따른 UI 렌더링
   const renderBrandResult = () => {
     if (!brandData) return null;
@@ -686,9 +741,10 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
     return (
       <BrandResult
         data={brandData}
-        isPremium={false}
+        canAccessStory={canAccessStory}
         onCopy={handleCopy}
         onDownload={handleDownload}
+        onUpgrade={handleUpgradeClick}
       />
     );
   };

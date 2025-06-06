@@ -2,114 +2,82 @@ import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { MemoryRouter } from 'react-router-dom';
 import BrandResult from '../components/common/BrandResult/BrandResult';
+import type { BrandResultData } from '../components/common/BrandResult/BrandResult';
+
+const mockData: BrandResultData = {
+  brandName: '하은 감자',
+  promotionText: '자연이 키운 진심의 맛',
+  story: `경기도 화성시 동탄면에서 자란 밤양갱 큐트케어는 특등급의 프리미엄 양갱입니다. 우리의 양갱은 최상의 품질을 위해 신선한 밤을 엄선하여 사용하며, 양갱공장에서 정성스럽게 만들어집니다. 부드럽고 쫄깃한 식감은 물론, 달콤한 맛이 입안을 가득 채워줍니다. 건강과 다이어트를 생각하는 여러분을 위해 설계된 이 양갱은, 고품질의 재료만을 사용하여 고객님의 건강을 최우선으로 생각합니다. 따뜻한 순간에 함께하고 싶은 밤양갱 큐트케어, 지금 바로 만나보세요!`,
+  imageUrl: 'https://placehold.co/200x200/E8F4FF/1F41BB?text=Brand+Logo'
+};
 
 const meta: Meta<typeof BrandResult> = {
   title: 'Components/BrandResult',
   component: BrandResult,
   parameters: {
     layout: 'centered',
-    backgrounds: {
-      default: 'light',
-      values: [
-        { name: 'light', value: '#F4FAFF' },
-        { name: 'white', value: '#ffffff' },
-      ],
-    },
     docs: {
       description: {
-        component: '브랜딩 완료 후 결과를 보여주는 컴포넌트입니다. 브랜드명, 홍보 문구, 스토리를 복사할 수 있고, 로고 이미지에 마우스를 올리면 다운로드 버튼이 나타납니다.'
-      }
-    }
+        component: '브랜드 생성 결과를 표시하는 컴포넌트입니다.',
+      },
+    },
   },
   argTypes: {
-    isPremium: { control: 'boolean' },
-    onCopy: { action: 'copied' },
-    onDownload: { action: 'downloaded' },
+    data: {
+      description: '브랜드 결과 데이터',
+    },
+    canAccessStory: {
+      description: '스토리 전체 접근 권한',
+      control: 'boolean',
+    },
+    onUpgrade: {
+      description: '업그레이드 버튼 클릭 핸들러',
+      action: 'upgrade-clicked',
+    },
   },
 };
 
 export default meta;
-
 type Story = StoryObj<typeof meta>;
 
-const mockData = {
-  brandName: "하은 감자",
-  promotionText: "자연이 키운 진심의 맛",
-  story: `한 줄기 햇살이 강원도의 붉은 흙을 비추던 어느 봄날,
-하은 농장의 밭 한가운데 작은 씨감자가 심어졌습니다.
-그 씨감자는 아무 말 없이, 하지만 누구보다 단단한 마음으로 뿌리를 내렸습니다.
-
-하은 감자는 화학비료 대신 미생물 퇴비,
-물 맑고 공기 좋은 고랭지 토양에서 천천히 자랍니다.
-더디지만 자연의 속도에 맞춘 그 기다림은,
-감자의 속살을 더 단단하고 촉촉하게,
-맛은 더 달콤하게 만들어줍니다.
-
-이 감자를 키운 사람은,
-도시에서 내려와 흙을 배우기 시작한 청년 농부.
-바로 '하은'이라는 이름을 가진 농부는
-감자 한 알 한 알에 "정직한 먹거리, 건강한 식탁"이라는 신념을 담습니다.`,
-  imageUrl: "https://placehold.co/200x200/4F46E5/ffffff?text=Brand+Logo"
-};
-
+// 기본 스토리 (접근 권한 없음)
 export const Default: Story = {
   args: {
     data: mockData,
-    isPremium: false,
+    canAccessStory: false,
+    onUpgrade: () => console.log('업그레이드 버튼 클릭'),
   },
-  parameters: {
-    docs: {
-      description: {
-        story: '기본 브랜딩 결과 화면입니다. 로고 이미지에 마우스를 올리면 우측 하단에서 다운로드 버튼이 슬라이드업 애니메이션으로 나타납니다.'
-      }
-    }
-  }
 };
 
-export const Premium: Story = {
+// 프리미엄 사용자 (접근 권한 있음)
+export const PremiumUser: Story = {
   args: {
     data: mockData,
-    isPremium: true,
+    canAccessStory: true,
+    onUpgrade: () => console.log('업그레이드 버튼 클릭'),
   },
-  parameters: {
-    docs: {
-      description: {
-        story: '프리미엄 사용자의 브랜딩 결과입니다. 스토리 더보기 버튼이 표시되지 않습니다.'
-      }
-    }
-  }
 };
 
+// 이미지 없는 상태
+export const WithoutImage: Story = {
+  args: {
+    data: {
+      ...mockData,
+      imageUrl: undefined,
+    },
+    canAccessStory: false,
+    onUpgrade: () => console.log('업그레이드 버튼 클릭'),
+  },
+};
+
+// 짧은 스토리 (더보기 없음)
 export const ShortStory: Story = {
   args: {
     data: {
       ...mockData,
-      story: "간단한 브랜드 스토리입니다. 이 정도 길이면 더보기 버튼이 나타나지 않을 수도 있습니다."
+      story: '간단한 브랜드 스토리입니다.',
     },
-    isPremium: false,
+    canAccessStory: true,
+    onUpgrade: () => console.log('업그레이드 버튼 클릭'),
   },
-  parameters: {
-    docs: {
-      description: {
-        story: '짧은 스토리가 있는 브랜딩 결과입니다.'
-      }
-    }
-  }
-};
-
-export const LongBrandName: Story = {
-  args: {
-    data: {
-      ...mockData,
-      brandName: "아주 긴 브랜드 이름으로 텍스트 오버플로우를 테스트합니다"
-    },
-    isPremium: false,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: '긴 브랜드명이 있는 경우의 레이아웃을 테스트합니다.'
-      }
-    }
-  }
 }; 

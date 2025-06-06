@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
-import iconClose from '../../../assets/icon-close.svg';
+import iconClose from '../../../assets/icon-cancel.svg';
 import iconBrush from '../../../assets/icon-brush.svg';
 import iconCopy from '../../../assets/icon-copy.svg';
 import iconDownload from '../../../assets/icon-download.svg';
 import { getKeywordLabel } from '../../../constants/keywords';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { BrandingHistory } from '../../../types/branding';
+import { fetchCurrentUserFromServer, getCurrentUser } from '../../../api/auth';
+import MoreButton from '../MoreButton/MoreButton';
 
 // 애니메이션
 const slideUp = keyframes`
@@ -259,20 +263,68 @@ const BrandDescription = styled.p`
   border: 1px solid rgba(31, 65, 187, 0.05);
 `;
 
-const BrandStory = styled.p`
+const BrandStory = styled.div`
+  padding: 16px;
+  background: #fafbff;
+  border-radius: 12px;
+  border: 1px solid rgba(31, 65, 187, 0.1);
+  box-sizing: border-box;
   font-family: 'Inter', sans-serif;
   font-weight: 400;
-  font-size: 15px;
-  line-height: 1.7;
-  color: #374151;
-  margin: 0;
-  padding: 24px;
-  background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(31, 65, 187, 0.08);
-  word-break: keep-all;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: left;
+  color: #2d2d2d;
   white-space: pre-wrap;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: rgba(31, 65, 187, 0.2);
+    background: #f7f9ff;
+  }
+`;
+
+const StoryContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const StoryField = styled.div<{ isExpanded: boolean; canAccess: boolean }>`
+  padding: 16px;
+  background: #fafbff;
+  border-radius: 12px;
+  border: 1px solid rgba(31, 65, 187, 0.1);
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #2d2d2d;
+  white-space: pre-wrap;
+  position: relative;
+  transition: all 0.2s ease;
+  
+  ${props => !props.canAccess && !props.isExpanded && `
+    max-height: 120px;
+    overflow: hidden;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background: linear-gradient(transparent, #fafbff);
+      pointer-events: none;
+    }
+  `}
+
+  &:hover {
+    border-color: rgba(31, 65, 187, 0.2);
+    background: #f7f9ff;
+  }
 `;
 
 const KeywordSection = styled.div`
@@ -476,8 +528,75 @@ const BrandingDetailModal: React.FC<BrandingDetailModalProps> = ({
   brandingHistory,
   onClose
 }) => {
+  const navigate = useNavigate();
+  const { showSuccess, showError, showInfo, showWarning } = useNotification();
   const [isClosing, setIsClosing] = useState(false);
-  const { showSuccess } = useNotification();
+  
+  // 🔥 멤버십 상태 및 스토리 표시 관련 상태
+  const [userMembershipType, setUserMembershipType] = useState<string>('FREE');
+  const [canAccessStory, setCanAccessStory] = useState<boolean>(false);
+  const [isStoryExpanded, setIsStoryExpanded] = useState<boolean>(false);
+
+  // 🔥 사용자 멤버십 정보 로드
+  useEffect(() => {
+    const loadUserMembershipInfo = async () => {
+      try {
+        const currentUser = await fetchCurrentUserFromServer();
+        if (currentUser) {
+          const membershipTypeStr = typeof currentUser.membershipType === 'string' 
+            ? currentUser.membershipType 
+            : currentUser.membershipType?.toString() || 'FREE';
+          
+          setUserMembershipType(membershipTypeStr);
+          setCanAccessStory(membershipTypeStr === 'PREMIUM_PLUS');
+          
+          console.log('🔍 브랜딩 상세 - 사용자 멤버십 정보 로드:', membershipTypeStr);
+          console.log('🔍 브랜딩 상세 - 브랜드 스토리 접근 권한:', membershipTypeStr === 'PREMIUM_PLUS');
+        } else {
+          // 로컬 정보 사용
+          const localUser = getCurrentUser();
+          if (localUser) {
+            const membershipTypeStr = typeof localUser.membershipType === 'string' 
+              ? localUser.membershipType 
+              : localUser.membershipType?.toString() || 'FREE';
+            
+            setUserMembershipType(membershipTypeStr);
+            setCanAccessStory(membershipTypeStr === 'PREMIUM_PLUS');
+          }
+        }
+      } catch (error) {
+        console.error('❌ 브랜딩 상세 - 사용자 정보 로드 실패:', error);
+        setUserMembershipType('FREE');
+        setCanAccessStory(false);
+      }
+    };
+    
+    if (isVisible) {
+      loadUserMembershipInfo();
+    }
+  }, [isVisible]);
+
+  // 🔥 스토리 미리보기 텍스트 생성 (BrandResult와 동일한 로직)
+  const getPreviewText = (text: string, maxLength: number = 80): string => {
+    if (text.length <= maxLength) return text;
+    
+    // 문장 단위로 자르기 (마침표, 느낌표, 물음표 기준)
+    const sentences = text.split(/([.!?])/);
+    let preview = '';
+    
+    for (let i = 0; i < sentences.length; i += 2) {
+      const sentence = sentences[i] + (sentences[i + 1] || '');
+      if ((preview + sentence).length > maxLength) break;
+      preview += sentence;
+    }
+    
+    // 문장 단위로 자를 수 없으면 글자 수로 자르기
+    if (preview.length === 0) {
+      preview = text.substring(0, maxLength);
+    }
+    
+    return preview.trim() + '...';
+  };
 
   const handleClose = () => {
     setIsClosing(true);
@@ -521,9 +640,20 @@ const BrandingDetailModal: React.FC<BrandingDetailModalProps> = ({
       document.body.removeChild(link);
       
       showSuccess('다운로드 시작', '브랜드 로고 이미지 다운로드가 시작되었습니다.');
+      console.log('다운로드 시작:', imageUrl);
     } catch (error) {
       console.error('이미지 다운로드 실패:', error);
-      showSuccess('다운로드 실패', '이미지 다운로드에 실패했습니다.');
+      showError('다운로드 실패', '이미지 다운로드에 실패했습니다.');
+    }
+  };
+
+  // 🔥 더보기 핸들러
+  const handleMoreClick = () => {
+    if (canAccessStory) {
+      setIsStoryExpanded(!isStoryExpanded);
+    } else {
+      // 마이페이지 멤버십 탭으로 이동
+      navigate('/mypage', { state: { initialTab: 'membership' } });
     }
   };
 
@@ -601,7 +731,24 @@ const BrandingDetailModal: React.FC<BrandingDetailModalProps> = ({
                   <CopyIcon src={iconCopy} alt="복사" />
                 </CopyButton>
               </LabelContainer>
-              <BrandStory>{brandingHistory.story}</BrandStory>
+              <StoryContainer>
+                <StoryField isExpanded={isStoryExpanded} canAccess={canAccessStory}>
+                  {!canAccessStory ? 
+                    getPreviewText(brandingHistory.story) : 
+                    brandingHistory.story
+                  }
+                </StoryField>
+                {!canAccessStory && (
+                  <MoreButton onClick={handleMoreClick}>
+                    프리미엄 플러스 구독하고 더 보기
+                  </MoreButton>
+                )}
+                {canAccessStory && brandingHistory.story.length > 200 && (
+                  <MoreButton onClick={handleMoreClick}>
+                    {isStoryExpanded ? '접기' : '더보기'}
+                  </MoreButton>
+                )}
+              </StoryContainer>
             </FieldContainer>
             
             {/* 키워드 섹션 */}

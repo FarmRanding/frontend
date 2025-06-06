@@ -267,25 +267,51 @@ const StoryField = styled.div<{ isExpanded: boolean; isPremium: boolean }>`
   }
 `;
 
-const StoryText = styled.span<{ isExpanded: boolean }>`
+const StoryText = styled.div<{ isExpanded: boolean }>`
   font-family: 'Inter', sans-serif;
   font-weight: 400;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
-  text-align: left;
-  color: #4a4a4a;
-  width: 100%;
-  display: ${props => props.isExpanded ? 'block' : '-webkit-box'};
-  -webkit-line-clamp: ${props => props.isExpanded ? 'none' : '2'};
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: #2d2d2d;
+  white-space: pre-wrap;
+  word-break: keep-all;
+  
+  ${props => !props.isExpanded && `
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  `}
+`;
+
+const PreviewText = styled.div`
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #2d2d2d;
+  white-space: pre-wrap;
   word-break: keep-all;
 `;
 
 const StoryContainer = styled.div`
   width: 100%;
   position: relative;
+`;
+
+const Section = styled.div`
+  width: 100%;
+  margin-bottom: 24px;
+`;
+
+const SectionTitle = styled.h3`
+  font-family: 'Jalnan 2', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.4;
+  color: #1a1a1a;
+  margin-bottom: 16px;
 `;
 
 export interface BrandResultData {
@@ -295,38 +321,31 @@ export interface BrandResultData {
   imageUrl?: string;
 }
 
-interface BrandResultProps {
+export interface BrandResultProps {
   data: BrandResultData;
-  isPremium?: boolean;
-  onCopy?: (field: 'brandName' | 'promotionText' | 'story', value: string) => void;
-  onDownload?: (imageUrl: string) => void;
-  className?: string;
+  canAccessStory?: boolean;
+  onUpgrade?: () => void;
 }
 
 const BrandResult: React.FC<BrandResultProps> = ({
   data,
-  isPremium = false,
-  onCopy,
-  onDownload,
-  className,
+  canAccessStory = false,
+  onUpgrade,
 }) => {
   const [isStoryExpanded, setIsStoryExpanded] = useState(false);
-  const [isImageLoading, setIsImageLoading] = useState(!!data.imageUrl);
+  const [isImageLoading, setIsImageLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  const handleCopy = (field: 'brandName' | 'promotionText' | 'story', value: string) => {
-    navigator.clipboard.writeText(value);
-    onCopy?.(field, value);
-  };
-
-  const handleDownload = () => {
-    if (data.imageUrl && !isImageLoading && !imageError) {
-      onDownload?.(data.imageUrl);
-    }
-  };
-
   const handleMoreClick = () => {
-    setIsStoryExpanded(!isStoryExpanded);
+    if (canAccessStory) {
+      setIsStoryExpanded(!isStoryExpanded);
+    } else {
+      if (onUpgrade) {
+        onUpgrade();
+      } else {
+        window.location.href = '/mypage#membership';
+      }
+    }
   };
 
   const handleImageLoad = () => {
@@ -339,6 +358,28 @@ const BrandResult: React.FC<BrandResultProps> = ({
     setImageError(true);
   };
 
+  // 🔥 스토리 미리보기 텍스트 생성
+  const getPreviewText = (text: string, maxLength: number = 80): string => {
+    if (text.length <= maxLength) return text;
+    
+    // 문장 단위로 자르기 (마침표, 느낌표, 물음표 기준)
+    const sentences = text.split(/([.!?])/);
+    let preview = '';
+    
+    for (let i = 0; i < sentences.length; i += 2) {
+      const sentence = sentences[i] + (sentences[i + 1] || '');
+      if ((preview + sentence).length > maxLength) break;
+      preview += sentence;
+    }
+    
+    // 문장 단위로 자를 수 없으면 글자 수로 자르기
+    if (preview.length === 0) {
+      preview = text.substring(0, maxLength);
+    }
+    
+    return preview.trim() + '...';
+  };
+
   // 이미지 URL이 변경될 때 로딩 상태 초기화
   React.useEffect(() => {
     if (data.imageUrl) {
@@ -349,8 +390,6 @@ const BrandResult: React.FC<BrandResultProps> = ({
       setImageError(false);
     }
   }, [data.imageUrl]);
-
-  const showMoreButton = !isPremium;
 
   const renderImageContent = () => {
     // 이미지 URL이 없는 경우 (아직 생성 중)
@@ -389,7 +428,7 @@ const BrandResult: React.FC<BrandResultProps> = ({
   };
 
   return (
-    <BrandResultCard className={className}>
+    <BrandResultCard>
       <ContentFrame>
         <FieldContainer>
           <LabelContainer>
@@ -412,7 +451,7 @@ const BrandResult: React.FC<BrandResultProps> = ({
             />
           )}
           {data.imageUrl && !isImageLoading && !imageError && (
-            <DownloadButton onClick={handleDownload}>
+            <DownloadButton onClick={() => {}}>
               <DownloadIcon src={iconDownload} alt="다운로드" />
             </DownloadButton>
           )}
@@ -421,7 +460,7 @@ const BrandResult: React.FC<BrandResultProps> = ({
         <FieldContainer>
           <LabelContainer>
             <FieldLabel>홍보 문구</FieldLabel>
-            <CopyButton onClick={() => handleCopy('promotionText', data.promotionText)}>
+            <CopyButton onClick={() => {}}>
               <CopyIcon src={iconCopy} alt="복사" />
             </CopyButton>
           </LabelContainer>
@@ -433,19 +472,28 @@ const BrandResult: React.FC<BrandResultProps> = ({
         <FieldContainer>
           <LabelContainer>
             <FieldLabel>스토리</FieldLabel>
-            <CopyButton onClick={() => handleCopy('story', data.story)}>
+            <CopyButton onClick={() => {}}>
               <CopyIcon src={iconCopy} alt="복사" />
             </CopyButton>
           </LabelContainer>
           <StoryContainer>
-            <StoryField isExpanded={isStoryExpanded} isPremium={isPremium}>
-              <StoryText isExpanded={isStoryExpanded}>
-                {data.story}
-              </StoryText>
+            <StoryField isExpanded={isStoryExpanded} isPremium={canAccessStory}>
+              {!canAccessStory ? (
+                <PreviewText>{getPreviewText(data.story)}</PreviewText>
+              ) : (
+                <StoryText isExpanded={isStoryExpanded}>
+                  {data.story}
+                </StoryText>
+              )}
             </StoryField>
-            {showMoreButton && (
+            {!canAccessStory && (
               <MoreButton onClick={handleMoreClick}>
-                {isStoryExpanded ? '접기' : '프리미엄 구독하고 더 보기'}
+                프리미엄 플러스 구독하고 더 보기
+              </MoreButton>
+            )}
+            {canAccessStory && data.story.length > 200 && (
+              <MoreButton onClick={handleMoreClick}>
+                {isStoryExpanded ? '접기' : '더보기'}
               </MoreButton>
             )}
           </StoryContainer>

@@ -11,11 +11,11 @@ interface SignupRequest {
 interface UserResponse {
   id: number;
   email: string;
-  nickname: string;
+  nickname?: string;
   name?: string;
   profileImage?: string;
-  provider: string;
-  membershipType: string;
+  provider?: string;
+  membershipType: string | { name: string } | any;
   farmName?: string;
   location?: string;
   createdAt: string;
