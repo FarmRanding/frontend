@@ -7,7 +7,7 @@ import iconCopy from '../../../assets/icon-copy.svg';
 import iconDownload from '../../../assets/icon-download.svg';
 import { getKeywordLabel } from '../../../constants/keywords';
 import { useNotification } from '../../../contexts/NotificationContext';
-import { BrandingHistory } from '../../../types/branding';
+import { BrandingHistory as BrandingHistoryType } from '../../../types/branding';
 import { fetchCurrentUserFromServer, getCurrentUser } from '../../../api/auth';
 import MoreButton from '../MoreButton/MoreButton';
 
@@ -519,7 +519,7 @@ interface BrandingHistory {
 
 interface BrandingDetailModalProps {
   isVisible: boolean;
-  brandingHistory: BrandingHistory | null;
+  brandingHistory: BrandingHistoryType | null;
   onClose: () => void;
 }
 

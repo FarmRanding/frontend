@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { StagewiseConfig } from '../../types/stagewise';
+import type { StagewiseConfig } from '@stagewise/toolbar-react';
 
 const StagewiseSetup: React.FC = () => {
   useEffect(() => {

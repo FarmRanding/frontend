@@ -8,4 +8,6 @@ declare module '@stagewise/toolbar-react' {
   }
 
   export const StagewiseToolbar: React.FC<StagewiseToolbarProps>;
-} 
+}
+
+export {};

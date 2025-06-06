@@ -332,8 +332,8 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
   const [loadingMessage, setLoadingMessage] = useState<string>('브랜드를 생성하고 있습니다...');
   const [error, setError] = useState<string>('');
   const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
-  const [imageStatus, setImageStatus] = useState<'PROCESSING' | 'COMPLETED' | 'FAILED'>('PROCESSING');
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [imageStatus, setImageStatus] = useState<'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'>('PROCESSING');
+  const pollingIntervalRef = useRef<number | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   
   // 🔥 NEW: 멤버십 정보 상태
@@ -341,7 +341,7 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
   const [canAccessStory, setCanAccessStory] = useState<boolean>(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<number | null>(null);
 
   const navigate = useNavigate();
 
