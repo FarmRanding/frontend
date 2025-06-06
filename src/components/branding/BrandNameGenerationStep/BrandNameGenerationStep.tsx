@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { brandingService, BrandNameRequest } from '../../../api/brandingService';
 import iconPencil from '../../../assets/icon-pencil.svg'; // 🔥 NEW: 프로젝트 아이콘 import
+import { getCurrentUser } from '../../../api/auth';
 
 // 애니메이션들
 const fadeIn = keyframes`
@@ -282,9 +283,27 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editingValue, setEditingValue] = useState<string>('');
 
+  // 🔥 NEW: 멤버십 정보 관리
+  const [userMembershipType, setUserMembershipType] = useState<string>('FREE');
+  const [maxRegenerations, setMaxRegenerations] = useState<number>(3);
+
   // 브랜딩 데이터에서 작물명과 키워드 추출
   const cropName = localStorage.getItem('brandingCropName') || '토마토'; // 기본값
-  const variety = localStorage.getItem('brandingVariety') || undefined; // 품종 정보
+  const variety = localStorage.getItem('brandingVariety') || undefined;
+
+  // 🔥 NEW: 멤버십별 제한 설정
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+    if (currentUser) {
+      setUserMembershipType(currentUser.membershipType);
+      // 멤버십별 재생성 제한 설정
+      if (currentUser.membershipType === 'PRO') {
+        setMaxRegenerations(10);
+      } else {
+        setMaxRegenerations(3);
+      }
+    }
+  }, []);
 
   const startGeneration = async () => {
     // 🔥 키워드 검증
@@ -306,7 +325,8 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
         variety,
         brandingKeywords,
         cropAppealKeywords,
-        previousBrandNames
+        previousBrandNames,
+        regenerationCount // 🔥 NEW: 재생성 횟수 전달
       };
       
       console.log('브랜드명 생성 요청 데이터:', request);
@@ -363,17 +383,27 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
         }, 150);
       }, 500);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('브랜드명 생성 실패:', error);
-      setError('브랜드명 생성에 실패했습니다. 다시 시도해주세요.');
+      
+      // 🔥 NEW: 멤버십별 제한 초과 에러 처리
+      if (error.response?.data?.code === 'FR404') {
+        const membershipName = userMembershipType === 'PRO' ? '프로' : '무료';
+        setError(`브랜드명 재생성은 ${membershipName} 멤버십은 ${maxRegenerations}번까지 가능합니다. ${userMembershipType === 'FREE' ? '더 많은 재생성을 원하시면 멤버십을 업그레이드해주세요.' : ''}`);
+      } else {
+        setError('브랜드명 생성에 실패했습니다. 다시 시도해주세요.');
+      }
+      
       setStatus('error');
       
-      // 에러 시 fallback 브랜드명 사용
-      const fallbackBrandName = generateBrandName(brandingKeywords.concat(cropAppealKeywords));
-      setBrandName(fallbackBrandName);
-      setStatus('complete');
-      onBrandNameGenerated(fallbackBrandName);
-      onValidationChange(true);
+      // 에러 시 fallback 브랜드명 사용 (제한 초과가 아닌 경우만)
+      if (error.response?.data?.code !== 'FR404') {
+        const fallbackBrandName = generateBrandName(brandingKeywords.concat(cropAppealKeywords));
+        setBrandName(fallbackBrandName);
+        setStatus('complete');
+        onBrandNameGenerated(fallbackBrandName);
+        onValidationChange(true);
+      }
     }
   };
 
@@ -388,8 +418,10 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
   }, []); // 마운트 시 한 번만 실행
 
   const handleRegenerate = () => {
-    if (regenerationCount >= 3) {
-      setError('브랜드명 재생성은 무료 회원은 3번까지 가능합니다. 더 많은 재생성을 원하시면 멤버십을 업그레이드해주세요.');
+    // 🔥 NEW: 멤버십별 재생성 제한 체크
+    if (regenerationCount >= maxRegenerations) {
+      const membershipName = userMembershipType === 'PRO' ? '프로' : '무료';
+      setError(`브랜드명 재생성은 ${membershipName} 멤버십은 ${maxRegenerations}번까지 가능합니다. ${userMembershipType === 'FREE' ? '더 많은 재생성을 원하시면 멤버십을 업그레이드해주세요.' : ''}`);
       return;
     }
     
@@ -430,6 +462,13 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
     } else if (e.key === 'Escape') {
       handleCancelEdit();
     }
+  };
+
+  // 🔥 NEW: 동적 버튼 텍스트 생성
+  const getRegenerateButtonText = () => {
+    const remaining = maxRegenerations - regenerationCount;
+    const membershipName = userMembershipType === 'PRO' ? '프로' : '무료';
+    return `브랜드명 다시 생성하기 (${remaining}회 남음)`;
   };
 
   return (
@@ -502,14 +541,31 @@ const BrandNameGenerationStep: React.FC<BrandNameGenerationStepProps> = ({
         <EditHint>클릭하여 브랜드명을 수정할 수 있어요</EditHint>
       )}
 
-      {(status === 'complete' || status === 'error') && (
+      {(status === 'complete' || status === 'error') && regenerationCount < maxRegenerations && (
         <RegenerateButton 
           onClick={handleRegenerate} 
           className="regen-button"
           style={{ fontFamily: "'Jalnan 2', sans-serif" }}
         >
-          브랜드명 다시 생성하기 ({3 - regenerationCount}회 남음)
+          {getRegenerateButtonText()}
         </RegenerateButton>
+      )}
+      
+      {/* 🔥 NEW: 제한 도달 시 멤버십 업그레이드 안내 */}
+      {regenerationCount >= maxRegenerations && userMembershipType === 'FREE' && (
+        <div style={{ 
+          marginTop: '16px', 
+          fontSize: '12px', 
+          color: '#1F41BB', 
+          textAlign: 'center',
+          fontFamily: "'Inter', sans-serif",
+          padding: '12px',
+          background: 'rgba(31, 65, 187, 0.1)',
+          borderRadius: '8px',
+          border: '1px solid rgba(31, 65, 187, 0.2)'
+        }}>
+          💡 프로 멤버십으로 업그레이드하면 브랜드명을 10번까지 재생성할 수 있어요!
+        </div>
       )}
       
       {/* 🔥 NEW: 이전 생성된 브랜드명들 표시 (디버깅용, 나중에 제거 가능) */}

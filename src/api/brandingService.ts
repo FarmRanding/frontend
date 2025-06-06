@@ -29,6 +29,7 @@ export interface BrandNameRequest {
   brandingKeywords: string[];
   cropAppealKeywords?: string[];
   previousBrandNames?: string[];
+  regenerationCount?: number;
 }
 
 // 브랜드명 생성 응답 타입
