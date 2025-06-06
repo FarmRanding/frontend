@@ -305,7 +305,7 @@ const StoryField = styled.div<{ isExpanded: boolean; canAccess: boolean }>`
   position: relative;
   transition: all 0.2s ease;
   
-  ${props => !props.canAccess && !props.isExpanded && `
+  ${props => props.canAccess && !props.isExpanded && `
     max-height: 120px;
     overflow: hidden;
     
@@ -543,25 +543,55 @@ const BrandingDetailModal: React.FC<BrandingDetailModalProps> = ({
       try {
         const currentUser = await fetchCurrentUserFromServer();
         if (currentUser) {
-          const membershipTypeStr = typeof currentUser.membershipType === 'string' 
-            ? currentUser.membershipType 
-            : currentUser.membershipType?.toString() || 'FREE';
+          let membershipTypeStr = '';
+          
+          // 멤버십 타입 정규화
+          if (typeof currentUser.membershipType === 'string') {
+            membershipTypeStr = currentUser.membershipType;
+          } else if (currentUser.membershipType && typeof currentUser.membershipType === 'object' && currentUser.membershipType.name) {
+            membershipTypeStr = currentUser.membershipType.name;
+          } else {
+            membershipTypeStr = currentUser.membershipType?.toString() || 'FREE';
+          }
+          
+          // 대소문자 무관하게 체크
+          const normalizedMembershipType = membershipTypeStr.toUpperCase();
+          const hasStoryAccess = normalizedMembershipType === 'PREMIUM_PLUS' || 
+                                normalizedMembershipType === 'PREMIUMPLUS' ||
+                                normalizedMembershipType.includes('PREMIUM_PLUS') ||
+                                normalizedMembershipType.includes('PREMIUMPLUS');
           
           setUserMembershipType(membershipTypeStr);
-          setCanAccessStory(membershipTypeStr === 'PREMIUM_PLUS');
+          setCanAccessStory(hasStoryAccess);
           
           console.log('🔍 브랜딩 상세 - 사용자 멤버십 정보 로드:', membershipTypeStr);
-          console.log('🔍 브랜딩 상세 - 브랜드 스토리 접근 권한:', membershipTypeStr === 'PREMIUM_PLUS');
+          console.log('🔍 브랜딩 상세 - 정규화된 멤버십 타입:', normalizedMembershipType);
+          console.log('🔍 브랜딩 상세 - 브랜드 스토리 접근 권한:', hasStoryAccess);
         } else {
           // 로컬 정보 사용
           const localUser = getCurrentUser();
           if (localUser) {
-            const membershipTypeStr = typeof localUser.membershipType === 'string' 
-              ? localUser.membershipType 
-              : localUser.membershipType?.toString() || 'FREE';
+            let membershipTypeStr = '';
+            
+            if (typeof localUser.membershipType === 'string') {
+              membershipTypeStr = localUser.membershipType;
+            } else if (localUser.membershipType && typeof localUser.membershipType === 'object' && localUser.membershipType.name) {
+              membershipTypeStr = localUser.membershipType.name;
+            } else {
+              membershipTypeStr = localUser.membershipType?.toString() || 'FREE';
+            }
+            
+            const normalizedMembershipType = membershipTypeStr.toUpperCase();
+            const hasStoryAccess = normalizedMembershipType === 'PREMIUM_PLUS' || 
+                                  normalizedMembershipType === 'PREMIUMPLUS' ||
+                                  normalizedMembershipType.includes('PREMIUM_PLUS') ||
+                                  normalizedMembershipType.includes('PREMIUMPLUS');
             
             setUserMembershipType(membershipTypeStr);
-            setCanAccessStory(membershipTypeStr === 'PREMIUM_PLUS');
+            setCanAccessStory(hasStoryAccess);
+            
+            console.log('🔍 브랜딩 상세 - 로컬 멤버십 정보:', membershipTypeStr);
+            console.log('🔍 브랜딩 상세 - 로컬 스토리 접근 권한:', hasStoryAccess);
           }
         }
       } catch (error) {
@@ -743,7 +773,7 @@ const BrandingDetailModal: React.FC<BrandingDetailModalProps> = ({
                     프리미엄 플러스 구독하고 더 보기
                   </MoreButton>
                 )}
-                {canAccessStory && brandingHistory.story.length > 200 && (
+                {canAccessStory && brandingHistory.story.length > 120 && (
                   <MoreButton onClick={handleMoreClick}>
                     {isStoryExpanded ? '접기' : '더보기'}
                   </MoreButton>

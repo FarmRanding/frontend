@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import iconDownload from '../../../assets/icon-download.svg';
 import iconCopy from '../../../assets/icon-copy.svg';
 import MoreButton from '../MoreButton/MoreButton';
+import { fetchCurrentUserFromServer, getCurrentUser } from '../../../api/auth';
 
 // 로딩 애니메이션
 const spin = keyframes`
@@ -335,9 +336,81 @@ const BrandResult: React.FC<BrandResultProps> = ({
   const [isStoryExpanded, setIsStoryExpanded] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
+  
+  // 🔥 BrandResult 내부에서 직접 멤버십 체크 (확실한 방법)
+  const [actualCanAccessStory, setActualCanAccessStory] = useState(canAccessStory);
+
+  // 🔥 컴포넌트 마운트 시 멤버십 직접 체크
+  useEffect(() => {
+    const checkMembershipDirectly = async () => {
+      try {
+        console.log('🔥 BrandResult - 직접 멤버십 체크 시작');
+        
+        const currentUser = await fetchCurrentUserFromServer();
+        if (currentUser) {
+          let membershipTypeStr = '';
+          
+          // 멤버십 타입 정규화
+          if (typeof currentUser.membershipType === 'string') {
+            membershipTypeStr = currentUser.membershipType;
+          } else if (currentUser.membershipType && typeof currentUser.membershipType === 'object' && currentUser.membershipType.name) {
+            membershipTypeStr = currentUser.membershipType.name;
+          } else {
+            membershipTypeStr = currentUser.membershipType?.toString() || 'FREE';
+          }
+          
+          // 대소문자 무관하게 체크
+          const normalizedMembershipType = membershipTypeStr.toUpperCase();
+          const hasStoryAccess = normalizedMembershipType === 'PREMIUM_PLUS' || 
+                                normalizedMembershipType === 'PREMIUMPLUS' ||
+                                normalizedMembershipType.includes('PREMIUM_PLUS') ||
+                                normalizedMembershipType.includes('PREMIUMPLUS');
+          
+          setActualCanAccessStory(hasStoryAccess);
+          
+          console.log('🔥 BrandResult - 직접 체크 결과:');
+          console.log('- 원본 멤버십:', currentUser.membershipType);
+          console.log('- 정규화된 멤버십:', normalizedMembershipType);
+          console.log('- 스토리 접근 권한:', hasStoryAccess);
+        } else {
+          // 로컬 정보 사용
+          const localUser = getCurrentUser();
+          if (localUser) {
+            let membershipTypeStr = '';
+            
+            if (typeof localUser.membershipType === 'string') {
+              membershipTypeStr = localUser.membershipType;
+            } else if (localUser.membershipType && typeof localUser.membershipType === 'object' && localUser.membershipType.name) {
+              membershipTypeStr = localUser.membershipType.name;
+            } else {
+              membershipTypeStr = localUser.membershipType?.toString() || 'FREE';
+            }
+            
+            const normalizedMembershipType = membershipTypeStr.toUpperCase();
+            const hasStoryAccess = normalizedMembershipType === 'PREMIUM_PLUS' || 
+                                  normalizedMembershipType === 'PREMIUMPLUS' ||
+                                  normalizedMembershipType.includes('PREMIUM_PLUS') ||
+                                  normalizedMembershipType.includes('PREMIUMPLUS');
+            
+            setActualCanAccessStory(hasStoryAccess);
+            
+            console.log('🔥 BrandResult - 로컬 체크 결과:');
+            console.log('- 로컬 멤버십:', membershipTypeStr);
+            console.log('- 정규화된 멤버십:', normalizedMembershipType);
+            console.log('- 스토리 접근 권한:', hasStoryAccess);
+          }
+        }
+      } catch (error) {
+        console.error('❌ BrandResult - 멤버십 체크 실패:', error);
+        setActualCanAccessStory(false);
+      }
+    };
+    
+    checkMembershipDirectly();
+  }, []);
 
   const handleMoreClick = () => {
-    if (canAccessStory) {
+    if (actualCanAccessStory) {
       setIsStoryExpanded(!isStoryExpanded);
     } else {
       if (onUpgrade) {
@@ -477,8 +550,8 @@ const BrandResult: React.FC<BrandResultProps> = ({
             </CopyButton>
           </LabelContainer>
           <StoryContainer>
-            <StoryField isExpanded={isStoryExpanded} isPremium={canAccessStory}>
-              {!canAccessStory ? (
+            <StoryField isExpanded={isStoryExpanded} isPremium={actualCanAccessStory}>
+              {!actualCanAccessStory ? (
                 <PreviewText>{getPreviewText(data.story)}</PreviewText>
               ) : (
                 <StoryText isExpanded={isStoryExpanded}>
@@ -486,12 +559,12 @@ const BrandResult: React.FC<BrandResultProps> = ({
                 </StoryText>
               )}
             </StoryField>
-            {!canAccessStory && (
+            {!actualCanAccessStory && (
               <MoreButton onClick={handleMoreClick}>
                 프리미엄 플러스 구독하고 더 보기
               </MoreButton>
             )}
-            {canAccessStory && data.story.length > 200 && (
+            {actualCanAccessStory && data.story.length > 120 && (
               <MoreButton onClick={handleMoreClick}>
                 {isStoryExpanded ? '접기' : '더보기'}
               </MoreButton>

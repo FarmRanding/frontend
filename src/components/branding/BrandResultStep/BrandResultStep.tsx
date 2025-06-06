@@ -660,25 +660,56 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
       try {
         const currentUser = await fetchCurrentUserFromServer();
         if (currentUser) {
-          const membershipTypeStr = typeof currentUser.membershipType === 'string' 
-            ? currentUser.membershipType 
-            : currentUser.membershipType?.toString() || 'FREE';
+          let membershipTypeStr = '';
+          
+          // 멤버십 타입 정규화
+          if (typeof currentUser.membershipType === 'string') {
+            membershipTypeStr = currentUser.membershipType;
+          } else if (currentUser.membershipType && typeof currentUser.membershipType === 'object' && currentUser.membershipType.name) {
+            membershipTypeStr = currentUser.membershipType.name;
+          } else {
+            membershipTypeStr = currentUser.membershipType?.toString() || 'FREE';
+          }
+          
+          // 대소문자 무관하게 체크
+          const normalizedMembershipType = membershipTypeStr.toUpperCase();
+          const hasStoryAccess = normalizedMembershipType === 'PREMIUM_PLUS' || 
+                                normalizedMembershipType === 'PREMIUMPLUS' ||
+                                normalizedMembershipType.includes('PREMIUM_PLUS') ||
+                                normalizedMembershipType.includes('PREMIUMPLUS');
           
           setUserMembershipType(membershipTypeStr);
-          setCanAccessStory(membershipTypeStr === 'PREMIUM_PLUS'); // 🔥 PREMIUM_PLUS만 접근 가능
+          setCanAccessStory(hasStoryAccess);
           
           console.log('🔍 브랜딩 완성 - 사용자 멤버십 정보 로드:', membershipTypeStr);
-          console.log('🔍 브랜딩 완성 - 브랜드 스토리 접근 권한:', membershipTypeStr === 'PREMIUM_PLUS');
+          console.log('🔍 브랜딩 완성 - 정규화된 멤버십 타입:', normalizedMembershipType);
+          console.log('🔍 브랜딩 완성 - 브랜드 스토리 접근 권한:', hasStoryAccess);
+          console.log('🔍 브랜딩 완성 - 서버 응답 전체:', currentUser);
         } else {
           // 로컬 정보 사용
           const localUser = getCurrentUser();
           if (localUser) {
-            const membershipTypeStr = typeof localUser.membershipType === 'string' 
-              ? localUser.membershipType 
-              : localUser.membershipType?.toString() || 'FREE';
+            let membershipTypeStr = '';
+            
+            if (typeof localUser.membershipType === 'string') {
+              membershipTypeStr = localUser.membershipType;
+            } else if (localUser.membershipType && typeof localUser.membershipType === 'object' && localUser.membershipType.name) {
+              membershipTypeStr = localUser.membershipType.name;
+            } else {
+              membershipTypeStr = localUser.membershipType?.toString() || 'FREE';
+            }
+            
+            const normalizedMembershipType = membershipTypeStr.toUpperCase();
+            const hasStoryAccess = normalizedMembershipType === 'PREMIUM_PLUS' || 
+                                  normalizedMembershipType === 'PREMIUMPLUS' ||
+                                  normalizedMembershipType.includes('PREMIUM_PLUS') ||
+                                  normalizedMembershipType.includes('PREMIUMPLUS');
             
             setUserMembershipType(membershipTypeStr);
-            setCanAccessStory(membershipTypeStr === 'PREMIUM_PLUS'); // 🔥 PREMIUM_PLUS만 접근 가능
+            setCanAccessStory(hasStoryAccess);
+            
+            console.log('🔍 브랜딩 완성 - 로컬 멤버십 정보:', membershipTypeStr);
+            console.log('🔍 브랜딩 완성 - 로컬 스토리 접근 권한:', hasStoryAccess);
           }
         }
       } catch (error) {
@@ -736,14 +767,17 @@ const BrandResultStep: React.FC<BrandResultStepProps> = ({
   const renderBrandResult = () => {
     if (!brandData) return null;
 
+    // 🔥 즉시 디버깅 - 실제 전달되는 값 확인
+    console.log('🚨 BrandResult 렌더링 시점 - canAccessStory:', canAccessStory);
+    console.log('🚨 BrandResult 렌더링 시점 - userMembershipType:', userMembershipType);
+    console.log('🚨 BrandResult 렌더링 시점 - brandData:', brandData);
+
     // 모든 상태에서 BrandResult 컴포넌트만 렌더링
     // 이미지 로딩/실패 상태는 BrandResult 컴포넌트 내부에서 처리됨
     return (
       <BrandResult
         data={brandData}
         canAccessStory={canAccessStory}
-        onCopy={handleCopy}
-        onDownload={handleDownload}
         onUpgrade={handleUpgradeClick}
       />
     );

@@ -6,6 +6,7 @@ import BrandResult from '../../components/common/BrandResult/BrandResult';
 import KeywordTag from '../../components/common/KeywordTag/KeywordTag';
 import iconCancel from '../../assets/icon-cancel.svg';
 import { type BrandResultData } from '../../components/common/BrandResult/BrandResult';
+import { fetchCurrentUserFromServer, getCurrentUser } from '../../api/auth';
 
 // 간단한 애니메이션만 유지
 const fadeIn = keyframes`
@@ -238,6 +239,10 @@ const BrandResultPage: React.FC = () => {
   const { showSuccess, showError, showInfo, showWarning } = useNotification();
   const [brandData, setBrandData] = useState<BrandResultData | null>(null);
   const [showAllKeywords, setShowAllKeywords] = useState(false);
+  
+  // 🔥 멤버십 상태 및 스토리 접근 권한
+  const [userMembershipType, setUserMembershipType] = useState<string>('FREE');
+  const [canAccessStory, setCanAccessStory] = useState<boolean>(false);
 
   // 이전 페이지에서 전달받은 데이터
   const state = location.state as LocationState;
@@ -255,8 +260,75 @@ const BrandResultPage: React.FC = () => {
   const visibleKeywords = showAllKeywords ? receivedKeywords : receivedKeywords.slice(0, 9);
   const hasMoreKeywords = receivedKeywords.length > 9;
 
+  // 🔥 멤버십 체크 및 브랜드 데이터 로드
   useEffect(() => {
-    setBrandData(generateBrandData(receivedBrandName));
+    const loadData = async () => {
+      try {
+        // 브랜드 데이터 설정
+        setBrandData(generateBrandData(receivedBrandName));
+        
+        // 멤버십 정보 확인
+        const currentUser = await fetchCurrentUserFromServer();
+        if (currentUser) {
+          let membershipTypeStr = '';
+          
+          // 멤버십 타입 정규화
+          if (typeof currentUser.membershipType === 'string') {
+            membershipTypeStr = currentUser.membershipType;
+          } else if (currentUser.membershipType && typeof currentUser.membershipType === 'object' && currentUser.membershipType.name) {
+            membershipTypeStr = currentUser.membershipType.name;
+          } else {
+            membershipTypeStr = currentUser.membershipType?.toString() || 'FREE';
+          }
+          
+          // 대소문자 무관하게 체크
+          const normalizedMembershipType = membershipTypeStr.toUpperCase();
+          const hasStoryAccess = normalizedMembershipType === 'PREMIUM_PLUS' || 
+                                normalizedMembershipType === 'PREMIUMPLUS' ||
+                                normalizedMembershipType.includes('PREMIUM_PLUS') ||
+                                normalizedMembershipType.includes('PREMIUMPLUS');
+          
+          setUserMembershipType(membershipTypeStr);
+          setCanAccessStory(hasStoryAccess);
+          
+          console.log('🔍 브랜드 결과 페이지 - 사용자 멤버십 정보:', membershipTypeStr);
+          console.log('🔍 브랜드 결과 페이지 - 스토리 접근 권한:', hasStoryAccess);
+        } else {
+          // 로컬 정보 사용
+          const localUser = getCurrentUser();
+          if (localUser) {
+            let membershipTypeStr = '';
+            
+            if (typeof localUser.membershipType === 'string') {
+              membershipTypeStr = localUser.membershipType;
+            } else if (localUser.membershipType && typeof localUser.membershipType === 'object' && localUser.membershipType.name) {
+              membershipTypeStr = localUser.membershipType.name;
+            } else {
+              membershipTypeStr = localUser.membershipType?.toString() || 'FREE';
+            }
+            
+            const normalizedMembershipType = membershipTypeStr.toUpperCase();
+            const hasStoryAccess = normalizedMembershipType === 'PREMIUM_PLUS' || 
+                                  normalizedMembershipType === 'PREMIUMPLUS' ||
+                                  normalizedMembershipType.includes('PREMIUM_PLUS') ||
+                                  normalizedMembershipType.includes('PREMIUMPLUS');
+            
+            setUserMembershipType(membershipTypeStr);
+            setCanAccessStory(hasStoryAccess);
+            
+            console.log('🔍 브랜드 결과 페이지 - 로컬 멤버십 정보:', membershipTypeStr);
+            console.log('🔍 브랜드 결과 페이지 - 로컬 스토리 접근 권한:', hasStoryAccess);
+          }
+        }
+      } catch (error) {
+        console.error('❌ 브랜드 결과 페이지 - 데이터 로드 실패:', error);
+        setBrandData(generateBrandData(receivedBrandName));
+        setUserMembershipType('FREE');
+        setCanAccessStory(false);
+      }
+    };
+    
+    loadData();
   }, [receivedBrandName]);
 
   const handleClose = () => {
@@ -330,7 +402,7 @@ const BrandResultPage: React.FC = () => {
         <BrandResultContainer>
           <BrandResult
             data={brandData}
-            canAccessStory={false}
+            canAccessStory={canAccessStory}
             onUpgrade={handleUpgradeClick}
           />
         </BrandResultContainer>

@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import ProtectedRoute from './components/common/ProtectedRoute/ProtectedRoute';
 import DevPanel from './components/common/DevPanel/DevPanel';
+import { StagewiseSetup } from './components/dev';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard/Home';
 import BrandingFlow from './pages/BrandingFlow/BrandingFlow';
@@ -97,6 +98,8 @@ function App() {
       <NotificationProvider>
         <Router>
           <AppContent />
+          {/* Stagewise toolbar for development mode only */}
+          <StagewiseSetup />
         </Router>
       </NotificationProvider>
     </AuthProvider>
