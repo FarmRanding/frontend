@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 import iconDownload from '../../../assets/icon-download.svg';
 import iconCopy from '../../../assets/icon-copy.svg';
 import MoreButton from '../MoreButton/MoreButton';
@@ -333,6 +334,7 @@ const BrandResult: React.FC<BrandResultProps> = ({
   canAccessStory = false,
   onUpgrade,
 }) => {
+  const navigate = useNavigate();
   const [isStoryExpanded, setIsStoryExpanded] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -413,11 +415,8 @@ const BrandResult: React.FC<BrandResultProps> = ({
     if (actualCanAccessStory) {
       setIsStoryExpanded(!isStoryExpanded);
     } else {
-      if (onUpgrade) {
-        onUpgrade();
-      } else {
-        window.location.href = '/mypage#membership';
-      }
+      // 🚀 React Router로 올바른 이동 (URL 파라미터 + state 둘 다 사용)
+      navigate('/mypage?tab=membership', { state: { initialTab: 'membership' } });
     }
   };
 

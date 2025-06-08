@@ -682,8 +682,8 @@ const BrandingDetailModal: React.FC<BrandingDetailModalProps> = ({
     if (canAccessStory) {
       setIsStoryExpanded(!isStoryExpanded);
     } else {
-      // 마이페이지 멤버십 탭으로 이동
-      navigate('/mypage', { state: { initialTab: 'membership' } });
+      // 마이페이지 멤버십 탭으로 이동 (URL 파라미터 + state 둘 다 사용)
+      navigate('/mypage?tab=membership', { state: { initialTab: 'membership' } });
     }
   };
 

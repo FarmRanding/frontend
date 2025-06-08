@@ -16,8 +16,7 @@ import iconSort from '../../assets/icon-sort.svg';
 import iconBrush from '../../assets/icon-brush.svg';
 import iconMoney from '../../assets/icon-money.svg';
 import iconPencil from '../../assets/icon-pencil.svg';
-import { fetchMyUser, updateMyUserProfile, upgradeToPremium, upgradeToPremiumPlus, type UpdateProfileRequest, type UserProfileResponse } from '../../api/userService';
-import { downgradeToPremium, downgradeToFree } from '../../api/auth';
+import { fetchMyUser, updateMyUserProfile, upgradeToPremium, upgradeToPremiumPlus, downgradeToPremium, downgradeToFree, type UpdateProfileRequest, type UserProfileResponse } from '../../api/userService';
 import { fetchBrandingList, fetchBrandingDetail, deleteBranding } from '../../api/brandingService';
 import type { UserResponse } from '../../types/user';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -395,6 +394,13 @@ const MyPage: React.FC = () => {
 
   // 사용자 정보 조회
   useEffect(() => {
+    // URL 쿼리 파라미터 확인해서 멤버십 탭으로 자동 이동
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabFromUrl = urlParams.get('tab');
+    if (tabFromUrl === 'membership') {
+      setSelectedTab('membership');
+    }
+
     const loadUserData = async () => {
       if (!authUser) {
         setLoading(false);
