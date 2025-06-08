@@ -415,8 +415,11 @@ const BrandResult: React.FC<BrandResultProps> = ({
     if (actualCanAccessStory) {
       setIsStoryExpanded(!isStoryExpanded);
     } else {
-      // 🚀 React Router로 올바른 이동 (URL 파라미터 + state 둘 다 사용)
-      navigate('/mypage?tab=membership', { state: { initialTab: 'membership' } });
+      // 🚀 멤버십 탭으로 이동 (강제 리프레시로 동일 URL 문제 해결)
+      navigate('/mypage?tab=membership', { 
+        replace: true,
+        state: { forceTabChange: Date.now() } // 고유 키로 강제 리프레시
+      });
     }
   };
 

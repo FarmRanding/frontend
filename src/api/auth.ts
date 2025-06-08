@@ -149,7 +149,7 @@ export const login = async (provider: string, code: string, redirectUri: string)
     
     throw error;
   }
-};
+}; 
 
 // 🔥 멤버십 업그레이드 API
 export const upgradeToPremium = async (): Promise<UserResponse> => {

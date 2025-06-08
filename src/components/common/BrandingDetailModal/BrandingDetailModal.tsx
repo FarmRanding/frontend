@@ -682,8 +682,12 @@ const BrandingDetailModal: React.FC<BrandingDetailModalProps> = ({
     if (canAccessStory) {
       setIsStoryExpanded(!isStoryExpanded);
     } else {
-      // 마이페이지 멤버십 탭으로 이동 (URL 파라미터 + state 둘 다 사용)
-      navigate('/mypage?tab=membership', { state: { initialTab: 'membership' } });
+      // 🚀 모달 닫기 + 멤버십 탭으로 이동 (강제 리프레시로 동일 URL 문제 해결)
+      handleClose(); // 현재 모달 닫기
+      navigate('/mypage?tab=membership', { 
+        replace: true,
+        state: { forceTabChange: Date.now() } // 고유 키로 강제 리프레시
+      });
     }
   };
 

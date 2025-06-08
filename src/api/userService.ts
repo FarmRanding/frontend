@@ -58,4 +58,22 @@ export const upgradeToPremiumPlus = async (): Promise<UserProfileResponse> => {
     return response.data.data;
   }
   throw new Error(response.data.message || '프리미엄 플러스 멤버십 업그레이드에 실패했습니다.');
+};
+
+// 프리미엄 멤버십 다운그레이드 API
+export const downgradeToPremium = async (): Promise<UserProfileResponse> => {
+  const response = await apiClient.post<ApiResponse<UserProfileResponse>>('/api/v1/users/downgrade/premium');
+  if (response.data.data) {
+    return response.data.data;
+  }
+  throw new Error(response.data.message || '프리미엄 멤버십 다운그레이드에 실패했습니다.');
+};
+
+// 무료 멤버십 다운그레이드 API
+export const downgradeToFree = async (): Promise<UserProfileResponse> => {
+  const response = await apiClient.post<ApiResponse<UserProfileResponse>>('/api/v1/users/downgrade/free');
+  if (response.data.data) {
+    return response.data.data;
+  }
+  throw new Error(response.data.message || '무료 멤버십 다운그레이드에 실패했습니다.');
 }; 

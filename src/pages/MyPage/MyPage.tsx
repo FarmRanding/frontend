@@ -392,15 +392,17 @@ const MyPage: React.FC = () => {
   const [brandingLoading, setBrandingLoading] = useState(false);
   const [brandingError, setBrandingError] = useState<string | null>(null);
 
-  // 사용자 정보 조회
+  // URL 파라미터 변경 감지 (location 변경 시마다 실행)
   useEffect(() => {
-    // URL 쿼리 파라미터 확인해서 멤버십 탭으로 자동 이동
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(location.search);
     const tabFromUrl = urlParams.get('tab');
     if (tabFromUrl === 'membership') {
       setSelectedTab('membership');
     }
+  }, [location.search, location.state]); // location.state도 감지하여 강제 탭 변경 감지
 
+  // 사용자 정보 조회
+  useEffect(() => {
     const loadUserData = async () => {
       if (!authUser) {
         setLoading(false);
