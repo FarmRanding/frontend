@@ -127,6 +127,16 @@ const PersonalInfoContainer = styled.div`
   overflow: hidden;
   position: relative;
   z-index: 10;
+  border-radius: 16px;
+  background: #FFFFFF;
+  
+  /* PersonalInfo 컴포넌트 내부 스타일 오버라이드 */
+  > div {
+    border-radius: 16px !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: hidden;
+  }
 `;
 
 const TabContainer = styled.div`
