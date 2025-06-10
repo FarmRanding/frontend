@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
-import InputField from '../../common/InputField/InputField';
+import ProductInput, { ProductInputData } from '../../common/ProductInput/ProductInput';
 import DatePicker from '../../common/DatePicker/DatePicker';
 import GradeSelector from '../../common/GradeSelector/GradeSelector';
 import iconCalendar from '../../../assets/icon-calendar.svg';
@@ -163,8 +163,9 @@ const CalendarIcon = styled.img`
 `;
 
 interface PriceQuoteData {
-  cropName: string;
-  variety: string;
+  productId: number | null;
+  garakCode: string;
+  productName: string;
   grade: string;
   harvestDate: Date | null;
 }
@@ -185,8 +186,15 @@ const PriceQuoteStep: React.FC<PriceQuoteStepProps> = ({
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isGradeSelectorOpen, setIsGradeSelectorOpen] = useState(false);
 
-  const handleInputChange = (field: keyof PriceQuoteData, value: string) => {
-    onChange({ [field]: value });
+  // 등급 입력 필드 ref
+  const gradeFieldRef = useRef<HTMLInputElement>(null);
+
+  const handleProductChange = (productData: ProductInputData) => {
+    onChange({
+      productId: productData.productId,
+      garakCode: productData.garakCode,
+      productName: productData.productName
+    });
   };
 
   const handleDateSelect = (date: Date) => {
@@ -238,8 +246,7 @@ const PriceQuoteStep: React.FC<PriceQuoteStepProps> = ({
   // 폼 유효성 검사
   useEffect(() => {
     const isValid = Boolean(
-      data.cropName.trim() &&
-      data.variety.trim() &&
+      data.productName.trim() &&
       data.harvestDate
     );
     
@@ -257,20 +264,11 @@ const PriceQuoteStep: React.FC<PriceQuoteStepProps> = ({
       <Title>당신의 작물 정보를{'\n'}입력해주세요.</Title>
       
       <FormContainer>
-        <InputField
-          label="작물명"
-          placeholder="작물명을 입력해주세요"
-          value={data.cropName}
-          onChange={(value) => handleInputChange('cropName', value)}
-          variant="default"
-        />
-
-        <InputField
-          label="품종"
-          placeholder="품종을 입력해주세요"
-          value={data.variety}
-          onChange={(value) => handleInputChange('variety', value)}
-          variant="default"
+        {/* 품목 입력 (작물명 + 품종 통합) */}
+        <ProductInput
+          value={data.productName}
+          onChange={handleProductChange}
+          nextFieldRef={gradeFieldRef}
         />
 
         <GradeContainer>

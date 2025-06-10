@@ -205,8 +205,7 @@ const DeleteIcon = styled.img`
 `;
 
 interface PriceQuoteCardProps {
-  cropName: string;
-  variety: string;
+  productName: string;
   grade: string;
   fairPrice: number;
   unit?: string;
@@ -216,8 +215,7 @@ interface PriceQuoteCardProps {
 }
 
 const PriceQuoteCard: React.FC<PriceQuoteCardProps> = ({
-  cropName,
-  variety,
+  productName,
   grade,
   fairPrice,
   unit = 'kg',
@@ -253,9 +251,9 @@ const PriceQuoteCard: React.FC<PriceQuoteCardProps> = ({
     <CardContainer onClick={handleCardClick}>
       <MainContent>
         <CropInfo>
-          <CropName>{cropName}</CropName>
+          <CropName>{productName}</CropName>
           <CropDetails>
-            {variety} • {getGradeDisplayText(grade)}
+            {getGradeDisplayText(grade)}
           </CropDetails>
         </CropInfo>
         

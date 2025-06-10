@@ -163,10 +163,11 @@ export enum PriceFlowStep {
   RESULT = 1
 }
 
-// 가격 제안 데이터 타입
+// 가격 제안 데이터 타입 (품목 통합)
 export interface PriceQuoteData {
-  cropName: string;
-  variety: string;
+  productId: number | null;
+  garakCode: string;
+  productName: string;
   grade: string;
   harvestDate: Date | null;
   estimatedPrice: number;
@@ -178,8 +179,9 @@ const PriceQuoteFlow: React.FC = () => {
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right'>('right');
   const [isCurrentStepValid, setIsCurrentStepValid] = useState(false);
   const [priceQuoteData, setPriceQuoteData] = useState<PriceQuoteData>({
-    cropName: '',
-    variety: '',
+    productId: null,
+    garakCode: '',
+    productName: '',
     grade: '',
     harvestDate: null,
     estimatedPrice: 0
@@ -223,8 +225,9 @@ const PriceQuoteFlow: React.FC = () => {
         return (
           <PriceQuoteStep
             data={{
-              cropName: priceQuoteData.cropName,
-              variety: priceQuoteData.variety,
+              productId: priceQuoteData.productId,
+              garakCode: priceQuoteData.garakCode,
+              productName: priceQuoteData.productName,
               grade: priceQuoteData.grade,
               harvestDate: priceQuoteData.harvestDate
             }}

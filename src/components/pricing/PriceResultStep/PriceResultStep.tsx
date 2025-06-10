@@ -236,8 +236,9 @@ const CompleteButton = styled.button`
 `;
 
 interface PriceQuoteData {
-  cropName: string;
-  variety: string;
+  productId: number | null;
+  garakCode: string;
+  productName: string;
   grade: string;
   harvestDate: Date | null;
   estimatedPrice: number;

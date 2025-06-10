@@ -1,6 +1,5 @@
 export interface PriceQuoteRequest {
-  cropName: string;
-  variety: string;
+  productName: string;
   grade: string;
   harvestDate: Date;
 }
