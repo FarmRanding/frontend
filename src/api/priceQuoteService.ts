@@ -184,8 +184,8 @@ export class PriceQuoteService {
         month: '2-digit',
         day: '2-digit'
       }).replace(/\./g, '.').replace(/ /g, ''),
-      unit: response.unit || 'kg',
-      quantity: response.quantity || 1
+      unit: 'kg',
+      quantity: 10
     };
   }
 } 

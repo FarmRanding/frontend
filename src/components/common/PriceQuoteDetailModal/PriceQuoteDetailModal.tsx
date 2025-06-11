@@ -550,7 +550,7 @@ const PriceQuoteDetailModal: React.FC<PriceQuoteDetailModalProps> = ({
                   <div style="width: 10px; height: 10px; background: ${yearData.color}; border-radius: 50%; margin-right: 10px; box-shadow: 0 2px 4px rgba(31, 65, 187, 0.3);"></div>
                   <span style="color: #666;">평균가격</span>
                 </div>
-                <span style="font-weight: bold; color: #1F41BB; font-size: 15px; margin-left: 20px;">${yearData.value.toLocaleString()}원</span>
+                <span style="font-weight: bold; color: #1F41BB; font-size: 15px; margin-left: 20px;">${Math.round(yearData.value).toLocaleString()}원</span>
               </div>
             `;
           }
@@ -661,7 +661,7 @@ const PriceQuoteDetailModal: React.FC<PriceQuoteDetailModalProps> = ({
               <PriceLabel>적정가격(10kg 기준)</PriceLabel>
             </PriceHeader>
             <PriceDisplay>
-              <PriceValue>{priceHistory.result.fairPrice.toLocaleString()}원</PriceValue>
+              <PriceValue>{Math.round(priceHistory.result.fairPrice).toLocaleString()}원</PriceValue>
             </PriceDisplay>
           </PriceSection>
 

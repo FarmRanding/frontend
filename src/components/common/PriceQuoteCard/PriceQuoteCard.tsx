@@ -244,7 +244,7 @@ const PriceQuoteCard: React.FC<PriceQuoteCardProps> = ({
   };
 
   const formatPrice = (price: number) => {
-    return price.toLocaleString();
+    return Math.round(price).toLocaleString();
   };
 
   return (
