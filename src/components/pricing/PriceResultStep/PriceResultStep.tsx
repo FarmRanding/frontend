@@ -44,7 +44,9 @@ const Container = styled.div`
   align-items: center;
   gap: 40px;
   width: 100%;
-  max-width: 320px;
+  max-width: 500px;
+  padding: 0 20px;
+  box-sizing: border-box;
 `;
 
 const TitleSection = styled.div`
@@ -132,6 +134,41 @@ const PriceValue = styled.span`
   animation: ${pulsePrice} 2s ease-in-out infinite;
 `;
 
+// 정보 섹션 스타일 (상세조회와 동일)
+const InfoSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  animation: ${slideInUp} 0.8s ease-out 0.1s both;
+`;
+
+const InfoItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #FFFFFF;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+`;
+
+const InfoLabel = styled.span`
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.2;
+  color: #6B7280;
+`;
+
+const InfoValue = styled.span`
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.2;
+  color: #1F2937;
+`;
+
 const ChartSection = styled.div`
   width: 100%;
   display: flex;
@@ -140,20 +177,76 @@ const ChartSection = styled.div`
   animation: ${slideInUp} 0.8s ease-out 0.4s both;
 `;
 
-const LegendContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 20px;
+const ChartTitle = styled.h3`
+  font-family: 'Jalnan 2', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.18;
+  color: #000000;
+  text-align: center;
+  margin: 0;
+  margin-bottom: 8px;
+`;
+
+const ErrorMessage = styled.div`
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #991B1B;
   margin-bottom: 12px;
+  white-space: pre-line;
+`;
+
+const DataSourceNotice = styled.div`
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #856404;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+`;
+
+const NoDataMessage = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #666;
+  font-size: 14px;
+  gap: 8px;
+  font-family: 'Inter', sans-serif;
+  
+  div:first-child {
+    font-size: 16px;
+    font-weight: 500;
+  }
+`;
+
+const LoadingMessage = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 440px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #9CA3AF;
 `;
 
 const ChartContainer = styled.div`
   width: 100%;
-  height: 280px;
+  height: 480px;
   background: #FFFFFF;
   border-radius: 12px;
   box-shadow: 0px 8px 24px 0px rgba(0, 0, 0, 0.08);
-  padding: 20px;
+  padding: 16px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -161,62 +254,20 @@ const ChartContainer = styled.div`
 
 const ChartWrapper = styled.div`
   width: 100%;
-  height: 220px;
+  height: 440px;
   position: relative;
-`;
-
-const LegendItem = styled.button<{ color: string; isActive: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: all 0.3s ease;
-  opacity: ${props => props.isActive ? 1 : 0.4};
-
-  &:hover {
-    background: rgba(31, 65, 187, 0.05);
-    transform: scale(1.05);
-  }
-
-  &:active {
-    transform: scale(0.95);
-  }
-`;
-
-const LegendColor = styled.div<{ color: string }>`
-  width: 12px;
-  height: 12px;
-  background: ${props => props.color};
-  border-radius: 50%;
-  transition: all 0.3s ease;
-
-  ${LegendItem}:hover & {
-    transform: scale(1.2);
-  }
-`;
-
-const LegendText = styled.span`
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 11px;
-  line-height: 1.2;
-  color: #6B7280;
 `;
 
 const CompleteButton = styled.button`
   width: 100%;
-  max-width: 300px;
-  padding: 17px;
+  max-width: 400px;
+  padding: 18px;
   background: #1F41BB;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-family: 'Jalnan 2', sans-serif;
   font-weight: 400;
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.18;
   color: #FFFFFF;
   cursor: pointer;
@@ -249,44 +300,145 @@ interface PriceResultStepProps {
   onComplete: () => void;
 }
 
-// 가격 데이터 생성 함수 (30일 데이터)
-const generatePriceData = (currentPrice: number) => {
-  const data = [];
-  const today = new Date();
-  
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(today.getDate() - i);
+// 가격 데이터를 가져오는 함수 (5년간 연도별 데이터)
+const fetchPriceData = async (data: PriceQuoteData) => {
+  try {
+    // 필요한 데이터가 모두 있는지 확인
+    if (!data.garakCode || !data.harvestDate || !data.grade) {
+      throw new Error('필수 가격 조회 정보가 누락되었습니다.');
+    }
+
+    // 동적 import로 서비스 로드
+    const { PriceDataService } = await import('../../../api/priceDataService');
     
-    // 최저가 (현재가격의 80-90%)
-    const minPrice = Math.round(currentPrice * (0.8 + Math.random() * 0.1));
-    // 최고가 (현재가격의 110-130%)
-    const maxPrice = Math.round(currentPrice * (1.1 + Math.random() * 0.2));
-    // 평균가 (최저가와 최고가 사이)
-    const avgPrice = Math.round((minPrice + maxPrice) / 2 + (Math.random() - 0.5) * 1000);
-    
-    data.push({
-      date: `${date.getMonth() + 1}/${date.getDate()}`,
-      minPrice,
-      maxPrice,
-      avgPrice
+    const priceData = await PriceDataService.lookupPrice({
+      garakCode: data.garakCode,
+      targetDate: data.harvestDate.toISOString().split('T')[0],
+      grade: data.grade as '특' | '상' | '중' | '하'
     });
+    
+    return priceData;
+    
+  } catch (error) {
+    console.error('가격 데이터 조회 실패:', error);
+    throw error; // 에러를 다시 던져서 상위에서 처리
   }
-  
-  return data;
 };
 
 const PriceResultStep: React.FC<PriceResultStepProps> = ({ data, onComplete }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<echarts.ECharts | null>(null);
-  const [visibleSeries, setVisibleSeries] = useState({
-    min: true,
-    max: true,
-    avg: true
-  });
+  const [priceChartData, setPriceChartData] = useState<any[]>([]);
+  const [isLoadingChart, setIsLoadingChart] = useState(true);
+  const [chartError, setChartError] = useState<string | null>(null);
+  const [priceDataSource, setPriceDataSource] = useState<'api' | 'estimated'>('api');
 
+  const handleComplete = async () => {
+    try {
+      // 가격 제안 결과 저장
+      const { PriceQuoteService } = await import('../../../api/priceQuoteService');
+      
+      // 최대/최소값 계산
+      const prices = priceChartData.map(item => item.price);
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+      const avgPrice = prices.reduce((sum, price) => sum + price, 0) / prices.length;
+      
+      const saveRequest = {
+        garakCode: data.garakCode,
+        productName: data.productName,
+        grade: data.grade,
+        harvestDate: data.harvestDate!.toISOString().split('T')[0],
+        unit: '10키로상자',
+        quantity: 1,
+        finalPrice: data.estimatedPrice,
+        minPrice,
+        maxPrice,
+        avgPrice,
+        yearlyPriceData: PriceQuoteService.yearlyPriceDataToJson(priceChartData),
+        lookupDate: new Date().toISOString().split('T')[0]
+      };
+      
+      await PriceQuoteService.savePriceQuoteResult(saveRequest);
+      console.log('가격 제안 결과 저장 완료');
+      
+    } catch (error) {
+      console.error('가격 제안 결과 저장 실패:', error);
+      // 저장 실패해도 계속 진행 (사용자 경험 방해하지 않음)
+    }
+    
+    onComplete();
+  };
+
+  // 날짜 포맷팅 함수
+  const formatDateForTitle = (date: Date | null) => {
+    if (!date) return '';
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${month}월 ${day}일자 `;
+  };
+
+  // 등급 표시 텍스트 변환 함수 (상세조회와 동일)
+  const getGradeDisplayText = (grade: string) => {
+    const gradeMap: { [key: string]: string } = {
+      '특': '특급(최고급)',
+      '상': '상급(우수)',
+      '중': '중급(보통)',
+      '하': '하급(일반)'
+    };
+    return gradeMap[grade] || grade;
+  };
+
+  // 날짜 포맷팅 함수 (상세조회와 동일)
+  const formatDate = (date: Date | null) => {
+    if (!date) return '';
+    return `${date.getFullYear()}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getDate().toString().padStart(2, '0')}.`;
+  };
+
+  // 가격 데이터 로드
   useEffect(() => {
-    if (chartRef.current) {
+    const loadPriceData = async () => {
+      setIsLoadingChart(true);
+      setChartError(null);
+      
+      try {
+        const apiPriceData = await fetchPriceData(data);
+        
+        if (apiPriceData && apiPriceData.yearlyPrices && apiPriceData.yearlyPrices.length > 0) {
+          // API 데이터를 년도 순으로 정렬 
+          const sortedData = [...apiPriceData.yearlyPrices].sort((a, b) => parseInt(a.year) - parseInt(b.year));
+          setPriceChartData(sortedData);
+          
+          // 품목명이 "품목 정보 조회 실패"나 "품목명 조회 실패"인 경우 추정 데이터로 표시
+          if (apiPriceData.productName?.includes('조회 실패') || 
+              apiPriceData.productName?.includes('실패')) {
+            setPriceDataSource('estimated');
+          } else {
+            setPriceDataSource('api');
+          }
+        } else {
+          throw new Error('유효한 가격 데이터를 받지 못했습니다.');
+        }
+      } catch (error) {
+        console.error('가격 데이터 로드 실패:', error);
+        setChartError(
+          '가락시장 가격 데이터를 불러올 수 없습니다.\n' +
+          '네트워크 상태를 확인하거나 잠시 후 다시 시도해주세요.'
+        );
+        // 에러 시 빈 배열로 설정
+        setPriceChartData([]);
+        setPriceDataSource('estimated');
+      } finally {
+        setIsLoadingChart(false);
+      }
+    };
+
+    loadPriceData();
+  }, [data]);
+
+  // 차트 렌더링
+  useEffect(() => {
+    if (chartRef.current && priceChartData.length > 0) {
       // 기존 차트 인스턴스 제거
       if (chartInstanceRef.current) {
         chartInstanceRef.current.dispose();
@@ -299,28 +451,39 @@ const PriceResultStep: React.FC<PriceResultStepProps> = ({ data, onComplete }) =
       });
       chartInstanceRef.current = chart;
 
-      const priceData = generatePriceData(data.estimatedPrice);
+      // Y축 범위 계산 (가독성 향상)
+      const prices = priceChartData.map(d => d.price);
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+      const padding = Math.max((maxPrice - minPrice) * 0.15, 1000);
+      const yAxisMin = Math.max(0, minPrice - padding);
+      const yAxisMax = maxPrice + padding;
 
       const option = {
-        animation: false,
+        animation: true,
+        animationDuration: 1200,
+        animationEasing: 'cubicOut' as const,
         grid: {
           top: 20,
-          right: 30,
-          bottom: 50,
-          left: 50
+          right: 20,
+          bottom: 40,
+          left: 15,
+          containLabel: true
         },
         xAxis: {
           type: 'category',
-          data: priceData.map(item => item.date),
+          data: priceChartData.map(item => item.year),
+          boundaryGap: false,
           axisLabel: {
-            fontSize: 10,
-            color: '#9DA3B7',
-            interval: 11,
-            rotate: 0
+            fontSize: 14,
+            color: '#333333',
+            fontWeight: 600,
+            margin: 10
           },
           axisLine: {
             lineStyle: {
-              color: '#E5E7EB'
+              color: '#E8E8E8',
+              width: 2
             }
           },
           axisTick: {
@@ -329,10 +492,16 @@ const PriceResultStep: React.FC<PriceResultStepProps> = ({ data, onComplete }) =
         },
         yAxis: {
           type: 'value',
+          min: yAxisMin,
+          max: yAxisMax,
           axisLabel: {
-            fontSize: 10,
-            color: '#9DA3B7',
-            formatter: (value: number) => `${Math.round(value / 1000)}k`
+            fontSize: 11,
+            color: '#666666',
+            fontWeight: 500,
+            margin: 4,
+            formatter: (value: number) => {
+              return `${Math.round(value / 1000)}k`;
+            }
           },
           axisLine: {
             show: false
@@ -342,93 +511,137 @@ const PriceResultStep: React.FC<PriceResultStepProps> = ({ data, onComplete }) =
           },
           splitLine: {
             lineStyle: {
-              color: '#F3F4F6',
-              opacity: 0.5
+              color: '#F0F0F0',
+              width: 1,
+              type: 'solid'
             }
           }
         },
         series: [
           {
-            name: '최저가',
+            name: '연도별 가격',
             type: 'line',
-            data: visibleSeries.min ? priceData.map(item => item.minPrice) : [],
-            lineStyle: {
-              color: '#10B981',
-              width: 2
-            },
-            itemStyle: {
-              color: '#10B981'
-            },
-            symbol: 'circle',
-            symbolSize: 4,
-            smooth: true,
-            showSymbol: false
-          },
-          {
-            name: '최고가',
-            type: 'line',
-            data: visibleSeries.max ? priceData.map(item => item.maxPrice) : [],
-            lineStyle: {
-              color: '#F6543E',
-              width: 2
-            },
-            itemStyle: {
-              color: '#F6543E'
-            },
-            symbol: 'circle',
-            symbolSize: 4,
-            smooth: true,
-            showSymbol: false
-          },
-          {
-            name: '평균가',
-            type: 'line',
-            data: visibleSeries.avg ? priceData.map(item => item.avgPrice) : [],
+            data: priceChartData.map(item => item.price),
             lineStyle: {
               color: '#1F41BB',
-              width: 3
+              width: 6,
+              shadowColor: 'rgba(31, 65, 187, 0.3)',
+              shadowBlur: 12
             },
             itemStyle: {
-              color: '#1F41BB'
+              color: '#1F41BB',
+              borderColor: '#FFFFFF',
+              borderWidth: 3,
+              shadowBlur: 8,
+              shadowColor: 'rgba(31, 65, 187, 0.4)'
+            },
+            areaStyle: {
+              color: {
+                type: 'linear',
+                x: 0,
+                y: 0,
+                x2: 0,
+                y2: 1,
+                colorStops: [{
+                  offset: 0, color: 'rgba(31, 65, 187, 0.25)'
+                }, {
+                  offset: 0.7, color: 'rgba(31, 65, 187, 0.1)'
+                }, {
+                  offset: 1, color: 'rgba(31, 65, 187, 0.02)'
+                }]
+              }
             },
             symbol: 'circle',
-            symbolSize: 5,
+            symbolSize: 18,
             smooth: true,
-            showSymbol: false
+            showSymbol: true,
+            emphasis: {
+              focus: 'series',
+              itemStyle: {
+                shadowBlur: 15,
+                shadowColor: 'rgba(31, 65, 187, 0.6)',
+                scale: 1.2
+              }
+            },
+            markPoint: {
+              data: [
+                {
+                  type: 'max',
+                  name: '최고가',
+                  itemStyle: {
+                    color: '#FF6B6B',
+                    borderColor: '#FFFFFF',
+                    borderWidth: 3,
+                    shadowBlur: 10,
+                    shadowColor: 'rgba(255, 107, 107, 0.4)'
+                  },
+                  label: {
+                    show: true,
+                    color: '#FFFFFF',
+                    fontWeight: 'bold',
+                    fontSize: 12,
+                    padding: [6, 10],
+                    formatter: () => '최대'
+                  }
+                },
+                {
+                  type: 'min', 
+                  name: '최저가',
+                  itemStyle: {
+                    color: '#51CF66',
+                    borderColor: '#FFFFFF',
+                    borderWidth: 3,
+                    shadowBlur: 10,
+                    shadowColor: 'rgba(81, 207, 102, 0.4)'
+                  },
+                  label: {
+                    show: true,
+                    color: '#FFFFFF',
+                    fontWeight: 'bold',
+                    fontSize: 12,
+                    padding: [6, 10],
+                    formatter: () => '최소'
+                  }
+                }
+              ]
+            }
           }
         ],
         tooltip: {
           trigger: 'axis',
-          backgroundColor: '#FFFFFF',
-          borderColor: '#E5E7EB',
+          backgroundColor: 'rgba(255, 255, 255, 0.96)',
+          borderColor: '#1F41BB',
           borderWidth: 1,
+          borderRadius: 12,
+          padding: [16, 20],
           textStyle: {
-            color: '#374151',
-            fontSize: 12
+            color: '#333333',
+            fontSize: 13
+          },
+          axisPointer: {
+            type: 'cross',
+            lineStyle: {
+              color: '#1F41BB',
+              width: 1,
+              type: 'dashed'
+            }
           },
           formatter: (params: any) => {
-            const date = params[0]?.axisValue;
-            if (!date) return '';
+            const yearData = params[0];
+            if (!yearData) return '';
             
-            let content = `<div style="font-weight: 600; margin-bottom: 8px;">${date}</div>`;
-            
-            params.forEach((param: any) => {
-              if (param.seriesName && param.value !== null && param.value !== undefined) {
-                const seriesKey = param.seriesName === '최저가' ? 'min' : 
-                                param.seriesName === '최고가' ? 'max' : 'avg';
-                if (visibleSeries[seriesKey]) {
-                  content += `
-                    <div style="display: flex; align-items: center; margin-bottom: 4px;">
-                      <div style="width: 8px; height: 8px; background: ${param.color}; border-radius: 50%; margin-right: 8px;"></div>
-                      <span style="flex: 1;">${param.seriesName}</span>
-                      <span style="font-weight: 600;">${param.value.toLocaleString()}원</span>
-                    </div>
-                  `;
-                }
-              }
-            });
-            
-            return content;
+            return `
+              <div style="font-weight: bold; margin-bottom: 10px; color: #1F41BB; font-size: 14px;">
+                ${yearData.axisValue}년 시장가격 (10kg 기준)
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center;">
+                  <div style="width: 10px; height: 10px; background: ${yearData.color}; border-radius: 50%; margin-right: 10px; box-shadow: 0 2px 4px rgba(31, 65, 187, 0.3);"></div>
+                  <span style="color: #666;">평균가격</span>
+                </div>
+                <span style="font-weight: bold; color: #1F41BB; font-size: 15px; margin-left: 20px;">${yearData.value.toLocaleString()}원</span>
+              </div>
+            `;
           }
         }
       };
@@ -451,65 +664,68 @@ const PriceResultStep: React.FC<PriceResultStepProps> = ({ data, onComplete }) =
         }
       };
     }
-  }, [data.estimatedPrice, visibleSeries]);
-
-  const toggleSeries = (seriesKey: keyof typeof visibleSeries) => {
-    setVisibleSeries(prev => ({
-      ...prev,
-      [seriesKey]: !prev[seriesKey]
-    }));
-  };
+  }, [priceChartData]);
 
   return (
-    <Container>
-      <TitleSection>
-        <Title>적정 가격이{'\n'}산출되었습니다!</Title>
-        
-        <PriceSection>
-          <PriceHeader>
-            <PriceIcon src={iconGraph} alt="가격" />
-            <PriceLabel>적정 가격(1kg 기준)</PriceLabel>
-          </PriceHeader>
-          <PriceDisplay>
-            <PriceValue>{data.estimatedPrice.toLocaleString()}원</PriceValue>
-          </PriceDisplay>
-        </PriceSection>
-      </TitleSection>
+          <Container>
+        <TitleSection>
+          <Title>{data.productName}의 적정 가격이{'\n'}산출되었습니다!</Title>
+          
+          <InfoSection>
+            <InfoItem>
+              <InfoLabel>품목명</InfoLabel>
+              <InfoValue>{data.productName}</InfoValue>
+            </InfoItem>
+            <InfoItem>
+              <InfoLabel>등급</InfoLabel>
+              <InfoValue>{getGradeDisplayText(data.grade)}</InfoValue>
+            </InfoItem>
+            <InfoItem>
+              <InfoLabel>수확일</InfoLabel>
+              <InfoValue>{formatDate(data.harvestDate)}</InfoValue>
+            </InfoItem>
+            <InfoItem>
+              <InfoLabel>기준 수량</InfoLabel>
+              <InfoValue>10kg</InfoValue>
+            </InfoItem>
+          </InfoSection>
+          
+          <PriceSection>
+            <PriceHeader>
+              <PriceIcon src={iconGraph} alt="가격" />
+              <PriceLabel>적정 가격(10kg 기준)</PriceLabel>
+            </PriceHeader>
+            <PriceDisplay>
+              <PriceValue>{data.estimatedPrice.toLocaleString()}원</PriceValue>
+            </PriceDisplay>
+          </PriceSection>
+        </TitleSection>
 
       <ChartSection>
-        <LegendContainer>
-          <LegendItem
-            color="#10B981"
-            isActive={visibleSeries.min}
-            onClick={() => toggleSeries('min')}
-          >
-            <LegendColor color="#10B981" />
-            <LegendText>최저가</LegendText>
-          </LegendItem>
-          <LegendItem
-            color="#F6543E"
-            isActive={visibleSeries.max}
-            onClick={() => toggleSeries('max')}
-          >
-            <LegendColor color="#F6543E" />
-            <LegendText>최고가</LegendText>
-          </LegendItem>
-          <LegendItem
-            color="#1F41BB"
-            isActive={visibleSeries.avg}
-            onClick={() => toggleSeries('avg')}
-          >
-            <LegendColor color="#1F41BB" />
-            <LegendText>평균가</LegendText>
-          </LegendItem>
-        </LegendContainer>
-        
+        <ChartTitle>{formatDateForTitle(data.harvestDate)}5년간 시장 가격 추이</ChartTitle>
+        {priceDataSource === 'estimated' && (
+          <DataSourceNotice>
+            ⚠️ 가락시장 실시간 데이터 조회가 어려워 추정 데이터를 표시하고 있습니다.
+          </DataSourceNotice>
+        )}
+        {chartError && (
+          <ErrorMessage>{chartError}</ErrorMessage>
+        )}
         <ChartContainer>
-          <ChartWrapper ref={chartRef} />
+          {isLoadingChart ? (
+            <LoadingMessage>가격 데이터를 불러오는 중...</LoadingMessage>
+          ) : priceChartData.length === 0 ? (
+            <NoDataMessage>
+              <div>📊 가격 데이터를 표시할 수 없습니다</div>
+              <div>잠시 후 다시 시도해주세요</div>
+            </NoDataMessage>
+          ) : (
+            <ChartWrapper ref={chartRef} />
+          )}
         </ChartContainer>
       </ChartSection>
 
-      <CompleteButton onClick={onComplete}>
+      <CompleteButton onClick={handleComplete}>
         완료
       </CompleteButton>
     </Container>

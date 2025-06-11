@@ -260,7 +260,7 @@ const LegendContainer = styled.div`
 
 const ChartContainer = styled.div`
   width: 100%;
-  height: 280px;
+  height: 480px;
   background: #FFFFFF;
   border-radius: 12px;
   box-shadow: 0px 8px 24px 0px rgba(0, 0, 0, 0.08);
@@ -272,7 +272,7 @@ const ChartContainer = styled.div`
 
 const ChartWrapper = styled.div`
   width: 100%;
-  height: 220px;
+  height: 440px;
   position: relative;
 `;
 
@@ -332,11 +332,7 @@ const PriceQuoteDetailModal: React.FC<PriceQuoteDetailModalProps> = ({
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.EChartsType | null>(null);
   const [isClosing, setIsClosing] = useState(false);
-  const [visibleSeries, setVisibleSeries] = useState({
-    min: true,
-    max: true,
-    avg: true
-  });
+
 
   useEffect(() => {
     if (!chartRef.current || !priceHistory || !isVisible) return;
@@ -362,26 +358,43 @@ const PriceQuoteDetailModal: React.FC<PriceQuoteDetailModalProps> = ({
         useDirtyRect: false
       });
 
+      // 연도별 가격 데이터 추출 (API에서 받은 데이터 사용)
+      const yearlyData = priceHistory.result.priceData || [];
+      const years = yearlyData.map(item => item.date);
+      const prices = yearlyData.map(item => item.avgPrice);
+      
+      // Y축 범위 계산 (가독성 향상) - 결과 페이지와 동일
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+      const padding = Math.max((maxPrice - minPrice) * 0.15, 1000);
+      const yAxisMin = Math.max(0, minPrice - padding);
+      const yAxisMax = maxPrice + padding;
+
       const option = {
-        animation: false,
+        animation: true,
+        animationDuration: 1200,
+        animationEasing: 'cubicOut' as const,
         grid: {
           top: 20,
-          right: 30,
-          bottom: 50,
-          left: 50
+          right: 20,
+          bottom: 40,
+          left: 15,
+          containLabel: true
         },
         xAxis: {
           type: 'category',
-          data: priceHistory.result.priceData.map(item => item.date),
+          data: years,
+          boundaryGap: false,
           axisLabel: {
-            fontSize: 10,
-            color: '#9DA3B7',
-            interval: 11,
-            rotate: 0
+            fontSize: 14,
+            color: '#333333',
+            fontWeight: 600,
+            margin: 10
           },
           axisLine: {
             lineStyle: {
-              color: '#E5E7EB'
+              color: '#E8E8E8',
+              width: 2
             }
           },
           axisTick: {
@@ -390,10 +403,16 @@ const PriceQuoteDetailModal: React.FC<PriceQuoteDetailModalProps> = ({
         },
         yAxis: {
           type: 'value',
+          min: yAxisMin,
+          max: yAxisMax,
           axisLabel: {
-            fontSize: 10,
-            color: '#9DA3B7',
-            formatter: (value: number) => `${Math.round(value / 1000)}k`
+            fontSize: 11,
+            color: '#666666',
+            fontWeight: 500,
+            margin: 4,
+            formatter: (value: number) => {
+              return `${Math.round(value / 1000)}k`;
+            }
           },
           axisLine: {
             show: false
@@ -403,93 +422,137 @@ const PriceQuoteDetailModal: React.FC<PriceQuoteDetailModalProps> = ({
           },
           splitLine: {
             lineStyle: {
-              color: '#F3F4F6',
-              opacity: 0.5
+              color: '#F0F0F0',
+              width: 1,
+              type: 'solid'
             }
           }
         },
         series: [
           {
-            name: '최저가',
+            name: '연도별 가격',
             type: 'line',
-            data: visibleSeries.min ? priceHistory.result.priceData.map(item => item.minPrice) : [],
-            lineStyle: {
-              color: '#10B981',
-              width: 2
-            },
-            itemStyle: {
-              color: '#10B981'
-            },
-            symbol: 'circle',
-            symbolSize: 4,
-            smooth: true,
-            showSymbol: false
-          },
-          {
-            name: '최고가',
-            type: 'line',
-            data: visibleSeries.max ? priceHistory.result.priceData.map(item => item.maxPrice) : [],
-            lineStyle: {
-              color: '#F6543E',
-              width: 2
-            },
-            itemStyle: {
-              color: '#F6543E'
-            },
-            symbol: 'circle',
-            symbolSize: 4,
-            smooth: true,
-            showSymbol: false
-          },
-          {
-            name: '평균가',
-            type: 'line',
-            data: visibleSeries.avg ? priceHistory.result.priceData.map(item => item.avgPrice) : [],
+            data: prices,
             lineStyle: {
               color: '#1F41BB',
-              width: 3
+              width: 6,
+              shadowColor: 'rgba(31, 65, 187, 0.3)',
+              shadowBlur: 12
             },
             itemStyle: {
-              color: '#1F41BB'
+              color: '#1F41BB',
+              borderColor: '#FFFFFF',
+              borderWidth: 3,
+              shadowBlur: 8,
+              shadowColor: 'rgba(31, 65, 187, 0.4)'
+            },
+            areaStyle: {
+              color: {
+                type: 'linear',
+                x: 0,
+                y: 0,
+                x2: 0,
+                y2: 1,
+                colorStops: [{
+                  offset: 0, color: 'rgba(31, 65, 187, 0.25)'
+                }, {
+                  offset: 0.7, color: 'rgba(31, 65, 187, 0.1)'
+                }, {
+                  offset: 1, color: 'rgba(31, 65, 187, 0.02)'
+                }]
+              }
             },
             symbol: 'circle',
-            symbolSize: 5,
+            symbolSize: 18,
             smooth: true,
-            showSymbol: false
+            showSymbol: true,
+            emphasis: {
+              focus: 'series',
+              itemStyle: {
+                shadowBlur: 15,
+                shadowColor: 'rgba(31, 65, 187, 0.6)',
+                scale: 1.2
+              }
+            },
+            markPoint: {
+              data: [
+                {
+                  type: 'max',
+                  name: '최고가',
+                  itemStyle: {
+                    color: '#FF6B6B',
+                    borderColor: '#FFFFFF',
+                    borderWidth: 3,
+                    shadowBlur: 10,
+                    shadowColor: 'rgba(255, 107, 107, 0.4)'
+                  },
+                  label: {
+                    show: true,
+                    color: '#FFFFFF',
+                    fontWeight: 'bold',
+                    fontSize: 12,
+                    padding: [6, 10],
+                    formatter: () => '최대'
+                  }
+                },
+                {
+                  type: 'min', 
+                  name: '최저가',
+                  itemStyle: {
+                    color: '#51CF66',
+                    borderColor: '#FFFFFF',
+                    borderWidth: 3,
+                    shadowBlur: 10,
+                    shadowColor: 'rgba(81, 207, 102, 0.4)'
+                  },
+                  label: {
+                    show: true,
+                    color: '#FFFFFF',
+                    fontWeight: 'bold',
+                    fontSize: 12,
+                    padding: [6, 10],
+                    formatter: () => '최소'
+                  }
+                }
+              ]
+            }
           }
         ],
         tooltip: {
           trigger: 'axis',
-          backgroundColor: '#FFFFFF',
-          borderColor: '#E5E7EB',
+          backgroundColor: 'rgba(255, 255, 255, 0.96)',
+          borderColor: '#1F41BB',
           borderWidth: 1,
+          borderRadius: 12,
+          padding: [16, 20],
           textStyle: {
-            color: '#374151',
-            fontSize: 12
+            color: '#333333',
+            fontSize: 13
+          },
+          axisPointer: {
+            type: 'cross',
+            lineStyle: {
+              color: '#1F41BB',
+              width: 1,
+              type: 'dashed'
+            }
           },
           formatter: (params: any) => {
-            const date = params[0]?.axisValue;
-            if (!date) return '';
+            const yearData = params[0];
+            if (!yearData) return '';
             
-            let content = `<div style="font-weight: 600; margin-bottom: 8px;">${date}</div>`;
-            
-            params.forEach((param: any) => {
-              if (param.seriesName && param.value !== null && param.value !== undefined) {
-                const seriesKey = param.seriesName === '최저가' ? 'min' : 
-                                param.seriesName === '최고가' ? 'max' : 'avg';
-                if (visibleSeries[seriesKey]) {
-                  content += `
-                    <div style="display: flex; align-items: center; margin-bottom: 4px;">
-                      <div style="width: 8px; height: 8px; background: ${param.color}; border-radius: 50%; margin-right: 8px;"></div>
-                      <span style="flex: 1;">${param.seriesName}</span>
-                      <span style="font-weight: 600;">${param.value.toLocaleString()}원</span>
-                    </div>
-                  `;
-                }
-              }
-            });
-            
-            return content;
+            return `
+              <div style="font-weight: bold; margin-bottom: 10px; color: #1F41BB; font-size: 14px;">
+                ${yearData.axisValue}년 시장가격 (10kg 기준)
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center;">
+                  <div style="width: 10px; height: 10px; background: ${yearData.color}; border-radius: 50%; margin-right: 10px; box-shadow: 0 2px 4px rgba(31, 65, 187, 0.3);"></div>
+                  <span style="color: #666;">평균가격</span>
+                </div>
+                <span style="font-weight: bold; color: #1F41BB; font-size: 15px; margin-left: 20px;">${yearData.value.toLocaleString()}원</span>
+              </div>
+            `;
           }
         }
       };
@@ -510,7 +573,7 @@ const PriceQuoteDetailModal: React.FC<PriceQuoteDetailModalProps> = ({
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  }, [priceHistory, visibleSeries, isVisible]);
+  }, [priceHistory, isVisible]);
 
   useEffect(() => {
     return () => {
@@ -535,12 +598,7 @@ const PriceQuoteDetailModal: React.FC<PriceQuoteDetailModalProps> = ({
     }
   };
 
-  const toggleSeries = (seriesKey: keyof typeof visibleSeries) => {
-    setVisibleSeries(prev => ({
-      ...prev,
-      [seriesKey]: !prev[seriesKey]
-    }));
-  };
+
 
   const getGradeDisplayText = (grade: string) => {
     const gradeMap: { [key: string]: string } = {
@@ -580,12 +638,8 @@ const PriceQuoteDetailModal: React.FC<PriceQuoteDetailModalProps> = ({
         <ModalContent>
           <InfoSection>
             <InfoItem>
-              <InfoLabel>작물명</InfoLabel>
-              <InfoValue>{priceHistory.request.cropName}</InfoValue>
-            </InfoItem>
-            <InfoItem>
-              <InfoLabel>품종</InfoLabel>
-              <InfoValue>{priceHistory.request.variety}</InfoValue>
+              <InfoLabel>품목명</InfoLabel>
+              <InfoValue>{priceHistory.request.productName}</InfoValue>
             </InfoItem>
             <InfoItem>
               <InfoLabel>등급</InfoLabel>
@@ -597,14 +651,14 @@ const PriceQuoteDetailModal: React.FC<PriceQuoteDetailModalProps> = ({
             </InfoItem>
             <InfoItem>
               <InfoLabel>기준 수량</InfoLabel>
-              <InfoValue>{priceHistory.quantity}{priceHistory.unit}</InfoValue>
+              <InfoValue>10kg</InfoValue>
             </InfoItem>
           </InfoSection>
 
           <PriceSection>
             <PriceHeader>
               <PriceIcon src={iconGraph} alt="적정가격" />
-              <PriceLabel>적정가격</PriceLabel>
+              <PriceLabel>적정가격(10kg 기준)</PriceLabel>
             </PriceHeader>
             <PriceDisplay>
               <PriceValue>{priceHistory.result.fairPrice.toLocaleString()}원</PriceValue>
@@ -612,33 +666,12 @@ const PriceQuoteDetailModal: React.FC<PriceQuoteDetailModalProps> = ({
           </PriceSection>
 
           <ChartSection>
-            <ChartTitle>5년간 가격 동향</ChartTitle>
-            <LegendContainer>
-              <LegendItem
-                color="#10B981"
-                isActive={visibleSeries.min}
-                onClick={() => toggleSeries('min')}
-              >
-                <LegendColor color="#10B981" />
-                <LegendText>최저가</LegendText>
-              </LegendItem>
-              <LegendItem
-                color="#F6543E"
-                isActive={visibleSeries.max}
-                onClick={() => toggleSeries('max')}
-              >
-                <LegendColor color="#F6543E" />
-                <LegendText>최고가</LegendText>
-              </LegendItem>
-              <LegendItem
-                color="#1F41BB"
-                isActive={visibleSeries.avg}
-                onClick={() => toggleSeries('avg')}
-              >
-                <LegendColor color="#1F41BB" />
-                <LegendText>평균가</LegendText>
-              </LegendItem>
-            </LegendContainer>
+            <ChartTitle>
+              {priceHistory.request.harvestDate ? 
+                `${new Date(priceHistory.request.harvestDate).getMonth() + 1}월 ${new Date(priceHistory.request.harvestDate).getDate()}일자 ` : 
+                ''
+              }5년간 시장 가격 추이
+            </ChartTitle>
             <ChartContainer>
               <ChartWrapper ref={chartRef} />
             </ChartContainer>

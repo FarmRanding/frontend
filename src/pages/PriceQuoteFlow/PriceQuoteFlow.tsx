@@ -59,7 +59,7 @@ const ContentArea = styled.div`
 
 const ProgressBar = styled.div`
   width: 100%;
-  max-width: 320px;
+  max-width: 500px;
   height: 4px;
   background: rgba(31, 65, 187, 0.1);
   border-radius: 2px;
@@ -99,7 +99,7 @@ const StepNumber = styled.span`
 
 const StepContainer = styled.div<{ $direction: 'left' | 'right' }>`
   width: 100%;
-  max-width: 320px;
+  max-width: 500px;
   animation: ${props => props.$direction === 'left' ? slideInLeft : slideInRight} 0.5s ease-out;
 `;
 
@@ -107,7 +107,7 @@ const NavigationContainer = styled.div`
   display: flex;
   gap: 12px;
   width: 100%;
-  max-width: 300px;
+  max-width: 400px;
   margin-top: 40px;
 `;
 
@@ -195,8 +195,30 @@ const PriceQuoteFlow: React.FC = () => {
     navigate('/mypage');
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep < PriceFlowStep.RESULT && isCurrentStepValid) {
+      // 가격이 아직 생성되지 않았다면 먼저 생성
+      if (priceQuoteData.estimatedPrice === 0) {
+        try {
+          // 동적 import로 서비스 로드
+          const { PriceDataService } = await import('../../api/priceDataService');
+          
+          const priceData = await PriceDataService.lookupPrice({
+            garakCode: priceQuoteData.garakCode,
+            targetDate: priceQuoteData.harvestDate!.toISOString().split('T')[0],
+            grade: priceQuoteData.grade as '특' | '상' | '중' | '하'
+          });
+          
+          updatePriceQuoteData({ estimatedPrice: priceData.recommendedPrice });
+          
+        } catch (error) {
+          console.error('가격 조회 실패:', error);
+          // 에러 시 사용자에게 알림 후 이전 단계로 돌아가거나 에러 처리
+          alert('가격 조회에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.');
+          return; // 다음 단계로 진행하지 않음
+        }
+      }
+      
       setAnimationDirection('left');
       setCurrentStep(currentStep + 1);
       setIsCurrentStepValid(false);

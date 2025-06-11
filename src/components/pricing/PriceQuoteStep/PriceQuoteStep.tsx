@@ -35,7 +35,9 @@ const Container = styled.div`
   align-items: center;
   gap: 48px;
   width: 100%;
-  max-width: 320px;
+  max-width: 500px;
+  padding: 0 20px;
+  box-sizing: border-box;
 `;
 
 const Title = styled.h1`
@@ -74,7 +76,7 @@ const Label = styled.label`
   color: #000000;
 `;
 
-const GradeInput = styled.div`
+const GradeInput = styled.div<{ hasValue: boolean }>`
   width: 100%;
   height: 33px;
   background: #FFFFFF;
@@ -90,7 +92,7 @@ const GradeInput = styled.div`
   font-weight: 400;
   font-size: 12px;
   line-height: 1.21;
-  color: #9C9C9C;
+  color: ${props => props.hasValue ? '#000000' : '#9C9C9C'};
   cursor: pointer;
   transition: all 0.3s ease;
 
@@ -162,6 +164,35 @@ const CalendarIcon = styled.img`
   }
 `;
 
+const PriceCheckButton = styled.button`
+  width: 100%;
+  max-width: 300px;
+  padding: 15px;
+  background: #1F41BB;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Jalnan 2', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.18;
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+  align-self: center;
+
+  &:hover {
+    background: #1a37a0;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(31, 65, 187, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 12px rgba(31, 65, 187, 0.2);
+  }
+`;
+
 interface PriceQuoteData {
   productId: number | null;
   garakCode: string;
@@ -185,9 +216,6 @@ const PriceQuoteStep: React.FC<PriceQuoteStepProps> = ({
 }) => {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isGradeSelectorOpen, setIsGradeSelectorOpen] = useState(false);
-
-  // 등급 입력 필드 ref
-  const gradeFieldRef = useRef<HTMLInputElement>(null);
 
   const handleProductChange = (productData: ProductInputData) => {
     onChange({
@@ -225,39 +253,54 @@ const PriceQuoteStep: React.FC<PriceQuoteStepProps> = ({
     return gradeMap[data.grade] || data.grade;
   };
 
-  // 가격 생성 로직 (예시)
-  const generatePrice = () => {
-    const basePrice = 10000;
-    // 등급이 없으면 '중'으로 기본 설정
-    const grade = data.grade || '중';
-    const gradeMultiplier = {
-      '특': 1.5,
-      '상': 1.2,
-      '중': 1.0,
-      '하': 0.8
-    }[grade] || 1.0;
-    
-    // 수확일에 따른 가격 변동 (예시)
-    const seasonMultiplier = Math.random() * 0.3 + 0.85; // 0.85 ~ 1.15
-    
-    return Math.round(basePrice * gradeMultiplier * seasonMultiplier);
+  // 실제 가격 조회 함수
+  const generatePrice = async (): Promise<number> => {
+    try {
+      // 가격 조회에 필요한 모든 데이터가 있는지 확인
+      if (!data.garakCode || !data.harvestDate || !data.grade) {
+        throw new Error('가격 조회에 필요한 정보가 부족합니다.');
+      }
+
+      // 동적 import로 서비스 로드 (순환 의존성 방지)
+      const { PriceDataService } = await import('../../../api/priceDataService');
+      
+      const priceData = await PriceDataService.lookupPrice({
+        garakCode: data.garakCode,
+        targetDate: data.harvestDate.toISOString().split('T')[0], // YYYY-MM-DD 형식
+        grade: data.grade as '특' | '상' | '중' | '하'
+      });
+      
+      return priceData.recommendedPrice;
+      
+    } catch (error) {
+      console.error('가격 조회 실패:', error);
+      // 에러를 다시 던져서 상위에서 처리하도록 함
+      throw new Error('가락시장 가격 조회에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    }
   };
 
-  // 폼 유효성 검사
+  // 가격 확인 버튼 클릭 핸들러
+  const handlePriceCheck = async () => {
+    try {
+      const price = await generatePrice();
+      onPriceGenerated(price);
+    } catch (error) {
+      console.error('가격 생성 실패:', error);
+      // 사용자에게 에러 메시지 표시 (실제 프로젝트에서는 토스트나 알림으로 처리)
+      alert('가격 조회에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    }
+  };
+
+  // 폼 유효성 검사 (API 호출 제거)
   useEffect(() => {
     const isValid = Boolean(
       data.productName.trim() &&
-      data.harvestDate
+      data.harvestDate &&
+      data.grade
     );
     
     onValidationChange(isValid);
-    
-    // 모든 필드가 채워지면 가격 생성
-    if (isValid) {
-      const price = generatePrice();
-      onPriceGenerated(price);
-    }
-  }, [data, onValidationChange, onPriceGenerated]);
+  }, [data.productName, data.harvestDate, data.grade, onValidationChange]);
 
   return (
     <Container>
@@ -268,12 +311,11 @@ const PriceQuoteStep: React.FC<PriceQuoteStepProps> = ({
         <ProductInput
           value={data.productName}
           onChange={handleProductChange}
-          nextFieldRef={gradeFieldRef}
         />
 
         <GradeContainer>
           <Label>등급 (미선택 시 '중'으로 설정됩니다.)</Label>
-          <GradeInput onClick={() => setIsGradeSelectorOpen(true)}>
+          <GradeInput hasValue={Boolean(data.grade)} onClick={() => setIsGradeSelectorOpen(true)}>
             <span>{getGradeDisplayText()}</span>
             <GradeIcon src={iconGrade} alt="등급" />
           </GradeInput>
@@ -293,6 +335,8 @@ const PriceQuoteStep: React.FC<PriceQuoteStepProps> = ({
             </DateInput>
           </DateInputContainer>
         </DateContainer>
+
+
       </FormContainer>
 
       {isGradeSelectorOpen && (

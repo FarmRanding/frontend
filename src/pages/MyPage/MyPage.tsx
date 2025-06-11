@@ -18,6 +18,7 @@ import iconMoney from '../../assets/icon-money.svg';
 import iconPencil from '../../assets/icon-pencil.svg';
 import { fetchMyUser, updateMyUserProfile, upgradeToPremium, upgradeToPremiumPlus, downgradeToPremium, downgradeToFree, type UpdateProfileRequest, type UserProfileResponse } from '../../api/userService';
 import { fetchBrandingList, fetchBrandingDetail, deleteBranding } from '../../api/brandingService';
+import { PriceQuoteService } from '../../api/priceQuoteService';
 import type { UserResponse } from '../../types/user';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -401,6 +402,11 @@ const MyPage: React.FC = () => {
   const [brandingHistory, setBrandingHistory] = useState<BrandingHistory[]>([]);
   const [brandingLoading, setBrandingLoading] = useState(false);
   const [brandingError, setBrandingError] = useState<string | null>(null);
+  
+  // 가격 제안 관련 상태
+  const [priceQuoteHistory, setPriceQuoteHistory] = useState<PriceQuoteHistory[]>([]);
+  const [priceQuoteLoading, setPriceQuoteLoading] = useState(false);
+  const [priceQuoteError, setPriceQuoteError] = useState<string | null>(null);
 
   // URL 파라미터 변경 감지 (location 변경 시마다 실행)
   useEffect(() => {
@@ -571,57 +577,28 @@ const MyPage: React.FC = () => {
     return data;
   };
 
-  // Mock 가격 제안 이력 데이터
-  const priceQuoteHistory: PriceQuoteHistory[] = [
-    {
-      id: '1',
-      request: {
-        cropName: '감자',
-        variety: '수미',
-        grade: '상',
-        harvestDate: new Date('2025-05-15')
-      },
-      result: {
-        fairPrice: 2745,
-        priceData: generatePriceData()
-      },
-      createdAt: '2025.05.15',
-      unit: 'kg',
-      quantity: 1
-    },
-    {
-      id: '2',
-      request: {
-        cropName: '사과',
-        variety: '후지',
-        grade: '특',
-        harvestDate: new Date('2025-05-14')
-      },
-      result: {
-        fairPrice: 6900,
-        priceData: generatePriceData()
-      },
-      createdAt: '2025.05.15',
-      unit: 'kg',
-      quantity: 1
-    },
-    {
-      id: '3',
-      request: {
-        cropName: '아스파라거스',
-        variety: '그린아스파라',
-        grade: '중',
-        harvestDate: new Date('2025-05-14')
-      },
-      result: {
-        fairPrice: 14700,
-        priceData: generatePriceData()
-      },
-      createdAt: '2025.05.14',
-      unit: 'kg',
-      quantity: 1
-    }
-  ];
+  // 가격 제안 목록 조회
+  useEffect(() => {
+    const loadPriceQuoteHistory = async () => {
+      setPriceQuoteLoading(true);
+      setPriceQuoteError(null);
+      
+      try {
+        const apiData = await PriceQuoteService.getMyPriceQuotes();
+        const mappedData = apiData.map(item => PriceQuoteService.toFrontendType(item));
+        setPriceQuoteHistory(mappedData);
+      } catch (err: any) {
+        console.error('가격 제안 목록 조회 실패:', err);
+        setPriceQuoteError(err.message || '가격 제안 목록을 불러오지 못했습니다.');
+        // 에러가 발생해도 빈 배열로 설정하여 UI가 정상 작동하도록 함
+        setPriceQuoteHistory([]);
+      } finally {
+        setPriceQuoteLoading(false);
+      }
+    };
+
+    loadPriceQuoteHistory();
+  }, []);
 
   // 더미 브랜딩 이력 데이터 제거 (실제 API 데이터 사용)
 
@@ -716,7 +693,7 @@ const MyPage: React.FC = () => {
       case 'oldest':
         return historyCopy.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
       case 'name':
-        return historyCopy.sort((a, b) => a.request.cropName.localeCompare(b.request.cropName));
+        return historyCopy.sort((a, b) => a.request.productName.localeCompare(b.request.productName));
       default:
         return historyCopy;
     }
@@ -827,9 +804,28 @@ const MyPage: React.FC = () => {
     setSelectedBrandingHistory(null);
   };
 
-  const handleDeletePriceQuote = (id: string) => {
-    console.log(`가격 제안 ${id} 삭제`);
-    // TODO: 실제 삭제 로직 구현
+  const handleDeletePriceQuote = async (id: string) => {
+    const confirmed = await showConfirm({
+      type: 'confirm',
+      title: '가격 제안 삭제',
+      message: '정말로 이 가격 제안을 삭제하시겠습니까?',
+      confirmText: '삭제',
+      cancelText: '취소'
+    });
+
+    if (confirmed) {
+      try {
+        await PriceQuoteService.deletePriceQuote(parseInt(id));
+        
+        // 로컬 상태에서 해당 항목 제거
+        setPriceQuoteHistory(prev => prev.filter(item => item.id !== id));
+        
+        showSuccess('삭제 완료', '가격 제안이 성공적으로 삭제되었습니다.');
+      } catch (err: any) {
+        console.error('가격 제안 삭제 실패:', err);
+        showError('삭제 실패', err.message || '가격 제안 삭제에 실패했습니다.');
+      }
+    }
   };
 
   const handlePriceQuoteClick = (priceHistory: PriceQuoteHistory) => {
@@ -1082,8 +1078,7 @@ const MyPage: React.FC = () => {
               {groupedHistory[date].map(item => (
                 <PriceQuoteCard
                   key={item.id}
-                  cropName={item.request.cropName}
-                  variety={item.request.variety}
+                  productName={item.request.productName}
                   grade={item.request.grade}
                   fairPrice={item.result.fairPrice}
                   unit={item.unit}
