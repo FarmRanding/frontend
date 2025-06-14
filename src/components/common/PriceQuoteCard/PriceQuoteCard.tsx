@@ -4,7 +4,10 @@ import iconTrash from '../../../assets/icon-trash.svg';
 
 const CardContainer = styled.div<{ $isPremium?: boolean }>`
   width: 100%;
-  background: #FFFFFF;
+  background: ${props => props.$isPremium 
+    ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.02) 0%, rgba(168, 85, 247, 0.03) 100%)'
+    : '#FFFFFF'
+  };
   border-radius: 12px;
   box-shadow: 0 4px 28px rgba(0, 0, 0, 0.15);
   padding: 16px 20px;
@@ -116,11 +119,11 @@ const PriceSection = styled.div`
   z-index: 1;
 `;
 
-const PriceIconContainer = styled.div`
+const PriceIconContainer = styled.div<{ $isPremium?: boolean }>`
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(31, 65, 187, 0.1);
+  background: ${props => props.$isPremium ? 'rgba(139, 92, 246, 0.1)' : 'rgba(31, 65, 187, 0.1)'};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -128,10 +131,10 @@ const PriceIconContainer = styled.div`
   font-family: 'Jalnan 2', sans-serif;
   font-weight: 400;
   font-size: 12px;
-  color: #1F41BB;
+  color: ${props => props.$isPremium ? '#8B5CF6' : '#1F41BB'};
 
   ${CardContainer}:hover & {
-    background: rgba(31, 65, 187, 0.15);
+    background: ${props => props.$isPremium ? 'rgba(139, 92, 246, 0.15)' : 'rgba(31, 65, 187, 0.15)'};
     transform: scale(1.05);
   }
 `;
@@ -143,12 +146,12 @@ const PriceContainer = styled.div`
   gap: 2px;
 `;
 
-const FairPrice = styled.div`
+const FairPrice = styled.div<{ $isPremium?: boolean }>`
   font-family: 'Jalnan 2', sans-serif;
   font-weight: 400;
   font-size: 16px;
   line-height: 1.18;
-  color: #1F41BB;
+  color: ${props => props.$isPremium ? '#8B5CF6' : '#1F41BB'};
   white-space: nowrap;
 `;
 
@@ -296,11 +299,11 @@ const PriceQuoteCard: React.FC<PriceQuoteCardProps> = ({
         </CropInfo>
         
         <PriceSection>
-          <PriceIconContainer>
+          <PriceIconContainer $isPremium={isPremium}>
             ₩
           </PriceIconContainer>
           <PriceContainer>
-            <FairPrice>{formatPrice(fairPrice)}원</FairPrice>
+            <FairPrice $isPremium={isPremium}>{formatPrice(fairPrice)}원</FairPrice>
             <PriceUnit>{quantity}{unit} 기준</PriceUnit>
           </PriceContainer>
         </PriceSection>

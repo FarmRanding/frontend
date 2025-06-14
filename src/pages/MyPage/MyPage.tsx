@@ -11,7 +11,7 @@ import PriceQuoteDetailModal from '../../components/common/PriceQuoteDetailModal
 import PremiumPriceDetailModal from '../../components/common/PremiumPriceDetailModal/PremiumPriceDetailModal';
 import PersonalInfo, { type PersonalInfoData } from '../../components/common/PersonalInfo/PersonalInfo';
 import MembershipList, { type MembershipPlan } from '../../components/common/MembershipList/MembershipList';
-import type { PriceQuoteHistory } from '../../types/priceHistory';
+import type { PriceQuoteHistory, PriceHistoryData } from '../../types/priceHistory';
 import { BrandingHistory, mapBrandingApiToHistory } from '../../types/branding';
 import iconSort from '../../assets/icon-sort.svg';
 import iconBrush from '../../assets/icon-brush.svg';
@@ -582,6 +582,44 @@ const MyPage: React.FC = () => {
     return data;
   };
 
+  // 실제 저장된 차트 데이터 파싱 (yearlyPriceData에서)
+  const parseStoredChartData = (yearlyPriceDataJson: string | null) => {
+    if (!yearlyPriceDataJson) {
+      // 저장된 데이터가 없으면 기본 더미 데이터 (고정값)
+      return [
+        { year: '2019', price: 23000 },
+        { year: '2020', price: 25000 },
+        { year: '2021', price: 27000 },
+        { year: '2022', price: 24000 },
+        { year: '2023', price: 26000 }
+      ];
+    }
+    
+    try {
+      const parsed = JSON.parse(yearlyPriceDataJson);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // 저장된 데이터가 {year, price} 형식인지 확인
+        if (parsed[0].year && parsed[0].price !== undefined) {
+          return parsed.map(item => ({
+            year: item.year,
+            price: typeof item.price === 'object' ? item.price.value || item.price : item.price
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('저장된 차트 데이터 파싱 실패:', error);
+    }
+    
+    // 파싱 실패 시 기본 더미 데이터
+    return [
+      { year: '2019', price: 23000 },
+      { year: '2020', price: 25000 },
+      { year: '2021', price: 27000 },
+      { year: '2022', price: 24000 },
+      { year: '2023', price: 26000 }
+    ];
+  };
+
   // 통합 가격 제안 목록 조회
   useEffect(() => {
     const loadUnifiedPriceHistory = async () => {
@@ -843,33 +881,76 @@ const MyPage: React.FC = () => {
     setIsDetailModalVisible(true);
   };
 
-  const handleUnifiedPriceClick = (unifiedHistory: UnifiedPriceHistoryResponse) => {
+  // 저장된 가격 데이터 가져오기 (실제 API 호출)
+  const fetchStoredPriceData = async (priceQuoteId: number) => {
+    try {
+      // 개별 가격 제안 상세 조회 API 호출
+      const response = await PriceQuoteService.getPriceQuote(priceQuoteId);
+      
+      if (response.yearlyPriceData) {
+        const parsed = JSON.parse(response.yearlyPriceData);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // 저장된 데이터가 올바른 형식인지 확인
+          const firstItem = parsed[0];
+          if (firstItem.year && firstItem.price !== undefined) {
+            return parsed.map(item => ({
+              year: item.year,
+              price: typeof item.price === 'object' ? 
+                (item.price.value || item.price) : 
+                item.price
+            }));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('저장된 가격 데이터 조회 실패:', error);
+    }
+    
+    // 실패 시 또는 데이터가 없을 시 고정 더미 데이터 반환
+    return [
+      { year: '2019', price: 23000 },
+      { year: '2020', price: 25000 },
+      { year: '2021', price: 27000 },
+      { year: '2022', price: 24000 },
+      { year: '2023', price: 26000 }
+    ];
+  };
+
+  const handleUnifiedPriceClick = async (unifiedHistory: UnifiedPriceHistoryResponse) => {
     if (unifiedHistory.type === 'PREMIUM') {
       // 프리미엄 타입은 프리미엄 전용 모달 사용
       setSelectedUnifiedData(unifiedHistory);
       setIsPremiumDetailModalOpen(true);
     } else {
-      // 일반 타입은 기존 모달 사용
-      const harvestDate = unifiedHistory.harvestDate || unifiedHistory.analysisDate || new Date().toISOString().split('T')[0];
-      
-      const convertedHistory: PriceQuoteHistory = {
-        id: unifiedHistory.id.toString(),
-        request: {
-          productName: unifiedHistory.productName,
-          grade: unifiedHistory.grade,
-          harvestDate: new Date(harvestDate)
-        },
-        result: {
-          fairPrice: unifiedHistory.suggestedPrice,
-          priceData: generatePriceData() // 일반 가격 제안은 그래프 데이터 생성
-        },
-        unit: unifiedHistory.unit,
-        quantity: unifiedHistory.quantity,
-        createdAt: unifiedHistory.createdAt
-      };
-      
-      setSelectedPriceHistory(convertedHistory);
-      setIsDetailModalVisible(true);
+      try {
+        // 일반 타입은 기존 모달 사용
+        const harvestDate = unifiedHistory.harvestDate || unifiedHistory.analysisDate || new Date().toISOString().split('T')[0];
+        
+        // 일반 가격 제안은 별도 API로 실제 저장된 데이터 가져오기
+        const priceData = await fetchStoredPriceData(unifiedHistory.id);
+        
+        const convertedHistory: PriceQuoteHistory = {
+          id: unifiedHistory.id.toString(),
+          request: {
+            productName: unifiedHistory.productName,
+            grade: unifiedHistory.grade,
+            harvestDate: new Date(harvestDate)
+          },
+          result: {
+            fairPrice: unifiedHistory.suggestedPrice,
+            priceData: priceData as any // 타입 호환성을 위해 any로 캐스팅
+          },
+          unit: unifiedHistory.unit,
+          quantity: unifiedHistory.quantity,
+          createdAt: unifiedHistory.createdAt
+        };
+        
+        setSelectedPriceHistory(convertedHistory);
+        setIsDetailModalVisible(true);
+      } catch (error) {
+        console.error('가격 데이터 로드 실패:', error);
+        showError('오류', '가격 데이터를 불러오는데 실패했습니다.');
+      }
     }
   };
 

@@ -358,15 +358,16 @@ const PriceQuoteDetailModal: React.FC<PriceQuoteDetailModalProps> = ({
         useDirtyRect: false
       });
 
-      // 연도별 가격 데이터 추출 (API에서 받은 데이터 사용)
-      const priceData = priceHistory?.priceData;
-      if (!priceData || !priceData.labels || !priceData.datasets || priceData.datasets.length === 0) {
-        console.error('차트 데이터가 없습니다:', priceData);
+      // 연도별 가격 데이터 추출 (PriceResultStep과 동일한 방식)
+      const priceData = priceHistory?.result?.priceData;
+      
+      if (!priceData || !Array.isArray(priceData) || priceData.length === 0) {
         return;
       }
       
-      const years = priceData.labels;
-      const prices = priceData.datasets[0].data;
+      // PriceResultStep과 동일한 형식: {year: string, price: number}[]
+      const years = priceData.map(item => item.year);
+      const prices = priceData.map(item => item.price);
       
       // Y축 범위 계산 (가독성 향상) - 결과 페이지와 동일
       const minPrice = Math.min(...prices);
