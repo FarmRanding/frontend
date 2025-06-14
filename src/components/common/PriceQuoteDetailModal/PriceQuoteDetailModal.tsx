@@ -365,9 +365,24 @@ const PriceQuoteDetailModal: React.FC<PriceQuoteDetailModalProps> = ({
         return;
       }
       
-      // PriceResultStep과 동일한 형식: {year: string, price: number}[]
-      const years = priceData.map(item => item.year);
-      const prices = priceData.map(item => item.price);
+      // 데이터 형식 확인 및 변환
+      let years: string[] = [];
+      let prices: number[] = [];
+      
+      // PriceHistoryData 형식인지 {year, price} 형식인지 확인
+      const firstItem = priceData[0] as any;
+      if (firstItem.year !== undefined && firstItem.price !== undefined) {
+        // {year: string, price: number}[] 형식
+        years = priceData.map((item: any) => item.year);
+        prices = priceData.map((item: any) => item.price);
+      } else if (firstItem.date !== undefined && firstItem.avgPrice !== undefined) {
+        // PriceHistoryData 형식
+        years = priceData.map(item => item.date);
+        prices = priceData.map(item => item.avgPrice);
+      } else {
+        console.error('알 수 없는 가격 데이터 형식:', firstItem);
+        return;
+      }
       
       // Y축 범위 계산 (가독성 향상) - 결과 페이지와 동일
       const minPrice = Math.min(...prices);
