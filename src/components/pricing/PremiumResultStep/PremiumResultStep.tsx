@@ -260,17 +260,33 @@ const AnalysisContent = styled.div`
   color: #6B7280;
 `;
 
-const FormulaText = styled.p`
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: 400;
-  font-size: 12px;
-  line-height: 1.4;
-  color: #8B5CF6;
+const CalculationExplanation = styled.div`
+  font-family: 'Pretendard', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #475569;
   background: #F8FAFC;
-  padding: 8px 12px;
-  border-radius: 8px;
-  margin: 8px 0 0 0;
-  word-break: break-all;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 16px;
+  
+  /* 읽기 쉬운 텍스트 스타일 */
+  text-align: left;
+  word-break: keep-all;
+  
+  /* 신뢰성을 강조하는 스타일 */
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+    border-radius: 2px 0 0 2px;
+  }
 `;
 
 const RecommendationList = styled.ul`
@@ -367,20 +383,49 @@ const TooltipContent = styled.div<{ $visible: boolean }>`
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.95);
   color: white;
-  padding: 12px;
-  border-radius: 8px;
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  line-height: 1.4;
-  white-space: nowrap;
-  max-width: 280px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  font-family: 'Pretendard', sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
   white-space: normal;
+  width: 320px;
+  max-width: 90vw;
   z-index: 1000;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   opacity: ${props => props.$visible ? 1 : 0};
   visibility: ${props => props.$visible ? 'visible' : 'hidden'};
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  word-break: keep-all;
+  
+  /* 화면 밖으로 나가지 않도록 조정 */
+  @media (max-width: 400px) {
+    width: 280px;
+    left: 0;
+    transform: translateX(0);
+    margin-left: -140px;
+  }
+  
+  /* 툴팁 화살표 */
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.95);
+  }
+  
+  @media (max-width: 400px) {
+    &::after {
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  }
   transition: opacity 0.2s ease, visibility 0.2s ease;
   
   &::after {
@@ -508,10 +553,10 @@ const PremiumResultStep: React.FC<PremiumResultStepProps> = ({ data, onComplete 
               <TooltipIcon>?</TooltipIcon>
             </TooltipTrigger>
             <TooltipContent $visible={showTooltip}>
-              직거래 제안가 = min(소매 5일 평균 × 0.95, max(도매 5일 평균 × 1.20, 도매 5일 평균 × α × 0.5 × 0.9))
+              최근 5일간 소매·도매 가격을 분석하여 생산자와 소비자 모두에게 공정한 직거래 가격을 산출합니다.
               <br />
               <br />
-              KAMIS 데이터를 기반으로 한 AI 분석 결과입니다.
+              KAMIS 공식 데이터와 AI 분석을 통해 신뢰성 있는 가격을 제공합니다.
             </TooltipContent>
           </TooltipContainer>
           <SuggestedPrice>{formatPrice(data.suggestedPrice)}</SuggestedPrice>
@@ -530,56 +575,21 @@ const PremiumResultStep: React.FC<PremiumResultStepProps> = ({ data, onComplete 
       </ResultCard>
 
       <AnalysisSection>
-        {data.priceCalculation && (
-          <AnalysisCard>
-            <AnalysisHeader>
-              <AnalysisIcon>
-                <img src={iconGraph} alt="계산 근거" />
-              </AnalysisIcon>
-              <AnalysisTitle>가격 계산 근거</AnalysisTitle>
-            </AnalysisHeader>
-            <AnalysisContent>
-              <p>{data.priceCalculation.explanation}</p>
-              <FormulaText>{data.priceCalculation.calculationFormula}</FormulaText>
-            </AnalysisContent>
-          </AnalysisCard>
-        )}
-
-        {data.marketAnalysis && (
-          <AnalysisCard>
-            <AnalysisHeader>
-              <AnalysisIcon>
-                <img src={iconCheck} alt="시장 분석" />
-              </AnalysisIcon>
-              <AnalysisTitle>시장 분석 및 추천사항</AnalysisTitle>
-            </AnalysisHeader>
-            <AnalysisContent>
-              <p><strong>시장 동향:</strong> {data.marketAnalysis.marketTrend}</p>
-              
-              {data.marketAnalysis.priceFactors.length > 0 && (
-                <div>
-                  <p><strong>가격 영향 요인:</strong></p>
-                  <RecommendationList>
-                    {data.marketAnalysis.priceFactors.map((factor, index) => (
-                      <RecommendationItem key={index}>{factor}</RecommendationItem>
-                    ))}
-                  </RecommendationList>
-                </div>
-              )}
-              
-              {data.marketAnalysis.recommendations.length > 0 && (
-                <div>
-                  <p><strong>판매 추천사항:</strong></p>
-                  <RecommendationList>
-                    {data.marketAnalysis.recommendations.map((recommendation, index) => (
-                      <RecommendationItem key={index}>{recommendation}</RecommendationItem>
-                    ))}
-                  </RecommendationList>
-                </div>
-              )}
-            </AnalysisContent>
-          </AnalysisCard>
-        )}
+        <AnalysisCard>
+          <AnalysisHeader>
+            <AnalysisIcon>
+              <img src={iconGraph} alt="계산 근거" />
+            </AnalysisIcon>
+            <AnalysisTitle>가격 산출 근거</AnalysisTitle>
+          </AnalysisHeader>
+          <AnalysisContent>
+            <CalculationExplanation>
+              {data.priceCalculation?.explanation || 
+                'KAMIS(한국농수산식품유통공사) 공식 데이터를 기반으로 최근 5일간의 소매·도매 가격을 분석하여 생산자와 소비자 모두에게 공정한 직거래 가격을 제안했습니다. 품질 등급과 지역 특성을 고려하여 시장 상황에 맞는 합리적인 가격을 산출했습니다.'
+              }
+            </CalculationExplanation>
+          </AnalysisContent>
+        </AnalysisCard>
       </AnalysisSection>
 
       <CompleteButton onClick={handleComplete}>

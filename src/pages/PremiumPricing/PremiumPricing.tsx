@@ -4,6 +4,7 @@ import styled, { keyframes } from 'styled-components';
 import Header from '../../components/common/Header/Header';
 import PremiumPriceStep from '../../components/pricing/PremiumPriceStep/PremiumPriceStep';
 import PremiumResultStep from '../../components/pricing/PremiumResultStep/PremiumResultStep';
+import { GradeValue } from '../../components/pricing/GradeSelector/GradeSelector';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 
@@ -222,6 +223,7 @@ export interface PremiumPriceData {
   productItemCode: string;
   productVarietyCode: string;
   productName: string;
+  productRankCode: GradeValue;
   location: string;
   date: Date | null;
   suggestedPrice: number;
@@ -257,6 +259,7 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
     productItemCode: '',
     productVarietyCode: '',
     productName: '',
+    productRankCode: '04', // 기본값: 상급
     location: '',
     date: null,
     suggestedPrice: 0,
@@ -293,6 +296,7 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
             productGroupCode: '', // 사용하지 않음
             productItemCode: premiumPriceData.productItemCode,
             productVarietyCode: premiumPriceData.productVarietyCode,
+            productRankCode: premiumPriceData.productRankCode,
             location: premiumPriceData.location,
             date: premiumPriceData.date?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0]
           };
@@ -320,7 +324,17 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
           
         } catch (error: any) {
           console.error('프리미엄 가격 제안 실패:', error);
-          showError('오류', error.message || '프리미엄 가격 제안에 실패했습니다. 잠시 후 다시 시도해주세요.');
+          
+          // FR474 오류 (KAMIS 데이터 없음) 특별 처리
+          if (error.response?.data?.code === 'FR474') {
+            showError(
+              '데이터 없음', 
+              `선택하신 품목(${premiumPriceData.productName})의 시장 가격 데이터가 없어 가격 제안이 불가능합니다.\n\n다른 품목을 선택하거나 지역을 변경해보세요.`
+            );
+          } else {
+            showError('오류', error.message || '프리미엄 가격 제안에 실패했습니다. 잠시 후 다시 시도해주세요.');
+          }
+          
           setIsLoading(false);
           return; // 다음 단계로 진행하지 않음
         } finally {
@@ -376,6 +390,7 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
               productItemCode: premiumPriceData.productItemCode,
               productVarietyCode: premiumPriceData.productVarietyCode,
               productName: premiumPriceData.productName,
+              productRankCode: premiumPriceData.productRankCode,
               location: premiumPriceData.location,
               date: premiumPriceData.date
             }}

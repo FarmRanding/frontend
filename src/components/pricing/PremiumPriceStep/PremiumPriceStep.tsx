@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import KamisProductInput from '../KamisProductInput/KamisProductInput';
+import GradeSelector, { GradeValue } from '../GradeSelector/GradeSelector';
 import LocationSelector from '../../common/LocationSelector/LocationSelector';
 import DatePicker from '../../common/DatePicker/DatePicker';
 import iconLocation from '../../../assets/icon-location.png';
@@ -208,6 +209,7 @@ interface PremiumPriceData {
   productItemCode: string;
   productVarietyCode: string;
   productName: string;
+  productRankCode: GradeValue;
   location: string;
   date: Date | null;
 }
@@ -235,6 +237,10 @@ const PremiumPriceStep: React.FC<PremiumPriceStepProps> = ({
       productVarietyCode: product.kindCode, // KAMIS 품종 코드
       productName: product.itemName // 품목명
     });
+  };
+
+  const handleGradeChange = (grade: GradeValue) => {
+    onChange({ productRankCode: grade });
   };
 
   const handleLocationSelect = (location: string) => {
@@ -285,12 +291,13 @@ const PremiumPriceStep: React.FC<PremiumPriceStepProps> = ({
   useEffect(() => {
     const isValid = Boolean(
       data.productName.trim() &&
+      data.productRankCode &&
       data.location &&
       data.date
     );
     
     onValidationChange(isValid);
-  }, [data.productName, data.location, data.date, onValidationChange]);
+  }, [data.productName, data.productRankCode, data.location, data.date, onValidationChange]);
 
   return (
     <Container>
@@ -301,6 +308,12 @@ const PremiumPriceStep: React.FC<PremiumPriceStepProps> = ({
         <KamisProductInput
           value={data.productName}
           onChange={handleProductChange}
+        />
+
+        {/* 등급 선택 */}
+        <GradeSelector
+          value={data.productRankCode}
+          onChange={handleGradeChange}
         />
 
         <LocationContainer>
