@@ -96,7 +96,7 @@ const LocationList = styled.div`
 const LocationItem = styled.button<{ isSelected: boolean }>`
   width: 100%;
   padding: 16px 24px;
-  background: ${props => props.isSelected ? '#F3F4F6' : 'transparent'};
+  background: ${props => props.isSelected ? '#F4FAFF' : 'transparent'};
   border: none;
   text-align: left;
   cursor: pointer;
@@ -105,10 +105,10 @@ const LocationItem = styled.button<{ isSelected: boolean }>`
   font-weight: ${props => props.isSelected ? '600' : '400'};
   font-size: 16px;
   line-height: 1.3;
-  color: ${props => props.isSelected ? '#8B5CF6' : '#1F2937'};
+  color: ${props => props.isSelected ? '#1F41BB' : '#1F2937'};
 
   &:hover {
-    background: ${props => props.isSelected ? '#F3F4F6' : '#F9FAFB'};
+    background: ${props => props.isSelected ? '#F4FAFF' : '#F9FAFB'};
   }
 
   &:active {
