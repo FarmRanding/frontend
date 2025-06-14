@@ -11,6 +11,7 @@ import BrandingFlow from './pages/BrandingFlow/BrandingFlow';
 import BrandResult from './pages/BrandResult/BrandResult';
 import MyPage from './pages/MyPage/MyPage';
 import PriceQuoteFlow from './pages/PriceQuoteFlow/PriceQuoteFlow';
+import PremiumPricing from './pages/PremiumPricing/PremiumPricing';
 import './App.css';
 
 const AppContainer = styled.div<{ isLanding: boolean }>`
@@ -80,6 +81,11 @@ function AppContent() {
           <Route path="/price-quote" element={
             <ProtectedRoute>
               <PriceQuoteFlow />
+            </ProtectedRoute>
+          } />
+          <Route path="/premium-pricing" element={
+            <ProtectedRoute>
+              <PremiumPricing />
             </ProtectedRoute>
           } />
           {/* 추가 페이지 라우트는 여기에 추가 */}

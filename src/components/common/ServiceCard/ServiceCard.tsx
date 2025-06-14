@@ -41,14 +41,16 @@ const CardContainer = styled.div<{ variant: ServiceCardVariant }>`
   padding: 20px 24px;
   width: 100%;
   height: 80px;
-  background: ${props => props.variant === 'branding' 
-    ? 'linear-gradient(135deg, rgba(31, 65, 187, 0.05) 0%, rgba(79, 70, 229, 0.08) 100%)'
-    : 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.08) 100%)'
-  };
-  border: 1px solid ${props => props.variant === 'branding' 
-    ? 'rgba(31, 65, 187, 0.1)'
-    : 'rgba(16, 185, 129, 0.1)'
-  };
+  background: ${props => {
+    if (props.variant === 'branding') return 'linear-gradient(135deg, rgba(31, 65, 187, 0.05) 0%, rgba(79, 70, 229, 0.08) 100%)';
+    if (props.variant === 'premium-pricing') return 'linear-gradient(135deg, rgba(147, 51, 234, 0.05) 0%, rgba(126, 34, 206, 0.08) 100%)';
+    return 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.08) 100%)';
+  }};
+  border: 1px solid ${props => {
+    if (props.variant === 'branding') return 'rgba(31, 65, 187, 0.1)';
+    if (props.variant === 'premium-pricing') return 'rgba(147, 51, 234, 0.1)';
+    return 'rgba(16, 185, 129, 0.1)';
+  }};
   border-radius: 16px;
   box-shadow: 
     0px 8px 32px rgba(0, 0, 0, 0.08),
@@ -81,10 +83,11 @@ const CardContainer = styled.div<{ variant: ServiceCardVariant }>`
     box-shadow: 
       0px 16px 48px rgba(0, 0, 0, 0.12),
       0px 1px 0px rgba(255, 255, 255, 0.6) inset;
-    border-color: ${props => props.variant === 'branding' 
-      ? 'rgba(31, 65, 187, 0.2)'
-      : 'rgba(16, 185, 129, 0.2)'
-    };
+    border-color: ${props => {
+      if (props.variant === 'branding') return 'rgba(31, 65, 187, 0.2)';
+      if (props.variant === 'premium-pricing') return 'rgba(147, 51, 234, 0.2)';
+      return 'rgba(16, 185, 129, 0.2)';
+    }};
     
     &::before {
       left: 100%;
@@ -104,10 +107,11 @@ const IconContainer = styled.div<{ variant: ServiceCardVariant }>`
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: ${props => props.variant === 'branding' 
-    ? 'linear-gradient(135deg, #1F41BB 0%, #4F46E5 100%)'
-    : 'linear-gradient(135deg, #10B981 0%, #059669 100%)'
-  };
+  background: ${props => {
+    if (props.variant === 'branding') return 'linear-gradient(135deg, #1F41BB 0%, #4F46E5 100%)';
+    if (props.variant === 'premium-pricing') return 'linear-gradient(135deg, #9333EA 0%, #7E22CE 100%)';
+    return 'linear-gradient(135deg, #10B981 0%, #059669 100%)';
+  }};
   border-radius: 12px;
   box-shadow: 
     0px 4px 16px rgba(0, 0, 0, 0.1),
@@ -169,13 +173,21 @@ const FirstLine = styled.div`
 
 const SecondLine = styled.div<{ variant: ServiceCardVariant }>`
   font-size: 18px;
-  color: ${props => props.variant === 'branding' ? '#1F41BB' : '#059669'};
+  color: ${props => {
+    if (props.variant === 'branding') return '#1F41BB';
+    if (props.variant === 'premium-pricing') return '#9333EA';
+    return '#059669';
+  }};
   font-weight: 700;
   transition: all 0.3s ease;
 
   ${CardContainer}:hover & {
     transform: translateX(2px);
-    color: ${props => props.variant === 'branding' ? '#1a37a0' : '#047857'};
+    color: ${props => {
+      if (props.variant === 'branding') return '#1a37a0';
+      if (props.variant === 'premium-pricing') return '#7E22CE';
+      return '#047857';
+    }};
   }
 `;
 
@@ -208,7 +220,7 @@ const ChevronIcon = styled.img`
   }
 `;
 
-export type ServiceCardVariant = 'branding' | 'pricing';
+export type ServiceCardVariant = 'branding' | 'pricing' | 'premium-pricing';
 
 interface ServiceCardProps {
   variant: ServiceCardVariant;
@@ -233,6 +245,8 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
         return iconBrush;
       case 'pricing':
         return iconMoney;
+      case 'premium-pricing':
+        return iconMoney; // 프리미엄 가격 제안도 동일한 아이콘 사용
       default:
         return iconBrush;
     }
@@ -250,6 +264,11 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
           first: '적정 가격 찾아드릴게요.',
           second: '예상 가격 받아보기'
         };
+      case 'premium-pricing':
+        return {
+          first: '더 정확한 가격 분석을 원한다면.',
+          second: '프리미엄 가격 제안'
+        };
       default:
         return { first: '', second: '' };
     }
@@ -261,6 +280,8 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
         return '브랜딩 서비스';
       case 'pricing':
         return '가격 서비스';
+      case 'premium-pricing':
+        return '프리미엄 가격 서비스';
       default:
         return '서비스';
     }

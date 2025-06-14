@@ -4,6 +4,7 @@ import styled, { keyframes } from 'styled-components';
 import Header from '../../components/common/Header';
 import ServiceCard from '../../components/common/ServiceCard';
 import PriceTrendChart from '../../components/common/PriceTrendChart';
+import { useAuth } from '../../contexts/AuthContext';
 
 // 부드러운 애니메이션만 유지
 const fadeInUp = keyframes`
@@ -157,6 +158,7 @@ const Home: React.FC<HomeProps> = ({ className }) => {
   const navigate = useNavigate();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activeChart, setActiveChart] = useState(0);
+  const { user } = useAuth();
 
   const handleBrandingClick = () => {
     navigate('/branding');
@@ -164,6 +166,16 @@ const Home: React.FC<HomeProps> = ({ className }) => {
 
   const handlePricingClick = () => {
     navigate('/price-quote');
+  };
+
+  const handlePremiumPricingClick = () => {
+    if (user?.membershipType === 'FREE') {
+      // 무료 사용자는 마이페이지 멤버십 탭으로 이동
+      navigate('/mypage?tab=membership');
+    } else {
+      // 프리미엄 이상 사용자는 프리미엄 가격 제안 페이지로 이동
+      navigate('/premium-pricing');
+    }
   };
 
   const handleLogoClick = () => {
@@ -216,6 +228,13 @@ const Home: React.FC<HomeProps> = ({ className }) => {
             description="예상 가격 받아보기"
             bgSvg=""
             onClick={handlePricingClick}
+          />
+          <ServiceCard 
+            variant="premium-pricing" 
+            title="프리미엄 가격 제안"
+            description="더 정확한 가격 분석"
+            bgSvg=""
+            onClick={handlePremiumPricingClick}
           />
         </ServiceCardsContainer>
 
