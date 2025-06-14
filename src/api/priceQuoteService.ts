@@ -44,6 +44,26 @@ export interface PriceQuoteResponse {
   updatedAt: string;
 }
 
+// 통합 가격 제안 이력 타입
+export interface UnifiedPriceHistoryResponse {
+  id: number;
+  type: 'STANDARD' | 'PREMIUM';
+  productName: string;
+  grade: string;
+  location?: string;
+  suggestedPrice: number;
+  unit: string;
+  quantity: number;
+  harvestDate?: string; // 일반 가격 제안용
+  analysisDate?: string; // 프리미엄 가격 제안용
+  createdAt: string;
+  
+  // 프리미엄 전용 필드
+  retailAverage?: number;
+  wholesaleAverage?: number;
+  calculationReason?: string;
+}
+
 /**
  * 가격 제안 API 서비스
  */
@@ -187,5 +207,31 @@ export class PriceQuoteService {
       unit: 'kg',
       quantity: 10
     };
+  }
+  
+  /**
+   * 통합 가격 제안 이력 조회 (일반 + 프리미엄)
+   */
+  static async getUnifiedPriceHistory(): Promise<UnifiedPriceHistoryResponse[]> {
+    try {
+      const response = await apiClient.get('/api/v1/price-quotes/unified-history');
+      
+      if (response.data && response.data.data) {
+        // 페이징된 응답에서 content 추출
+        const pageData = response.data.data;
+        return pageData.content || pageData as UnifiedPriceHistoryResponse[];
+      }
+      
+      throw new Error('통합 가격 제안 이력 조회 응답이 올바르지 않습니다.');
+      
+    } catch (error: any) {
+      console.error('통합 가격 제안 이력 조회 실패:', error);
+      
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      
+      throw new Error('통합 가격 제안 이력 조회에 실패했습니다.');
+    }
   }
 } 

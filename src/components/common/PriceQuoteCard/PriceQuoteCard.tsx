@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import iconTrash from '../../../assets/icon-trash.svg';
 
-const CardContainer = styled.div`
+const CardContainer = styled.div<{ $isPremium?: boolean }>`
   width: 100%;
   background: #FFFFFF;
   border-radius: 12px;
@@ -16,7 +16,7 @@ const CardContainer = styled.div`
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(31, 65, 187, 0.05);
+  border: 1px solid ${props => props.$isPremium ? 'rgba(139, 92, 246, 0.1)' : 'rgba(31, 65, 187, 0.05)'};
 
   &::before {
     content: '';
@@ -25,15 +25,21 @@ const CardContainer = styled.div`
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(90deg, #1F41BB 0%, #4F46E5 50%, #818CF8 100%);
+    background: ${props => props.$isPremium 
+      ? 'linear-gradient(90deg, #8B5CF6 0%, #A855F7 50%, #C084FC 100%)'
+      : 'linear-gradient(90deg, #1F41BB 0%, #4F46E5 50%, #818CF8 100%)'
+    };
     opacity: 0;
     transition: opacity 0.3s ease;
   }
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 32px rgba(31, 65, 187, 0.15);
-    border-color: rgba(31, 65, 187, 0.1);
+    box-shadow: ${props => props.$isPremium 
+      ? '0 12px 32px rgba(139, 92, 246, 0.2)'
+      : '0 12px 32px rgba(31, 65, 187, 0.15)'
+    };
+    border-color: ${props => props.$isPremium ? 'rgba(139, 92, 246, 0.15)' : 'rgba(31, 65, 187, 0.1)'};
     
     &::before {
       opacity: 1;
@@ -82,6 +88,24 @@ const CropDetails = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const TypeBadge = styled.span<{ $isPremium?: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 10px;
+  line-height: 1.2;
+  background: ${props => props.$isPremium ? 'rgba(139, 92, 246, 0.1)' : 'rgba(31, 65, 187, 0.1)'};
+  color: ${props => props.$isPremium ? '#8B5CF6' : '#1F41BB'};
+  border: 1px solid ${props => props.$isPremium ? 'rgba(139, 92, 246, 0.2)' : 'rgba(31, 65, 187, 0.2)'};
+  flex-shrink: 0;
 `;
 
 const PriceSection = styled.div`
@@ -210,6 +234,8 @@ interface PriceQuoteCardProps {
   fairPrice: number;
   unit?: string;
   quantity?: number;
+  type?: 'STANDARD' | 'PREMIUM'; // 가격 제안 타입
+  location?: string; // 프리미엄 전용
   onClick?: () => void;
   onDelete?: () => void;
 }
@@ -220,6 +246,8 @@ const PriceQuoteCard: React.FC<PriceQuoteCardProps> = ({
   fairPrice,
   unit = 'kg',
   quantity = 1,
+  type = 'STANDARD',
+  location,
   onClick,
   onDelete
 }) => {
@@ -247,13 +275,23 @@ const PriceQuoteCard: React.FC<PriceQuoteCardProps> = ({
     return Math.round(price).toLocaleString();
   };
 
+  const isPremium = type === 'PREMIUM';
+
   return (
-    <CardContainer onClick={handleCardClick}>
+    <CardContainer $isPremium={isPremium} onClick={handleCardClick}>
       <MainContent>
         <CropInfo>
           <CropName>{productName}</CropName>
           <CropDetails>
-            {getGradeDisplayText(grade)}
+            <span>{getGradeDisplayText(grade)}</span>
+            <TypeBadge $isPremium={isPremium}>
+              {isPremium ? '프리미엄' : '일반'}
+            </TypeBadge>
+            {isPremium && location && (
+              <span style={{ color: '#8B5CF6', fontSize: '10px' }}>
+                {location}
+              </span>
+            )}
           </CropDetails>
         </CropInfo>
         

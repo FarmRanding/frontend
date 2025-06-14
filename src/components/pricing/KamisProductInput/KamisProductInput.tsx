@@ -100,51 +100,71 @@ const DropdownPortal = styled.div<{ $isOpen: boolean; $top: number; $left: numbe
   top: ${props => props.$top}px;
   left: ${props => props.$left}px;
   width: ${props => props.$width}px;
-  background: #FFFFFF;
-  border: none;
+  background: white;
   border-radius: 8px;
-  box-shadow: 0px 8px 24px 0px rgba(0, 0, 0, 0.15);
+  box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.15);
   z-index: 9999;
-  max-height: 240px;
+  max-height: 200px;
   overflow-y: auto;
   margin-top: 4px;
+  padding: 8px 0;
   opacity: ${props => props.$isOpen ? 1 : 0};
   visibility: ${props => props.$isOpen ? 'visible' : 'hidden'};
   transform: ${props => props.$isOpen ? 'translateY(0)' : 'translateY(-10px)'};
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   pointer-events: ${props => props.$isOpen ? 'auto' : 'none'};
+  
+  /* 스크롤바 스타일링 */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
 `;
 
 const DropdownItem = styled.div<{ $isHighlighted: boolean }>`
   padding: 12px 16px;
   cursor: pointer;
-  background: ${props => props.$isHighlighted ? '#F4FAFF' : '#FFFFFF'};
-  border-bottom: 1px solid #F4FAFF;
+  background-color: ${({ $isHighlighted }) => $isHighlighted ? '#F0F7FF' : 'transparent'};
+  border-left: ${({ $isHighlighted }) => $isHighlighted ? '3px solid #1F41BB' : '3px solid transparent'};
   transition: all 0.2s ease;
-
+  
   &:hover {
-    background: #F4FAFF;
-    transform: translateX(2px);
+    background-color: #F0F7FF;
+    border-left: 3px solid #1F41BB;
   }
-
-  &:last-child {
-    border-bottom: none;
+  
+  &:active {
+    background-color: #E3F2FD;
   }
 `;
 
-const ItemName = styled.div`
+const ItemName = styled.div<{ $isHighlighted?: boolean }>`
   font-family: 'Inter', sans-serif;
   font-weight: 500;
   font-size: 14px;
-  color: #111827;
-  margin-bottom: 4px;
+  color: ${({ $isHighlighted }) => $isHighlighted ? '#1F41BB' : '#000000'};
+  transition: color 0.2s ease;
+  margin-bottom: 2px;
 `;
 
 const ItemVariety = styled.div`
   font-family: 'Inter', sans-serif;
   font-weight: 400;
   font-size: 12px;
-  color: #6B7280;
+  color: #9C9C9C;
 `;
 
 const NoResults = styled.div`
@@ -152,7 +172,7 @@ const NoResults = styled.div`
   text-align: center;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
-  color: #6B7280;
+  color: #9C9C9C;
 `;
 
 const LoadingItem = styled.div`
@@ -160,7 +180,7 @@ const LoadingItem = styled.div`
   text-align: center;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
-  color: #6B7280;
+  color: #9C9C9C;
 `;
 
 // 타입 정의
@@ -209,7 +229,15 @@ const KamisProductInput: React.FC<KamisProductInputProps> = ({
   // 외부 클릭 감지
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      
+      // 드롭다운 포탈 내부 클릭인지 확인
+      const dropdownPortal = document.querySelector('[data-dropdown-portal]');
+      if (dropdownPortal && dropdownPortal.contains(target)) {
+        return; // 드롭다운 내부 클릭이면 무시
+      }
+      
+      if (containerRef.current && !containerRef.current.contains(target)) {
         setIsOpen(false);
         setHighlightedIndex(-1);
       }
@@ -308,6 +336,7 @@ const KamisProductInput: React.FC<KamisProductInputProps> = ({
 
   // 상품 선택 핸들러
   const handleProductSelect = (product: KamisProduct) => {
+    console.log('KamisProductInput에서 상품 선택:', product);
     setSearchTerm(product.itemName);
     setIsOpen(false);
     setHighlightedIndex(-1);
@@ -328,9 +357,17 @@ const KamisProductInput: React.FC<KamisProductInputProps> = ({
       <DropdownItem
         key={`${product.itemCode}-${product.kindCode}`}
         $isHighlighted={index === highlightedIndex}
-        onClick={() => handleProductSelect(product)}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('드롭다운 아이템 클릭:', product);
+          handleProductSelect(product);
+        }}
+        onMouseDown={(e) => {
+          e.preventDefault(); // 포커스 잃는 것 방지
+        }}
       >
-        <ItemName>{product.itemName}</ItemName>
+        <ItemName $isHighlighted={index === highlightedIndex}>{product.itemName}</ItemName>
         <ItemVariety>{product.kindName}</ItemVariety>
       </DropdownItem>
     ));
@@ -364,6 +401,7 @@ const KamisProductInput: React.FC<KamisProductInputProps> = ({
       {/* 포탈로 렌더링되는 드롭다운 */}
       {typeof window !== 'undefined' && createPortal(
         <DropdownPortal
+          data-dropdown-portal
           $isOpen={shouldShowDropdown}
           $top={dropdownPosition.top}
           $left={dropdownPosition.left}
