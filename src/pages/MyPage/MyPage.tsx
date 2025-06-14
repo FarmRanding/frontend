@@ -8,6 +8,7 @@ import BrandingCard from '../../components/common/BrandingCard/BrandingCard';
 import BrandingDetailModal from '../../components/common/BrandingDetailModal/BrandingDetailModal';
 import PriceQuoteCard from '../../components/common/PriceQuoteCard/PriceQuoteCard';
 import PriceQuoteDetailModal from '../../components/common/PriceQuoteDetailModal/PriceQuoteDetailModal';
+import PremiumPriceDetailModal from '../../components/common/PremiumPriceDetailModal/PremiumPriceDetailModal';
 import PersonalInfo, { type PersonalInfoData } from '../../components/common/PersonalInfo/PersonalInfo';
 import MembershipList, { type MembershipPlan } from '../../components/common/MembershipList/MembershipList';
 import type { PriceQuoteHistory } from '../../types/priceHistory';
@@ -18,7 +19,7 @@ import iconMoney from '../../assets/icon-money.svg';
 import iconPencil from '../../assets/icon-pencil.svg';
 import { fetchMyUser, updateMyUserProfile, upgradeToPremium, upgradeToPremiumPlus, downgradeToPremium, downgradeToFree, type UpdateProfileRequest, type UserProfileResponse } from '../../api/userService';
 import { fetchBrandingList, fetchBrandingDetail, deleteBranding } from '../../api/brandingService';
-import { PriceQuoteService } from '../../api/priceQuoteService';
+import { PriceQuoteService, UnifiedPriceHistoryResponse } from '../../api/priceQuoteService';
 import type { UserResponse } from '../../types/user';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -403,10 +404,14 @@ const MyPage: React.FC = () => {
   const [brandingLoading, setBrandingLoading] = useState(false);
   const [brandingError, setBrandingError] = useState<string | null>(null);
   
-  // 가격 제안 관련 상태
-  const [priceQuoteHistory, setPriceQuoteHistory] = useState<PriceQuoteHistory[]>([]);
+  // 가격 제안 관련 상태 (통합)
+  const [unifiedPriceHistory, setUnifiedPriceHistory] = useState<UnifiedPriceHistoryResponse[]>([]);
   const [priceQuoteLoading, setPriceQuoteLoading] = useState(false);
   const [priceQuoteError, setPriceQuoteError] = useState<string | null>(null);
+  
+  // 프리미엄 상세 모달 관련 상태
+  const [selectedUnifiedData, setSelectedUnifiedData] = useState<UnifiedPriceHistoryResponse | null>(null);
+  const [isPremiumDetailModalOpen, setIsPremiumDetailModalOpen] = useState(false);
 
   // URL 파라미터 변경 감지 (location 변경 시마다 실행)
   useEffect(() => {
@@ -577,27 +582,26 @@ const MyPage: React.FC = () => {
     return data;
   };
 
-  // 가격 제안 목록 조회
+  // 통합 가격 제안 목록 조회
   useEffect(() => {
-    const loadPriceQuoteHistory = async () => {
+    const loadUnifiedPriceHistory = async () => {
       setPriceQuoteLoading(true);
       setPriceQuoteError(null);
       
       try {
-        const apiData = await PriceQuoteService.getMyPriceQuotes();
-        const mappedData = apiData.map(item => PriceQuoteService.toFrontendType(item));
-        setPriceQuoteHistory(mappedData);
+        const unifiedData = await PriceQuoteService.getUnifiedPriceHistory();
+        setUnifiedPriceHistory(unifiedData);
       } catch (err: any) {
-        console.error('가격 제안 목록 조회 실패:', err);
+        console.error('통합 가격 제안 목록 조회 실패:', err);
         setPriceQuoteError(err.message || '가격 제안 목록을 불러오지 못했습니다.');
         // 에러가 발생해도 빈 배열로 설정하여 UI가 정상 작동하도록 함
-        setPriceQuoteHistory([]);
+        setUnifiedPriceHistory([]);
       } finally {
         setPriceQuoteLoading(false);
       }
     };
 
-    loadPriceQuoteHistory();
+    loadUnifiedPriceHistory();
   }, []);
 
   // 더미 브랜딩 이력 데이터 제거 (실제 API 데이터 사용)
@@ -685,7 +689,7 @@ const MyPage: React.FC = () => {
   };
 
   const getSortedPriceHistory = () => {
-    const historyCopy = [...priceQuoteHistory];
+    const historyCopy = [...unifiedPriceHistory];
     
     switch (sortType) {
       case 'latest':
@@ -693,7 +697,7 @@ const MyPage: React.FC = () => {
       case 'oldest':
         return historyCopy.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
       case 'name':
-        return historyCopy.sort((a, b) => a.request.productName.localeCompare(b.request.productName));
+        return historyCopy.sort((a, b) => a.productName.localeCompare(b.productName));
       default:
         return historyCopy;
     }
@@ -715,13 +719,19 @@ const MyPage: React.FC = () => {
 
   const getGroupedPriceHistory = () => {
     const sortedHistory = getSortedPriceHistory();
-    const grouped: { [date: string]: PriceQuoteHistory[] } = {};
+    const grouped: { [date: string]: UnifiedPriceHistoryResponse[] } = {};
     
     sortedHistory.forEach(item => {
-      if (!grouped[item.createdAt]) {
-        grouped[item.createdAt] = [];
+      const dateKey = new Date(item.createdAt).toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
       }
-      grouped[item.createdAt].push(item);
+      grouped[dateKey].push(item);
     });
     
     return grouped;
@@ -818,7 +828,7 @@ const MyPage: React.FC = () => {
         await PriceQuoteService.deletePriceQuote(parseInt(id));
         
         // 로컬 상태에서 해당 항목 제거
-        setPriceQuoteHistory(prev => prev.filter(item => item.id !== id));
+        setUnifiedPriceHistory(prev => prev.filter(item => item.id !== parseInt(id)));
         
         showSuccess('삭제 완료', '가격 제안이 성공적으로 삭제되었습니다.');
       } catch (err: any) {
@@ -833,9 +843,44 @@ const MyPage: React.FC = () => {
     setIsDetailModalVisible(true);
   };
 
+  const handleUnifiedPriceClick = (unifiedHistory: UnifiedPriceHistoryResponse) => {
+    if (unifiedHistory.type === 'PREMIUM') {
+      // 프리미엄 타입은 프리미엄 전용 모달 사용
+      setSelectedUnifiedData(unifiedHistory);
+      setIsPremiumDetailModalOpen(true);
+    } else {
+      // 일반 타입은 기존 모달 사용
+      const harvestDate = unifiedHistory.harvestDate || unifiedHistory.analysisDate || new Date().toISOString().split('T')[0];
+      
+      const convertedHistory: PriceQuoteHistory = {
+        id: unifiedHistory.id.toString(),
+        request: {
+          productName: unifiedHistory.productName,
+          grade: unifiedHistory.grade,
+          harvestDate: new Date(harvestDate)
+        },
+        result: {
+          fairPrice: unifiedHistory.suggestedPrice,
+          priceData: generatePriceData() // 일반 가격 제안은 그래프 데이터 생성
+        },
+        unit: unifiedHistory.unit,
+        quantity: unifiedHistory.quantity,
+        createdAt: unifiedHistory.createdAt
+      };
+      
+      setSelectedPriceHistory(convertedHistory);
+      setIsDetailModalVisible(true);
+    }
+  };
+
   const handleCloseDetailModal = () => {
     setIsDetailModalVisible(false);
     setSelectedPriceHistory(null);
+  };
+
+  const handleClosePremiumDetailModal = () => {
+    setIsPremiumDetailModalOpen(false);
+    setSelectedUnifiedData(null);
   };
 
   const handleSelectPlan = async (planId: string) => {
@@ -1078,13 +1123,15 @@ const MyPage: React.FC = () => {
               {groupedHistory[date].map(item => (
                 <PriceQuoteCard
                   key={item.id}
-                  productName={item.request.productName}
-                  grade={item.request.grade}
-                  fairPrice={item.result.fairPrice}
+                  productName={item.productName}
+                  grade={item.grade}
+                  fairPrice={item.suggestedPrice}
                   unit={item.unit}
                   quantity={item.quantity}
-                  onClick={() => handlePriceQuoteClick(item)}
-                  onDelete={() => handleDeletePriceQuote(item.id)}
+                  type={item.type}
+                  location={item.location}
+                  onClick={() => handleUnifiedPriceClick(item)}
+                  onDelete={() => handleDeletePriceQuote(item.id.toString())}
                 />
               ))}
             </CardsList>
@@ -1196,6 +1243,14 @@ const MyPage: React.FC = () => {
         brandingHistory={selectedBrandingHistory}
         onClose={handleCloseBrandingDetail}
       />
+
+      {selectedUnifiedData && (
+        <PremiumPriceDetailModal
+          isOpen={isPremiumDetailModalOpen}
+          data={selectedUnifiedData}
+          onClose={handleClosePremiumDetailModal}
+        />
+      )}
     </PageContainer>
   );
 };
