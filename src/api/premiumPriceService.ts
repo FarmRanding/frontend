@@ -35,25 +35,24 @@ export interface PremiumPriceRequest {
   date: string; // YYYY-MM-DD 형식
 }
 
-// 가격 제안 응답 타입
+// 가격 제안 응답 타입 (백엔드 응답 구조에 맞춤)
 export interface PremiumPriceResponse {
   id: number;
-  productName: string;
-  location: string;
-  retailPrice: number;
-  wholesalePrice: number;
   suggestedPrice: number;
-  priceCalculation: {
-    retailAverage: number;
-    wholesaleAverage: number;
-    priceRatio: number;
-    calculationFormula: string;
-    explanation: string;
+  retail5DayAvg: number;
+  wholesale5DayAvg: number;
+  alphaRatio: number;
+  calculationReason: string;
+  productInfo: {
+    itemCategoryCode: string;
+    itemCode: string;
+    kindCode: string;
+    productRankCode: string;
+    location: string;
   };
-  marketAnalysis: {
-    marketTrend: string;
-    priceFactors: string[];
-    recommendations: string[];
+  analysisPeriod: {
+    startDate: string;
+    endDate: string;
   };
   createdAt: string;
 }
@@ -66,6 +65,16 @@ export interface PremiumPriceHistoryResponse {
   currentPage: number;
   pageSize: number;
 }
+
+// KAMIS 품목 코드 조회
+export const fetchKamisProductCodes = async (searchTerm?: string): Promise<Array<{ itemCode: string; itemName: string; kindCode: string; kindName: string }>> => {
+  const params = searchTerm ? { search: searchTerm } : {};
+  const response = await apiClient.get<ApiResponse<Array<{ itemCode: string; itemName: string; kindCode: string; kindName: string }>>>('/api/v1/premium-price/kamis-products', { params });
+  if (response.data.data) {
+    return response.data.data;
+  }
+  throw new Error(response.data.message || 'KAMIS 품목 코드 조회에 실패했습니다.');
+};
 
 // 상품 그룹 목록 조회
 export const fetchProductGroups = async (): Promise<KamisProductGroup[]> => {

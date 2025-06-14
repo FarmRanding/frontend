@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import ProductInput, { ProductInputData } from '../../common/ProductInput/ProductInput';
+import KamisProductInput from '../KamisProductInput/KamisProductInput';
 import LocationSelector from '../../common/LocationSelector/LocationSelector';
 import DatePicker from '../../common/DatePicker/DatePicker';
 import iconLocation from '../../../assets/icon-location.png';
@@ -195,6 +195,14 @@ const PriceCheckButton = styled.button`
   }
 `;
 
+// KAMIS 상품 타입
+interface KamisProduct {
+  itemCode: string;
+  itemName: string;
+  kindCode: string;
+  kindName: string;
+}
+
 // 프리미엄 가격 제안 데이터 타입
 interface PremiumPriceData {
   productItemCode: string;
@@ -220,13 +228,12 @@ const PremiumPriceStep: React.FC<PremiumPriceStepProps> = ({
   const [isLocationSelectorOpen, setIsLocationSelectorOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
-  const handleProductChange = (productData: ProductInputData) => {
-    // ProductInput에서 받은 데이터를 프리미엄 가격 제안 형식으로 변환
-    // 품목명을 productItemCode로 전달하여 백엔드에서 KAMIS 코드로 매핑하도록 함
+  const handleProductChange = (product: KamisProduct) => {
+    // KAMIS 상품 데이터를 프리미엄 가격 제안 형식으로 변환
     onChange({
-      productItemCode: productData.productName, // 품목명을 전달하여 백엔드에서 KAMIS 코드로 변환
-      productVarietyCode: '', // 품종은 별도로 선택하지 않음 (기본값 사용)
-      productName: productData.productName
+      productItemCode: product.itemCode, // KAMIS 품목 코드
+      productVarietyCode: product.kindCode, // KAMIS 품종 코드
+      productName: product.itemName // 품목명
     });
   };
 
@@ -291,7 +298,7 @@ const PremiumPriceStep: React.FC<PremiumPriceStepProps> = ({
       
       <FormContainer>
         {/* 품목 입력 */}
-        <ProductInput
+        <KamisProductInput
           value={data.productName}
           onChange={handleProductChange}
         />
