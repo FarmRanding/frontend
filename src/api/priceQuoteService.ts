@@ -159,6 +159,23 @@ export class PriceQuoteService {
   }
   
   /**
+   * 통합 가격 제안 삭제 (일반 + 프리미엄)
+   */
+  static async deleteUnifiedPriceQuote(id: number, type: 'STANDARD' | 'PREMIUM'): Promise<void> {
+    try {
+      await apiClient.delete(`/api/v1/price-quotes/unified/${id}?type=${type}`);
+    } catch (error: any) {
+      console.error('통합 가격 제안 삭제 실패:', error);
+      
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      
+      throw new Error('가격 제안 삭제에 실패했습니다.');
+    }
+  }
+  
+  /**
    * YearlyPriceData를 JSON 문자열로 변환
    */
   static yearlyPriceDataToJson(data: YearlyPriceData[]): string {

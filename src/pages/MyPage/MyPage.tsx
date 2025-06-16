@@ -863,7 +863,15 @@ const MyPage: React.FC = () => {
 
     if (confirmed) {
       try {
-        await PriceQuoteService.deletePriceQuote(parseInt(id));
+        // 해당 ID의 항목을 찾아서 타입 확인
+        const targetItem = unifiedPriceHistory.find(item => item.id === parseInt(id));
+        if (!targetItem) {
+          showError('삭제 실패', '삭제하려는 항목을 찾을 수 없습니다.');
+          return;
+        }
+
+        // 통합 삭제 API 사용
+        await PriceQuoteService.deleteUnifiedPriceQuote(parseInt(id), targetItem.type);
         
         // 로컬 상태에서 해당 항목 제거
         setUnifiedPriceHistory(prev => prev.filter(item => item.id !== parseInt(id)));

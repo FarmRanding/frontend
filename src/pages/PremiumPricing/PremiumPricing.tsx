@@ -528,7 +528,7 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
         return (
           <PremiumResultStep
             data={premiumPriceData}
-            onComplete={() => navigate('/mypage?tab=premium-pricing')}
+            onComplete={() => navigate('/mypage?tab=pricing')}
           />
         );
       default:
