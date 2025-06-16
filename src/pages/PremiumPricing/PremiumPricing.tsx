@@ -311,19 +311,13 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
           
           console.log('API 요청 전 데이터:', premiumPriceData);
           
-          // 선택된 날짜의 1년 전 중간 날짜로 API 요청 (앞뒤 2일씩 총 5일 범위)
+          // 사용자가 선택한 날짜를 그대로 전송 (백엔드에서 1년 전 기준으로 앞뒤 2일씩 조회)
           const apiDate = premiumPriceData.date ? (() => {
             const selectedDate = new Date(premiumPriceData.date);
-            const centerDate = new Date(selectedDate);
-            centerDate.setFullYear(selectedDate.getFullYear() - 1); // 1년 전
-            centerDate.setDate(centerDate.getDate() - 2); // 중간 기준으로 2일 전 (총 5일 범위의 중심)
-            return centerDate.toISOString().split('T')[0];
+            return selectedDate.toISOString().split('T')[0]; // 사용자 선택 날짜 그대로 전송
           })() : (() => {
             const today = new Date();
-            const centerDate = new Date(today);
-            centerDate.setFullYear(today.getFullYear() - 1); // 1년 전
-            centerDate.setDate(centerDate.getDate() - 2); // 중간 기준으로 2일 전
-            return centerDate.toISOString().split('T')[0];
+            return today.toISOString().split('T')[0];
           })();
 
           const request = {
@@ -528,7 +522,10 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
         return (
           <PremiumResultStep
             data={premiumPriceData}
-            onComplete={() => navigate('/mypage?tab=pricing')}
+            onComplete={() => navigate('/mypage?tab=pricing', { 
+              replace: true,
+              state: { forceTabChange: Date.now() } // 고유 키로 강제 탭 변경
+            })}
           />
         );
       default:

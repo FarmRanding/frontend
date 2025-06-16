@@ -156,23 +156,29 @@ export const ForPremiumPricing: Story = {
               setSelectedDate(date);
               console.log('선택된 날짜:', date);
               
-              // 프리미엄 가격 제안 API 요청 날짜 범위 계산
+              // 프리미엄 가격 제안 API 요청 날짜 범위 계산 (백엔드에서 처리)
               const selectedYear = date.getFullYear();
               const lastYear = selectedYear - 1;
               
+              // 백엔드로 사용자 선택 날짜 그대로 전송
+              const userSelectedDate = date.toISOString().split('T')[0];
+              
+              // 백엔드에서 실제로 조회할 날짜 범위 (설명용)
               const centerDate = new Date(date);
-              centerDate.setFullYear(lastYear);
-              centerDate.setDate(centerDate.getDate() - 2); // 중간 기준으로 2일 전
+              centerDate.setFullYear(lastYear); // 작년 동일 날짜
               
               const startDate = new Date(centerDate);
-              const endDate = new Date(centerDate);
-              endDate.setDate(endDate.getDate() + 4); // 5일 범위
+              startDate.setDate(startDate.getDate() - 2); // 중심 - 2일
               
-              console.log('API 요청 날짜 범위:', {
-                center: centerDate.toISOString().split('T')[0],
-                start: startDate.toISOString().split('T')[0],
-                end: endDate.toISOString().split('T')[0],
-                description: `${lastYear}년 ${date.getMonth() + 1}월 ${date.getDate()}일 앞뒤 5일간`
+              const endDate = new Date(centerDate);
+              endDate.setDate(endDate.getDate() + 2); // 중심 + 2일
+              
+              console.log('프리미엄 가격 제안 날짜 처리:', {
+                userSelected: userSelectedDate,
+                backendCenter: centerDate.toISOString().split('T')[0],
+                backendStart: startDate.toISOString().split('T')[0],
+                backendEnd: endDate.toISOString().split('T')[0],
+                description: `사용자 선택: ${date.getMonth() + 1}월 ${date.getDate()}일 → 백엔드 조회: ${lastYear}년 ${date.getMonth() + 1}월 ${date.getDate() - 2}~${date.getDate() + 2}일`
               });
             }}
             onClose={() => {

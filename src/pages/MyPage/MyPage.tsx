@@ -416,9 +416,13 @@ const MyPage: React.FC = () => {
   // URL 파라미터 변경 감지 (location 변경 시마다 실행)
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
-    const tabFromUrl = urlParams.get('tab');
+    const tabFromUrl = urlParams.get('tab') as MyPageTabOption;
     if (tabFromUrl === 'membership') {
       setSelectedTab('membership');
+    } else if (tabFromUrl === 'pricing') {
+      setSelectedTab('pricing');
+    } else if (tabFromUrl === 'branding') {
+      setSelectedTab('branding');
     }
   }, [location.search, location.state]); // location.state도 감지하여 강제 탭 변경 감지
 

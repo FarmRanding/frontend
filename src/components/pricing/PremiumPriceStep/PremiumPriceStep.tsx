@@ -373,7 +373,7 @@ const PremiumPriceStep: React.FC<PremiumPriceStepProps> = ({
           onClose={() => setIsDatePickerOpen(false)}
           minDate={(() => {
             const minDate = new Date();
-            minDate.setDate(minDate.getDate() + 2); // 오늘부터 3일 후
+            minDate.setDate(minDate.getDate() + 3); // 오늘부터 3일 후
             return minDate;
           })()}
           maxDate={(() => {
