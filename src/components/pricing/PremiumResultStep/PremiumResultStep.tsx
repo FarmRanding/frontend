@@ -340,105 +340,6 @@ const CompleteButton = styled.button`
   }
 `;
 
-// 툴팁 관련 스타일
-const TooltipContainer = styled.div`
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-`;
-
-const TooltipTrigger = styled.button`
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 2px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s ease;
-  
-  &:hover {
-    background: rgba(255, 255, 255, 0.1);
-  }
-`;
-
-const TooltipIcon = styled.div`
-  width: 16px;
-  height: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Inter', sans-serif;
-  font-size: 10px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
-`;
-
-const TooltipContent = styled.div<{ $visible: boolean }>`
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.95);
-  color: white;
-  padding: 16px 20px;
-  border-radius: 12px;
-  font-family: 'Pretendard', sans-serif;
-  font-size: 13px;
-  line-height: 1.5;
-  white-space: normal;
-  width: 320px;
-  max-width: 90vw;
-  z-index: 1000;
-  margin-bottom: 12px;
-  opacity: ${props => props.$visible ? 1 : 0};
-  visibility: ${props => props.$visible ? 'visible' : 'hidden'};
-  transition: all 0.2s ease;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  word-break: keep-all;
-  
-  /* 화면 밖으로 나가지 않도록 조정 */
-  @media (max-width: 400px) {
-    width: 280px;
-    left: 0;
-    transform: translateX(0);
-    margin-left: -140px;
-  }
-  
-  /* 툴팁 화살표 */
-  &::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 6px solid transparent;
-    border-top-color: rgba(0, 0, 0, 0.95);
-  }
-  
-  @media (max-width: 400px) {
-    &::after {
-      left: 50%;
-      transform: translateX(-50%);
-    }
-  }
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  
-  &::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 4px solid transparent;
-    border-top-color: rgba(0, 0, 0, 0.9);
-  }
-`;
-
 // 프리미엄 가격 제안 데이터 타입
 interface PremiumPriceData {
   productItemCode: string;
@@ -468,7 +369,6 @@ interface PremiumResultStepProps {
 }
 
 const PremiumResultStep: React.FC<PremiumResultStepProps> = ({ data, onComplete }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
   const handleComplete = async () => {
     try {
       // 프리미엄 가격 제안 결과 저장
@@ -543,22 +443,7 @@ const PremiumResultStep: React.FC<PremiumResultStepProps> = ({ data, onComplete 
         </ProductInfo>
 
         <PriceSection>
-          <TooltipContainer>
-            <PriceLabel>AI 추천 직거래 가격</PriceLabel>
-            <TooltipTrigger
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-              onClick={() => setShowTooltip(!showTooltip)}
-            >
-              <TooltipIcon>?</TooltipIcon>
-            </TooltipTrigger>
-            <TooltipContent $visible={showTooltip}>
-              최근 5일간 소매·도매 가격을 분석하여 생산자와 소비자 모두에게 공정한 직거래 가격을 산출합니다.
-              <br />
-              <br />
-              KAMIS 공식 데이터와 AI 분석을 통해 신뢰성 있는 가격을 제공합니다.
-            </TooltipContent>
-          </TooltipContainer>
+          <PriceLabel>AI 추천 직거래 가격</PriceLabel>
           <SuggestedPrice>{formatPrice(data.suggestedPrice)}</SuggestedPrice>
           
           <PriceBreakdown>

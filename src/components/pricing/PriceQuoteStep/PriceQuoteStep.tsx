@@ -264,9 +264,14 @@ const PriceQuoteStep: React.FC<PriceQuoteStepProps> = ({
       // 동적 import로 서비스 로드 (순환 의존성 방지)
       const { PriceDataService } = await import('../../../api/priceDataService');
       
+      // 선택된 날짜의 1년 전 날짜로 API 요청
+      const selectedDate = new Date(data.harvestDate);
+      const apiDate = new Date(selectedDate);
+      apiDate.setFullYear(selectedDate.getFullYear() - 1); // 1년 전
+      
       const priceData = await PriceDataService.lookupPrice({
         garakCode: data.garakCode,
-        targetDate: data.harvestDate.toISOString().split('T')[0], // YYYY-MM-DD 형식
+        targetDate: apiDate.toISOString().split('T')[0], // 1년 전 날짜로 설정
         grade: data.grade as '특' | '상' | '중' | '하'
       });
       
@@ -352,6 +357,12 @@ const PriceQuoteStep: React.FC<PriceQuoteStepProps> = ({
           selectedDate={data.harvestDate}
           onDateSelect={handleDateSelect}
           onClose={() => setIsDatePickerOpen(false)}
+          minDate={new Date()} // 오늘부터
+          maxDate={(() => {
+            const maxDate = new Date();
+            maxDate.setFullYear(maxDate.getFullYear() + 1); // 1년 후까지
+            return maxDate;
+          })()}
         />
       )}
     </Container>

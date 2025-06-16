@@ -4,6 +4,7 @@ import styled, { keyframes } from 'styled-components';
 import Header from '../../components/common/Header/Header';
 import PremiumPriceStep from '../../components/pricing/PremiumPriceStep/PremiumPriceStep';
 import PremiumResultStep from '../../components/pricing/PremiumResultStep/PremiumResultStep';
+import ErrorModal from '../../components/common/ErrorModal/ErrorModal';
 import { GradeValue } from '../../components/pricing/GradeSelector/GradeSelector';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -255,6 +256,22 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right'>('right');
   const [isCurrentStepValid, setIsCurrentStepValid] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // 에러 모달 상태
+  const [errorModal, setErrorModal] = useState({
+    isOpen: false,
+    title: '',
+    subtitle: '',
+    showCondition: false,
+    condition: {
+      productName: '',
+      grade: '',
+      location: '',
+      date: ''
+    },
+    onRetry: undefined as (() => void) | undefined
+  });
+  
   const [premiumPriceData, setPremiumPriceData] = useState<PremiumPriceData>({
     productItemCode: '',
     productVarietyCode: '',
@@ -294,6 +311,21 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
           
           console.log('API 요청 전 데이터:', premiumPriceData);
           
+          // 선택된 날짜의 1년 전 중간 날짜로 API 요청 (앞뒤 2일씩 총 5일 범위)
+          const apiDate = premiumPriceData.date ? (() => {
+            const selectedDate = new Date(premiumPriceData.date);
+            const centerDate = new Date(selectedDate);
+            centerDate.setFullYear(selectedDate.getFullYear() - 1); // 1년 전
+            centerDate.setDate(centerDate.getDate() - 2); // 중간 기준으로 2일 전 (총 5일 범위의 중심)
+            return centerDate.toISOString().split('T')[0];
+          })() : (() => {
+            const today = new Date();
+            const centerDate = new Date(today);
+            centerDate.setFullYear(today.getFullYear() - 1); // 1년 전
+            centerDate.setDate(centerDate.getDate() - 2); // 중간 기준으로 2일 전
+            return centerDate.toISOString().split('T')[0];
+          })();
+
           const request = {
             productGroupCode: '', // 사용하지 않음
             productItemCode: premiumPriceData.productItemCode,
@@ -301,7 +333,7 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
             productName: premiumPriceData.productName, // 누락된 필드 추가
             productRankCode: premiumPriceData.productRankCode,
             location: premiumPriceData.location,
-            date: premiumPriceData.date?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0]
+            date: apiDate // 1년 전 날짜로 설정
           };
           
           console.log('API 요청 데이터:', request);
@@ -332,12 +364,100 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
           
           // FR474 오류 (KAMIS 데이터 없음) 특별 처리
           if (error.response?.data?.code === 'FR474') {
-            showError(
-              '데이터 없음', 
-              `선택하신 품목(${premiumPriceData.productName})의 시장 가격 데이터가 없어 가격 제안이 불가능합니다.\n\n다른 품목을 선택하거나 지역을 변경해보세요.`
-            );
+            setErrorModal({
+              isOpen: true,
+              title: '시장 가격 데이터가 없습니다',
+              subtitle: '선택하신 조건에 대한 시장 가격 데이터가 없어 분석을 진행할 수 없습니다.',
+              showCondition: true,
+              condition: {
+                productName: premiumPriceData.productName,
+                grade: premiumPriceData.productRankCode === '04' ? '상급' : '중급',
+                location: premiumPriceData.location,
+                date: premiumPriceData.date?.toLocaleDateString('ko-KR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                }) || ''
+              },
+              onRetry: () => {
+                setErrorModal(prev => ({ ...prev, isOpen: false }));
+                // 사용자가 조건을 변경할 수 있도록 현재 단계에 머물러 있음
+              }
+            });
+          } else if (error.response?.data?.code === 'FR471') {
+            // 프리미엄 멤버십 필요
+            setErrorModal({
+              isOpen: true,
+              title: '프리미엄 멤버십 필요',
+              subtitle: '이 기능을 사용하려면 프리미엄 멤버십이 필요합니다.',
+              showCondition: false,
+              condition: {
+                productName: '',
+                grade: '',
+                location: '',
+                date: ''
+              },
+              onRetry: () => {
+                setErrorModal(prev => ({ ...prev, isOpen: false }));
+                navigate('/mypage?tab=membership');
+              }
+            });
+            return;
+          } else if (error.response?.data?.code === 'FR461') {
+            // 품목 코드 없음
+            setErrorModal({
+              isOpen: true,
+              title: '지원하지 않는 농산물입니다',
+              subtitle: '현재 지원하지 않는 농산물입니다. 다른 농산물을 선택해 주세요.',
+              showCondition: true,
+              condition: {
+                productName: premiumPriceData.productName,
+                grade: premiumPriceData.productRankCode === '04' ? '상급' : '중급',
+                location: premiumPriceData.location,
+                date: premiumPriceData.date?.toLocaleDateString('ko-KR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                }) || ''
+              },
+              onRetry: undefined
+            });
+          } else if (error.response?.data?.code === 'FR441') {
+            // AI 서비스 에러
+            setErrorModal({
+              isOpen: true,
+              title: 'AI 분석 중 오류가 발생했습니다',
+              subtitle: '잠시 후 다시 시도해 주세요.',
+              showCondition: false,
+              condition: {
+                productName: '',
+                grade: '',
+                location: '',
+                date: ''
+              },
+              onRetry: () => {
+                setErrorModal(prev => ({ ...prev, isOpen: false }));
+                handleNext(); // 다시 시도
+              }
+            });
           } else {
-            showError('오류', error.message || '프리미엄 가격 제안에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            // 기타 에러
+            setErrorModal({
+              isOpen: true,
+              title: '일시적인 오류가 발생했습니다',
+              subtitle: '서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+              showCondition: false,
+              condition: {
+                productName: '',
+                grade: '',
+                location: '',
+                date: ''
+              },
+              onRetry: () => {
+                setErrorModal(prev => ({ ...prev, isOpen: false }));
+                handleNext(); // 다시 시도
+              }
+            });
           }
           
           setIsLoading(false);
@@ -458,6 +578,17 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
           </NavigationContainer>
         )}
       </ContentArea>
+      
+      {/* 에러 모달 */}
+      <ErrorModal
+        isOpen={errorModal.isOpen}
+        title={errorModal.title}
+        subtitle={errorModal.subtitle}
+        showCondition={errorModal.showCondition}
+        condition={errorModal.condition}
+        onClose={() => setErrorModal(prev => ({ ...prev, isOpen: false }))}
+        onRetry={errorModal.onRetry}
+      />
     </PageContainer>
   );
 };

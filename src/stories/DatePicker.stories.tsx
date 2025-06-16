@@ -89,16 +89,16 @@ export const WithSelectedDate: Story = {
   },
 };
 
-// 최소/최대 날짜 제한
-export const WithDateRange: Story = {
-  name: '날짜 범위 제한',
+// 일반 가격 제안용 날짜 제한
+export const ForStandardPricing: Story = {
+  name: '일반 가격 제안용',
   render: () => {
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [showPicker, setShowPicker] = useState(true);
     
     const today = new Date();
     const maxDate = new Date();
-    maxDate.setDate(today.getDate() + 30); // 30일 후까지
+    maxDate.setFullYear(today.getFullYear() + 1); // 1년 후까지
 
     return (
       <div style={{ width: '402px', margin: '0 auto' }}>
@@ -108,6 +108,11 @@ export const WithDateRange: Story = {
             onDateSelect={(date) => {
               setSelectedDate(date);
               console.log('선택된 날짜:', date);
+              console.log('API 요청 날짜 (1년 전):', (() => {
+                const apiDate = new Date(date);
+                apiDate.setFullYear(date.getFullYear() - 1);
+                return apiDate.toISOString().split('T')[0];
+              })());
             }}
             onClose={() => {
               setShowPicker(false);
@@ -123,7 +128,68 @@ export const WithDateRange: Story = {
   parameters: {
     docs: {
       description: {
-        story: '오늘부터 30일 후까지만 선택 가능한 달력입니다. 범위를 벗어난 날짜들은 비활성화되어 선택할 수 없습니다.',
+        story: '일반 가격 제안용 달력입니다. 오늘부터 1년 후까지만 선택 가능하며, 실제 API 요청 시에는 선택된 날짜의 1년 전 데이터를 조회합니다.',
+      },
+    },
+  },
+};
+
+// 프리미엄 가격 제안용 날짜 제한 (3일 후부터)
+export const ForPremiumPricing: Story = {
+  name: '프리미엄 가격 제안용',
+  render: () => {
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const [showPicker, setShowPicker] = useState(true);
+    
+    const minDate = new Date();
+    minDate.setDate(minDate.getDate() + 3); // 오늘부터 3일 후
+    
+    const maxDate = new Date();
+    maxDate.setFullYear(maxDate.getFullYear() + 1); // 1년 후까지
+
+    return (
+      <div style={{ width: '402px', margin: '0 auto' }}>
+        {showPicker && (
+          <DatePicker
+            selectedDate={selectedDate}
+            onDateSelect={(date) => {
+              setSelectedDate(date);
+              console.log('선택된 날짜:', date);
+              
+              // 프리미엄 가격 제안 API 요청 날짜 범위 계산
+              const selectedYear = date.getFullYear();
+              const lastYear = selectedYear - 1;
+              
+              const centerDate = new Date(date);
+              centerDate.setFullYear(lastYear);
+              centerDate.setDate(centerDate.getDate() - 2); // 중간 기준으로 2일 전
+              
+              const startDate = new Date(centerDate);
+              const endDate = new Date(centerDate);
+              endDate.setDate(endDate.getDate() + 4); // 5일 범위
+              
+              console.log('API 요청 날짜 범위:', {
+                center: centerDate.toISOString().split('T')[0],
+                start: startDate.toISOString().split('T')[0],
+                end: endDate.toISOString().split('T')[0],
+                description: `${lastYear}년 ${date.getMonth() + 1}월 ${date.getDate()}일 앞뒤 5일간`
+              });
+            }}
+            onClose={() => {
+              setShowPicker(false);
+              setTimeout(() => setShowPicker(true), 1000);
+            }}
+            minDate={minDate}
+            maxDate={maxDate}
+          />
+        )}
+      </div>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: '프리미엄 가격 제안용 달력입니다. 오늘부터 3일 후부터 1년 후까지 선택 가능하며, 실제 API 요청 시에는 선택된 날짜의 1년 전 중간 기준으로 앞뒤 5일간의 데이터를 조회합니다.',
       },
     },
   },

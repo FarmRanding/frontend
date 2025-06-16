@@ -8,7 +8,7 @@ const meta: Meta<typeof GradeSelector> = {
     layout: 'centered',
     docs: {
       description: {
-        component: '농산물 등급 선택을 위한 컴포넌트입니다. 상(04), 중(05), 하(06) 등급을 선택할 수 있습니다.'
+        component: '농산물 등급 선택을 위한 컴포넌트입니다. 상(04), 중(05) 등급을 선택할 수 있습니다.'
       }
     }
   },
@@ -16,7 +16,7 @@ const meta: Meta<typeof GradeSelector> = {
   argTypes: {
     value: {
       control: 'select',
-      options: ['04', '05', '06'],
+      options: ['04', '05'],
       description: '현재 선택된 등급 코드'
     },
     onChange: {
@@ -70,28 +70,12 @@ export const MiddleGrade: Story = {
   }
 };
 
-export const LowGrade: Story = {
-  args: {
-    value: '06',
-    onChange: (grade: GradeValue) => {
-      console.log('Selected grade:', grade);
-    }
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: '하급(06) 등급이 선택된 상태입니다.'
-      }
-    }
-  }
-};
-
 export const Interactive: Story = {
   args: {
     value: '04',
     onChange: (grade: GradeValue) => {
       console.log('Selected grade:', grade);
-      const gradeNames = { '04': '상급', '05': '중급', '06': '하급' };
+      const gradeNames = { '04': '상급', '05': '중급' };
       alert(`선택된 등급: ${gradeNames[grade]} (${grade})`);
     }
   },

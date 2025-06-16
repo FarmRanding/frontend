@@ -203,9 +203,14 @@ const PriceQuoteFlow: React.FC = () => {
           // 동적 import로 서비스 로드
           const { PriceDataService } = await import('../../api/priceDataService');
           
+          // 선택된 날짜의 1년 전 날짜로 API 요청
+          const selectedDate = new Date(priceQuoteData.harvestDate!);
+          const apiDate = new Date(selectedDate);
+          apiDate.setFullYear(selectedDate.getFullYear() - 1); // 1년 전
+          
           const priceData = await PriceDataService.lookupPrice({
             garakCode: priceQuoteData.garakCode,
-            targetDate: priceQuoteData.harvestDate!.toISOString().split('T')[0],
+            targetDate: apiDate.toISOString().split('T')[0], // 1년 전 날짜로 설정
             grade: priceQuoteData.grade as '특' | '상' | '중' | '하'
           });
           

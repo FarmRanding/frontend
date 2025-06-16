@@ -60,15 +60,14 @@ const GradeButton = styled.button<{ $isSelected: boolean }>`
   }
 `;
 
-// 등급 옵션 정의
+// 등급 옵션 정의 - 하급 제거
 const GRADE_OPTIONS = [
   { label: '상급', value: '04', description: '최상급 품질' },
-  { label: '중급', value: '05', description: '일반 품질' },
-  { label: '하급', value: '06', description: '저급 품질' }
+  { label: '중급', value: '05', description: '일반 품질' }
 ] as const;
 
-// 타입 정의
-export type GradeValue = '04' | '05' | '06';
+// 타입 정의 - 하급 제거
+export type GradeValue = '04' | '05';
 
 interface GradeSelectorProps {
   value: GradeValue;

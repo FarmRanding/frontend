@@ -351,7 +351,7 @@ const PremiumPriceStep: React.FC<PremiumPriceStepProps> = ({
               onClick={() => setIsDatePickerOpen(true)}
             >
               <span>
-                {data.date ? formatDate(data.date) : '2025년 6월 1일'}
+                {data.date ? formatDate(data.date) : '출하예정일을 선택해 주세요'}
               </span>
               <CalendarIcon src={iconCalendar} alt="달력" />
             </DateInput>
@@ -371,6 +371,16 @@ const PremiumPriceStep: React.FC<PremiumPriceStepProps> = ({
           selectedDate={data.date}
           onDateSelect={handleDateSelect}
           onClose={() => setIsDatePickerOpen(false)}
+          minDate={(() => {
+            const minDate = new Date();
+            minDate.setDate(minDate.getDate() + 2); // 오늘부터 3일 후
+            return minDate;
+          })()}
+          maxDate={(() => {
+            const maxDate = new Date();
+            maxDate.setFullYear(maxDate.getFullYear() + 1); // 1년 후까지
+            return maxDate;
+          })()}
         />
       )}
     </Container>
