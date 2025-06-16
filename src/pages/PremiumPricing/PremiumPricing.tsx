@@ -375,7 +375,8 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
               },
               onRetry: () => {
                 setErrorModal(prev => ({ ...prev, isOpen: false }));
-                // 사용자가 조건을 변경할 수 있도록 현재 단계에 머물러 있음
+                // 조건 변경을 위해 이전 단계로 돌아가기
+                handlePrev();
               }
             });
           } else if (error.response?.data?.code === 'FR471') {
@@ -421,17 +422,22 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
             setErrorModal({
               isOpen: true,
               title: 'AI 분석 중 오류가 발생했습니다',
-              subtitle: '잠시 후 다시 시도해 주세요.',
-              showCondition: false,
+              subtitle: '조건을 변경하거나 잠시 후 다시 시도해 주세요.',
+              showCondition: true,
               condition: {
-                productName: '',
-                grade: '',
-                location: '',
-                date: ''
+                productName: premiumPriceData.productName,
+                grade: premiumPriceData.productRankCode === '04' ? '상급' : '중급',
+                location: premiumPriceData.location,
+                date: premiumPriceData.date?.toLocaleDateString('ko-KR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                }) || ''
               },
               onRetry: () => {
                 setErrorModal(prev => ({ ...prev, isOpen: false }));
-                handleNext(); // 다시 시도
+                // 조건 변경을 위해 이전 단계로 돌아가기
+                handlePrev();
               }
             });
           } else {
@@ -439,17 +445,22 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
             setErrorModal({
               isOpen: true,
               title: '일시적인 오류가 발생했습니다',
-              subtitle: '서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.',
-              showCondition: false,
+              subtitle: '조건을 변경하거나 잠시 후 다시 시도해 주세요.',
+              showCondition: true,
               condition: {
-                productName: '',
-                grade: '',
-                location: '',
-                date: ''
+                productName: premiumPriceData.productName,
+                grade: premiumPriceData.productRankCode === '04' ? '상급' : '중급',
+                location: premiumPriceData.location,
+                date: premiumPriceData.date?.toLocaleDateString('ko-KR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                }) || ''
               },
               onRetry: () => {
                 setErrorModal(prev => ({ ...prev, isOpen: false }));
-                handleNext(); // 다시 시도
+                // 조건 변경을 위해 이전 단계로 돌아가기
+                handlePrev();
               }
             });
           }
