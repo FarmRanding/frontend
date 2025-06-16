@@ -954,7 +954,8 @@ const MyPage: React.FC = () => {
           },
           unit: unifiedHistory.unit,
           quantity: unifiedHistory.quantity,
-          createdAt: unifiedHistory.createdAt
+          createdAt: unifiedHistory.createdAt,
+          quotationType: unifiedHistory.type // 직접 매핑 (둘 다 동일한 값)
         };
         
         setSelectedPriceHistory(convertedHistory);

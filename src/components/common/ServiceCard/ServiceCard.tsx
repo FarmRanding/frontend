@@ -32,7 +32,7 @@ const iconPulse = keyframes`
   }
 `;
 
-const CardContainer = styled.div<{ variant: ServiceCardVariant }>`
+const CardContainer = styled.div<{ $variant: ServiceCardVariant }>`
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -42,13 +42,13 @@ const CardContainer = styled.div<{ variant: ServiceCardVariant }>`
   width: 100%;
   height: 80px;
   background: ${props => {
-    if (props.variant === 'branding') return 'linear-gradient(135deg, rgba(31, 65, 187, 0.05) 0%, rgba(79, 70, 229, 0.08) 100%)';
-    if (props.variant === 'premium-pricing') return 'linear-gradient(135deg, rgba(147, 51, 234, 0.05) 0%, rgba(126, 34, 206, 0.08) 100%)';
+    if (props.$variant === 'branding') return 'linear-gradient(135deg, rgba(31, 65, 187, 0.05) 0%, rgba(79, 70, 229, 0.08) 100%)';
+    if (props.$variant === 'premium-pricing') return 'linear-gradient(135deg, rgba(147, 51, 234, 0.05) 0%, rgba(126, 34, 206, 0.08) 100%)';
     return 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.08) 100%)';
   }};
   border: 1px solid ${props => {
-    if (props.variant === 'branding') return 'rgba(31, 65, 187, 0.1)';
-    if (props.variant === 'premium-pricing') return 'rgba(147, 51, 234, 0.1)';
+    if (props.$variant === 'branding') return 'rgba(31, 65, 187, 0.1)';
+    if (props.$variant === 'premium-pricing') return 'rgba(147, 51, 234, 0.1)';
     return 'rgba(16, 185, 129, 0.1)';
   }};
   border-radius: 16px;
@@ -84,8 +84,8 @@ const CardContainer = styled.div<{ variant: ServiceCardVariant }>`
       0px 16px 48px rgba(0, 0, 0, 0.12),
       0px 1px 0px rgba(255, 255, 255, 0.6) inset;
     border-color: ${props => {
-      if (props.variant === 'branding') return 'rgba(31, 65, 187, 0.2)';
-      if (props.variant === 'premium-pricing') return 'rgba(147, 51, 234, 0.2)';
+      if (props.$variant === 'branding') return 'rgba(31, 65, 187, 0.2)';
+      if (props.$variant === 'premium-pricing') return 'rgba(147, 51, 234, 0.2)';
       return 'rgba(16, 185, 129, 0.2)';
     }};
     
@@ -100,7 +100,7 @@ const CardContainer = styled.div<{ variant: ServiceCardVariant }>`
   }
 `;
 
-const IconContainer = styled.div<{ variant: ServiceCardVariant }>`
+const IconContainer = styled.div<{ $variant: ServiceCardVariant }>`
   width: 48px;
   height: 48px;
   display: flex;
@@ -108,8 +108,8 @@ const IconContainer = styled.div<{ variant: ServiceCardVariant }>`
   justify-content: center;
   flex-shrink: 0;
   background: ${props => {
-    if (props.variant === 'branding') return 'linear-gradient(135deg, #1F41BB 0%, #4F46E5 100%)';
-    if (props.variant === 'premium-pricing') return 'linear-gradient(135deg, #9333EA 0%, #7E22CE 100%)';
+    if (props.$variant === 'branding') return 'linear-gradient(135deg, #1F41BB 0%, #4F46E5 100%)';
+    if (props.$variant === 'premium-pricing') return 'linear-gradient(135deg, #9333EA 0%, #7E22CE 100%)';
     return 'linear-gradient(135deg, #10B981 0%, #059669 100%)';
   }};
   border-radius: 12px;
@@ -171,11 +171,11 @@ const FirstLine = styled.div`
   }
 `;
 
-const SecondLine = styled.div<{ variant: ServiceCardVariant }>`
+const SecondLine = styled.div<{ $variant: ServiceCardVariant }>`
   font-size: 18px;
   color: ${props => {
-    if (props.variant === 'branding') return '#1F41BB';
-    if (props.variant === 'premium-pricing') return '#9333EA';
+    if (props.$variant === 'branding') return '#1F41BB';
+    if (props.$variant === 'premium-pricing') return '#9333EA';
     return '#059669';
   }};
   font-weight: 700;
@@ -184,8 +184,8 @@ const SecondLine = styled.div<{ variant: ServiceCardVariant }>`
   ${CardContainer}:hover & {
     transform: translateX(2px);
     color: ${props => {
-      if (props.variant === 'branding') return '#1a37a0';
-      if (props.variant === 'premium-pricing') return '#7E22CE';
+      if (props.$variant === 'branding') return '#1a37a0';
+      if (props.$variant === 'premium-pricing') return '#7E22CE';
       return '#047857';
     }};
   }
@@ -290,14 +290,14 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   const textLines = getTextLines();
 
   return (
-    <CardContainer variant={variant} className={className} onClick={onClick}>
-      <IconContainer variant={variant}>
+    <CardContainer $variant={variant} className={className} onClick={onClick}>
+      <IconContainer $variant={variant}>
         <IconImage src={getIconSrc()} alt={getAltText()} />
       </IconContainer>
       <TextContainer>
         <MainText>
           <FirstLine>{textLines.first}</FirstLine>
-          <SecondLine variant={variant}>{textLines.second}</SecondLine>
+          <SecondLine $variant={variant}>{textLines.second}</SecondLine>
         </MainText>
       </TextContainer>
       <ChevronContainer>

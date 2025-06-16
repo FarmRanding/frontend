@@ -6,6 +6,7 @@ import ServiceCard from '../../components/common/ServiceCard';
 import PriceQuoteHistoryCard from '../../components/common/PriceQuoteHistoryCard';
 import EmptyPriceHistory from '../../components/common/EmptyPriceHistory';
 import { useAuth } from '../../contexts/AuthContext';
+import PremiumMembershipModal from '../../components/common/PremiumMembershipModal/PremiumMembershipModal';
 import { PriceQuoteService, UnifiedPriceHistoryResponse } from '../../api/priceQuoteService';
 
 // 부드러운 애니메이션만 유지
@@ -111,14 +112,13 @@ interface HomeProps {
   className?: string;
 }
 
-
-
 const Home: React.FC<HomeProps> = ({ className }) => {
   const navigate = useNavigate();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activeChart, setActiveChart] = useState(0);
   const [priceHistory, setPriceHistory] = useState<UnifiedPriceHistoryResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const { user } = useAuth();
   
   // API에서 가격 제안 이력 가져오기
@@ -149,11 +149,14 @@ const Home: React.FC<HomeProps> = ({ className }) => {
   };
 
   const handlePremiumPricingClick = () => {
+    console.log('프리미엄 가격 제안 클릭 - 사용자 멤버십:', user?.membershipType);
     if (user?.membershipType === 'FREE') {
-      // 무료 사용자는 마이페이지 멤버십 탭으로 이동
-      navigate('/mypage?tab=membership');
+      // 무료 사용자는 프리미엄 멤버십 모달 표시
+      console.log('무료 사용자 - 프리미엄 모달 표시');
+      setIsPremiumModalOpen(true);
     } else {
       // 프리미엄 이상 사용자는 프리미엄 가격 제안 페이지로 이동
+      console.log('프리미엄 사용자 - 페이지 이동');
       navigate('/premium-pricing');
     }
   };
@@ -196,6 +199,15 @@ const Home: React.FC<HomeProps> = ({ className }) => {
       const newActiveChart = Math.round(scrollLeft / chartWidth);
       setActiveChart(newActiveChart);
     }
+  };
+
+  const handlePremiumModalClose = () => {
+    setIsPremiumModalOpen(false);
+  };
+
+  const handlePremiumUpgrade = () => {
+    setIsPremiumModalOpen(false);
+    navigate('/mypage?tab=membership'); // 멤버십 탭으로 이동
   };
 
   return (
@@ -277,6 +289,16 @@ const Home: React.FC<HomeProps> = ({ className }) => {
           )}
         </PriceTrendSection>
       </ContentArea>
+      
+      {/* 프리미엄 멤버십 모달 */}
+      <PremiumMembershipModal
+        isOpen={isPremiumModalOpen}
+        onClose={handlePremiumModalClose}
+        onUpgrade={handlePremiumUpgrade}
+        title="프리미엄 멤버십 필요"
+        subtitle="프리미엄 가격 제안은 프리미엄 이상 멤버십에서 이용할 수 있습니다."
+        featureName="프리미엄 가격 제안"
+      />
     </PageContainer>
   );
 };

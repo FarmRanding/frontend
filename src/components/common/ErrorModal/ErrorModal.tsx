@@ -274,6 +274,8 @@ interface ErrorModalProps {
   subtitle?: string;
   condition?: ErrorCondition;
   showCondition?: boolean;
+  retryButtonText?: string;
+  isPremiumRequired?: boolean;
 }
 
 const ErrorModal: React.FC<ErrorModalProps> = ({
@@ -283,7 +285,9 @@ const ErrorModal: React.FC<ErrorModalProps> = ({
   title,
   subtitle = "조건을 변경하고 다시 시도해 보세요.",
   condition,
-  showCondition = true
+  showCondition = true,
+  retryButtonText = "조건 변경",
+  isPremiumRequired = false
 }) => {
   if (!isOpen) return null;
 
@@ -356,11 +360,11 @@ const ErrorModal: React.FC<ErrorModalProps> = ({
 
         <ModalFooter>
           <Button $variant="secondary" onClick={onClose}>
-            취소
+            {isPremiumRequired ? '나중에' : '취소'}
           </Button>
           {onRetry ? (
             <Button $variant="primary" onClick={onRetry}>
-              조건 변경
+              {retryButtonText}
             </Button>
           ) : (
             <Button $variant="primary" onClick={onClose}>

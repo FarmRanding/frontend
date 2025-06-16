@@ -317,7 +317,7 @@ const PremiumPriceStep: React.FC<PremiumPriceStepProps> = ({
 
   return (
     <Container>
-      <Title>프리미엄 농산물 정보를{'\n'}입력해주세요.</Title>
+      <Title>농산물 정보를{'\n'}입력해주세요.</Title>
       
       <FormContainer>
         {/* 품목 입력 */}

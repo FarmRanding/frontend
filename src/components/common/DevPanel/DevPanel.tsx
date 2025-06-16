@@ -42,8 +42,8 @@ const DevPanel: React.FC<DevPanelProps> = ({ className }) => {
   };
 
   return (
-    <DevPanelContainer className={className} isExpanded={isExpanded}>
-      <ToggleButton onClick={() => setIsExpanded(!isExpanded)} isExpanded={isExpanded}>
+    <DevPanelContainer className={className} $isExpanded={isExpanded}>
+      <ToggleButton onClick={() => setIsExpanded(!isExpanded)} $isExpanded={isExpanded}>
         🛠️ DEV
         {isExpanded ? ' ⬇️' : ' ⬆️'}
       </ToggleButton>
@@ -104,7 +104,7 @@ const DevPanel: React.FC<DevPanelProps> = ({ className }) => {
 export default DevPanel;
 
 // Styled Components
-const DevPanelContainer = styled.div<{ isExpanded: boolean }>`
+const DevPanelContainer = styled.div<{ $isExpanded: boolean }>`
   position: fixed;
   bottom: 0;
   left: 50%;
@@ -122,7 +122,7 @@ const DevPanelContainer = styled.div<{ isExpanded: boolean }>`
   
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   
-  ${props => props.isExpanded ? `
+  ${props => props.$isExpanded ? `
     height: auto;
     max-height: 80vh;
     overflow-y: auto;
@@ -131,7 +131,7 @@ const DevPanelContainer = styled.div<{ isExpanded: boolean }>`
   `}
 `;
 
-const ToggleButton = styled.button<{ isExpanded: boolean }>`
+const ToggleButton = styled.button<{ $isExpanded: boolean }>`
   width: 100%;
   padding: 12px 20px;
   background: transparent;

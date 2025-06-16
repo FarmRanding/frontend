@@ -14,10 +14,10 @@ import PriceQuoteFlow from './pages/PriceQuoteFlow/PriceQuoteFlow';
 import PremiumPricing from './pages/PremiumPricing/PremiumPricing';
 import './App.css';
 
-const AppContainer = styled.div<{ isLanding: boolean }>`
+const AppContainer = styled.div<{ $isLanding: boolean }>`
   width: 100vw;
   min-height: 100vh;
-  background: ${props => props.isLanding ? '#FFFFFF' : '#F4FAFF'};
+  background: ${props => props.$isLanding ? '#FFFFFF' : '#F4FAFF'};
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -31,14 +31,14 @@ const AppContainer = styled.div<{ isLanding: boolean }>`
   text-rendering: optimizeLegibility;
 `;
 
-const ContentWrapper = styled.div<{ isLanding: boolean }>`
+const ContentWrapper = styled.div<{ $isLanding: boolean }>`
   width: 100%;
   min-height: 100vh;
-  background: ${props => props.isLanding ? '#FFFFFF' : '#F4FAFF'};
+  background: ${props => props.$isLanding ? '#FFFFFF' : '#F4FAFF'};
   position: relative;
   
   /* 랜딩페이지가 아닐 때만 최대 너비 제한 */
-  ${props => !props.isLanding && `
+  ${props => !props.$isLanding && `
     max-width: 402px;
     margin: 0 auto;
     
@@ -53,8 +53,8 @@ function AppContent() {
   const isLanding = location.pathname === '/';
 
   return (
-    <AppContainer isLanding={isLanding}>
-      <ContentWrapper isLanding={isLanding}>
+    <AppContainer $isLanding={isLanding}>
+      <ContentWrapper $isLanding={isLanding}>
         <Routes>
           <Route path="/" element={<Home />} />
           {/* 보호된 라우트들 */}

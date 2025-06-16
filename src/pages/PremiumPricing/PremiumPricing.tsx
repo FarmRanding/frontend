@@ -5,6 +5,7 @@ import Header from '../../components/common/Header/Header';
 import PremiumPriceStep from '../../components/pricing/PremiumPriceStep/PremiumPriceStep';
 import PremiumResultStep from '../../components/pricing/PremiumResultStep/PremiumResultStep';
 import ErrorModal from '../../components/common/ErrorModal/ErrorModal';
+import PremiumMembershipModal from '../../components/common/PremiumMembershipModal/PremiumMembershipModal';
 import { GradeValue } from '../../components/pricing/GradeSelector/GradeSelector';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -257,6 +258,9 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
   const [isCurrentStepValid, setIsCurrentStepValid] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
+  // 프리미엄 멤버십 모달 상태
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+  
   // 에러 모달 상태
   const [errorModal, setErrorModal] = useState({
     isOpen: false,
@@ -269,7 +273,9 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
       location: '',
       date: ''
     },
-    onRetry: undefined as (() => void) | undefined
+    onRetry: undefined as (() => void) | undefined,
+    retryButtonText: '조건 변경',
+    isPremiumRequired: false
   });
   
   const [premiumPriceData, setPremiumPriceData] = useState<PremiumPriceData>({
@@ -284,13 +290,14 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
     wholesalePrice: 0
   });
 
-  // 멤버십 확인
+  // 멤버십 확인 - 진입 시점에서 차단
   React.useEffect(() => {
+    console.log('PremiumPricing - 사용자 멤버십 체크:', user?.membershipType);
     if (user?.membershipType === 'FREE') {
-      showError('프리미엄 멤버십 필요', '프리미엄 가격 제안은 프리미엄 이상 멤버십에서 이용할 수 있습니다.');
-      navigate('/mypage?tab=membership');
+      console.log('무료 사용자 감지 - 프리미엄 모달 표시');
+      setIsPremiumModalOpen(true);
     }
-  }, [user, navigate, showError]);
+  }, [user]);
 
   const handleLogoClick = () => {
     navigate('/home');
@@ -298,6 +305,16 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
 
   const handleMypageClick = () => {
     navigate('/mypage');
+  };
+
+  const handlePremiumModalClose = () => {
+    setIsPremiumModalOpen(false);
+    navigate('/home'); // 홈으로 돌아가기
+  };
+
+  const handlePremiumUpgrade = () => {
+    setIsPremiumModalOpen(false);
+    navigate('/mypage?tab=membership'); // 멤버십 탭으로 이동
   };
 
   const handleNext = async () => {
@@ -377,7 +394,9 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
                 setErrorModal(prev => ({ ...prev, isOpen: false }));
                 // 조건 변경을 위해 이전 단계로 돌아가기
                 handlePrev();
-              }
+              },
+              retryButtonText: '조건 변경',
+              isPremiumRequired: false
             });
           } else if (error.response?.data?.code === 'FR471') {
             // 프리미엄 멤버십 필요
@@ -395,7 +414,9 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
               onRetry: () => {
                 setErrorModal(prev => ({ ...prev, isOpen: false }));
                 navigate('/mypage?tab=membership');
-              }
+              },
+              retryButtonText: '멤버십 업그레이드',
+              isPremiumRequired: true
             });
             return;
           } else if (error.response?.data?.code === 'FR461') {
@@ -415,7 +436,9 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
                   day: 'numeric'
                 }) || ''
               },
-              onRetry: undefined
+              onRetry: undefined,
+              retryButtonText: '조건 변경',
+              isPremiumRequired: false
             });
           } else if (error.response?.data?.code === 'FR441') {
             // AI 서비스 에러
@@ -438,7 +461,9 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
                 setErrorModal(prev => ({ ...prev, isOpen: false }));
                 // 조건 변경을 위해 이전 단계로 돌아가기
                 handlePrev();
-              }
+              },
+              retryButtonText: '조건 변경',
+              isPremiumRequired: false
             });
           } else {
             // 기타 에러
@@ -461,7 +486,9 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
                 setErrorModal(prev => ({ ...prev, isOpen: false }));
                 // 조건 변경을 위해 이전 단계로 돌아가기
                 handlePrev();
-              }
+              },
+              retryButtonText: '조건 변경',
+              isPremiumRequired: false
             });
           }
           
@@ -587,6 +614,16 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
         )}
       </ContentArea>
       
+      {/* 프리미엄 멤버십 모달 */}
+      <PremiumMembershipModal
+        isOpen={isPremiumModalOpen}
+        onClose={handlePremiumModalClose}
+        onUpgrade={handlePremiumUpgrade}
+        title="프리미엄 멤버십 필요"
+        subtitle="프리미엄 가격 제안은 프리미엄 이상 멤버십에서 이용할 수 있습니다."
+        featureName="프리미엄 가격 제안"
+      />
+      
       {/* 에러 모달 */}
       <ErrorModal
         isOpen={errorModal.isOpen}
@@ -596,6 +633,8 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
         condition={errorModal.condition}
         onClose={() => setErrorModal(prev => ({ ...prev, isOpen: false }))}
         onRetry={errorModal.onRetry}
+        retryButtonText={errorModal.retryButtonText}
+        isPremiumRequired={errorModal.isPremiumRequired}
       />
     </PageContainer>
   );
