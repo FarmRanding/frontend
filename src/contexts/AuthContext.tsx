@@ -8,6 +8,7 @@ interface AuthContextType {
   login: (userInfo: UserResponse) => void;
   logout: () => void;
   loading: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 interface AuthProviderProps {
@@ -39,6 +40,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
     setIsAuthenticated(false);
     logout(); // API 함수 호출
+  }, []);
+
+  // 사용자 정보 강제 새로고침 함수
+  const refreshUser = useCallback(async () => {
+    console.log('AuthContext - 사용자 정보 강제 새로고침 시작');
+    try {
+      const serverUser = await fetchCurrentUserFromServer();
+      if (serverUser) {
+        console.log('AuthContext - 서버에서 최신 사용자 정보 조회 성공:', serverUser);
+        setUser(serverUser);
+        setIsAuthenticated(true);
+      } else {
+        console.warn('AuthContext - 서버에서 사용자 정보 조회 실패');
+      }
+    } catch (error) {
+      console.error('AuthContext - 사용자 정보 새로고침 중 오류:', error);
+    }
   }, []);
 
   useEffect(() => {
@@ -95,6 +113,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login: handleLogin,
     logout: handleLogout,
     loading,
+    refreshUser,
   };
 
   return (

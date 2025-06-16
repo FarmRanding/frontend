@@ -374,7 +374,7 @@ type SortType = 'latest' | 'oldest' | 'name';
 const MyPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user: authUser } = useAuth();
+  const { user: authUser, refreshUser } = useAuth();
   const { showSuccess, showError, showConfirm, showInfo, showWarning } = useNotification();
   const [selectedTab, setSelectedTab] = useState<MyPageTabOption>(
     location.state?.initialTab || 'branding'
@@ -1066,6 +1066,10 @@ const MyPage: React.FC = () => {
         email: updatedUser.email || prev.email,
         createdAt: updatedUser.createdAt || prev.createdAt
       } : null);
+
+      // 🔥 AuthContext의 사용자 정보도 새로고침 (캐시 문제 해결)
+      console.log('멤버십 변경 완료 - AuthContext 사용자 정보 새로고침 시작');
+      await refreshUser();
       
       // 편집된 값도 업데이트  
       setEditValues(prev => ({

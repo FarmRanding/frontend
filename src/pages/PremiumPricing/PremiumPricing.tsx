@@ -251,7 +251,7 @@ interface PremiumPricingProps {
 
 const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { showError } = useNotification();
   const [currentStep, setCurrentStep] = useState<PremiumPriceFlowStep>(PremiumPriceFlowStep.PRICE_INPUT);
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right'>('right');
@@ -292,12 +292,24 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
 
   // 멤버십 확인 - 진입 시점에서 차단
   React.useEffect(() => {
-    console.log('PremiumPricing - 사용자 멤버십 체크:', user?.membershipType);
-    if (user?.membershipType === 'FREE') {
-      console.log('무료 사용자 감지 - 프리미엄 모달 표시');
-      setIsPremiumModalOpen(true);
-    }
-  }, [user]);
+    const checkMembership = async () => {
+      console.log('PremiumPricing - 사용자 멤버십 체크:', user?.membershipType);
+      
+      // 사용자 정보가 없으면 서버에서 최신 정보 가져오기
+      if (!user) {
+        console.log('사용자 정보 없음 - 서버에서 최신 정보 가져오기');
+        await refreshUser();
+        return;
+      }
+      
+      if (user?.membershipType === 'FREE') {
+        console.log('무료 사용자 감지 - 프리미엄 모달 표시');
+        setIsPremiumModalOpen(true);
+      }
+    };
+    
+    checkMembership();
+  }, [user, refreshUser]);
 
   const handleLogoClick = () => {
     navigate('/home');

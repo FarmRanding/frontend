@@ -119,7 +119,7 @@ const Home: React.FC<HomeProps> = ({ className }) => {
   const [priceHistory, setPriceHistory] = useState<UnifiedPriceHistoryResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   
   // API에서 가격 제안 이력 가져오기
   useEffect(() => {
