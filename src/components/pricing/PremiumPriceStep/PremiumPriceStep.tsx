@@ -150,7 +150,7 @@ const DateInput = styled.div<{ hasValue: boolean }>`
   transition: all 0.3s ease;
 
   &:hover {
-    box-shadow: 0px 8px 24px 0px rgba(139, 92, 246, 0.2);
+    box-shadow: 0px 8px 24px 0px rgba(31, 65, 187, 0.2);
     transform: translateY(-1px);
   }
 `;
@@ -162,7 +162,7 @@ const CalendarIcon = styled.img`
   transition: all 0.3s ease;
 
   ${DateInput}:hover & {
-    filter: brightness(0) saturate(100%) invert(55%) sepia(98%) saturate(1653%) hue-rotate(248deg) brightness(96%) contrast(91%);
+    filter: brightness(0) saturate(100%) invert(25%) sepia(98%) saturate(1653%) hue-rotate(221deg) brightness(96%) contrast(91%);
     transform: scale(1.1);
   }
 `;
