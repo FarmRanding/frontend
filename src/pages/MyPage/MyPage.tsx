@@ -672,6 +672,7 @@ const MyPage: React.FC = () => {
         '브랜딩: 무제한',
         '가격 제안: 무제한',
         '판매글 생성: 제공되지 않음',
+        '프리미엄 가격 제안 서비스 이용 가능'
       ],
       isRecommended: true,
     },
@@ -680,11 +681,12 @@ const MyPage: React.FC = () => {
       iconType: 'diamond',
       title: '프리미엄 플러스',
       price: '₩8,900 /월',
-      description: '홍보 문구까지 자동으로 완성해드릴게요. 마케팅까지 맡기고 싶은 농장주님께 추천합니다.',
+      description: '홍보 문구까지 자동으로 완성해드릴게요. 모든 기능을 제한 없이 사용할 수 있습니다. ',
       features: [
         '브랜딩: 무제한',
         '가격 제안: 무제한',
         '판매글 생성: 무제한',
+        '프리미엄 가격 제안 서비스 이용 가능'
       ],
       isPremium: true,
     },
