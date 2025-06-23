@@ -210,7 +210,7 @@ const Dot = styled.div<{ $delay: number }>`
   height: 8px;
   background: #8B5CF6;
   border-radius: 50%;
-  animation: ${pulse} 1.5s infinite;
+  animation: ${pulse} 1.4s ease-in-out infinite both;
   animation-delay: ${props => props.$delay}s;
 `;
 
@@ -289,6 +289,16 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
     retailPrice: 0,
     wholesalePrice: 0
   });
+
+  // 등급 코드를 한글로 변환하는 공통 함수
+  const getGradeText = (gradeCode: string) => {
+    const gradeMap: { [key: string]: string } = {
+      '04': '상급',
+      '05': '중급',
+      '06': '하급'
+    };
+    return gradeMap[gradeCode] || '상급';
+  };
 
   // 멤버십 확인 - 진입 시점에서 차단
   React.useEffect(() => {
@@ -394,7 +404,7 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
               showCondition: true,
               condition: {
                 productName: premiumPriceData.productName,
-                grade: premiumPriceData.productRankCode === '04' ? '상급' : '중급',
+                grade: getGradeText(premiumPriceData.productRankCode),
                 location: premiumPriceData.location,
                 date: premiumPriceData.date?.toLocaleDateString('ko-KR', {
                   year: 'numeric',
@@ -440,7 +450,7 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
               showCondition: true,
               condition: {
                 productName: premiumPriceData.productName,
-                grade: premiumPriceData.productRankCode === '04' ? '상급' : '중급',
+                grade: getGradeText(premiumPriceData.productRankCode),
                 location: premiumPriceData.location,
                 date: premiumPriceData.date?.toLocaleDateString('ko-KR', {
                   year: 'numeric',
@@ -461,7 +471,7 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
               showCondition: true,
               condition: {
                 productName: premiumPriceData.productName,
-                grade: premiumPriceData.productRankCode === '04' ? '상급' : '중급',
+                grade: getGradeText(premiumPriceData.productRankCode),
                 location: premiumPriceData.location,
                 date: premiumPriceData.date?.toLocaleDateString('ko-KR', {
                   year: 'numeric',
@@ -486,7 +496,7 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
               showCondition: true,
               condition: {
                 productName: premiumPriceData.productName,
-                grade: premiumPriceData.productRankCode === '04' ? '상급' : '중급',
+                grade: getGradeText(premiumPriceData.productRankCode),
                 location: premiumPriceData.location,
                 date: premiumPriceData.date?.toLocaleDateString('ko-KR', {
                   year: 'numeric',
