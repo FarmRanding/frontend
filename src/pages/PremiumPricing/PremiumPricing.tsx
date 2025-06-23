@@ -312,8 +312,9 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
         return;
       }
       
-      if (user?.membershipType === 'FREE') {
-        console.log('무료 사용자 감지 - 프리미엄 모달 표시');
+      // 프리미엄 플러스 멤버십이 아닌 경우 모달 표시 (FREE, PREMIUM)
+      if (user?.membershipType !== 'PREMIUM_PLUS') {
+        console.log('프리미엄 플러스 멤버십이 아닌 사용자 감지:', user?.membershipType);
         setIsPremiumModalOpen(true);
       }
     };
@@ -421,11 +422,11 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
               isPremiumRequired: false
             });
           } else if (error.response?.data?.code === 'FR471') {
-            // 프리미엄 멤버십 필요
+            // 프리미엄 플러스 멤버십 필요
             setErrorModal({
               isOpen: true,
-              title: '프리미엄 멤버십 필요',
-              subtitle: '이 기능을 사용하려면 프리미엄 멤버십이 필요합니다.',
+              title: '프리미엄 플러스 멤버십 필요',
+              subtitle: '이 기능을 사용하려면 프리미엄 플러스 멤버십이 필요합니다.',
               showCondition: false,
               condition: {
                 productName: '',
@@ -641,8 +642,8 @@ const PremiumPricing: React.FC<PremiumPricingProps> = ({ className }) => {
         isOpen={isPremiumModalOpen}
         onClose={handlePremiumModalClose}
         onUpgrade={handlePremiumUpgrade}
-        title="프리미엄 멤버십 필요"
-        subtitle="프리미엄 가격 제안은 프리미엄 이상 멤버십에서 이용할 수 있습니다."
+        title="프리미엄 플러스 멤버십 필요"
+        subtitle="프리미엄 가격 제안은 프리미엄 플러스 멤버십에서만 이용할 수 있습니다."
         featureName="프리미엄 가격 제안"
       />
       
