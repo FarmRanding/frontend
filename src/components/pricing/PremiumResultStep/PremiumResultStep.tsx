@@ -340,12 +340,85 @@ const CompleteButton = styled.button`
   }
 `;
 
+// 정보 섹션 스타일
+const InfoSection = styled.div`
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid rgba(139, 92, 246, 0.1);
+  animation: ${slideInUp} 0.8s ease-out 0.4s both;
+`;
+
+const InfoSectionTitle = styled.h3`
+  font-family: 'Jalnan 2', sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.3;
+  color: #000000;
+  margin: 0 0 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const InfoTitleIcon = styled.div`
+  width: 24px;
+  height: 24px;
+  background: #8B5CF6;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &::after {
+    content: 'ⓘ';
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+  }
+`;
+
+const InfoGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+`;
+
+const InfoItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const InfoLabel = styled.span`
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.3;
+  color: #666666;
+`;
+
+const InfoValue = styled.span`
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.3;
+  color: #000000;
+`;
+
 // 프리미엄 가격 제안 데이터 타입
 interface PremiumPriceData {
   productItemCode: string;
   productVarietyCode: string;
   productName: string;
   location: string;
+  productRankCode?: string; // 등급 코드 (04: 상급, 05: 중급, 06: 하급)
+  date?: Date | null; // 분석일
+  grade?: string;
+  analysisDate?: string;
+  quantity?: string;
+  unit?: string;
   suggestedPrice: number;
   retailPrice: number;
   wholesalePrice: number;
@@ -369,6 +442,15 @@ interface PremiumResultStepProps {
 }
 
 const PremiumResultStep: React.FC<PremiumResultStepProps> = ({ data, onComplete }) => {
+  // 등급 코드를 한글로 변환
+  const getGradeText = (gradeCode: string) => {
+    const gradeMap: { [key: string]: string } = {
+      '04': '상급',
+      '05': '중급',
+      '06': '하급'
+    };
+    return gradeMap[gradeCode] || '상급';
+  };
   const handleComplete = async () => {
     try {
       // 프리미엄 가격 제안 결과 저장
@@ -398,6 +480,12 @@ const PremiumResultStep: React.FC<PremiumResultStepProps> = ({ data, onComplete 
       return '데이터 없음';
     }
     return `${Math.round(price).toLocaleString()}원`;
+  };
+
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}.`;
   };
 
   const getLocationDisplayName = (location: string) => {
@@ -458,6 +546,39 @@ const PremiumResultStep: React.FC<PremiumResultStepProps> = ({ data, onComplete 
           </PriceBreakdown>
         </PriceSection>
       </ResultCard>
+
+      <InfoSection>
+        <InfoSectionTitle>
+          <InfoTitleIcon />
+          분석 상세 정보
+        </InfoSectionTitle>
+        <InfoGrid>
+          <InfoItem>
+            <InfoLabel>품목명</InfoLabel>
+            <InfoValue>{data.productName || '-'}</InfoValue>
+          </InfoItem>
+
+          <InfoItem>
+            <InfoLabel>등급</InfoLabel>
+            <InfoValue>{data.grade || (data.productRankCode ? getGradeText(data.productRankCode) : '상급')}</InfoValue>
+          </InfoItem>
+
+          <InfoItem>
+            <InfoLabel>분석일</InfoLabel>
+            <InfoValue>{data.analysisDate ? formatDate(data.analysisDate) : (data.date ? formatDate(data.date.toISOString()) : formatDate(new Date().toISOString()))}</InfoValue>
+          </InfoItem>
+
+          <InfoItem>
+            <InfoLabel>기준 수량</InfoLabel>
+            <InfoValue>{data.quantity || '1'}{data.unit || 'kg'}</InfoValue>
+          </InfoItem>
+
+          <InfoItem>
+            <InfoLabel>지역</InfoLabel>
+            <InfoValue>{getLocationDisplayName(data.location)}</InfoValue>
+          </InfoItem>
+        </InfoGrid>
+      </InfoSection>
 
       <AnalysisSection>
         <AnalysisCard>

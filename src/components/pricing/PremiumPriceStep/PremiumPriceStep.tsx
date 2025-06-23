@@ -333,7 +333,7 @@ const PremiumPriceStep: React.FC<PremiumPriceStepProps> = ({
         />
 
         <LocationContainer>
-          <Label>지역</Label>
+          <Label>출하 지역</Label>
           <LocationInput
             hasValue={!!data.location}
             onClick={() => setIsLocationSelectorOpen(true)}
