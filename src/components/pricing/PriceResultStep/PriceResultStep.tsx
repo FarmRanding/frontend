@@ -134,6 +134,26 @@ const PriceValue = styled.span`
   animation: ${pulsePrice} 2s ease-in-out infinite;
 `;
 
+const PriceExplanation = styled.div`
+  width: 100%;
+  padding: 16px;
+  background: rgba(31, 65, 187, 0.05);
+  border-radius: 8px;
+  border-left: 4px solid #1F41BB;
+  margin-top: 12px;
+  animation: ${slideInUp} 0.8s ease-out 0.3s both;
+`;
+
+const PriceExplanationText = styled.p`
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #374151;
+  margin: 0;
+  text-align: left;
+`;
+
 // 정보 섹션 스타일 (상세조회와 동일)
 const InfoSection = styled.div`
   display: flex;
@@ -698,6 +718,11 @@ const PriceResultStep: React.FC<PriceResultStepProps> = ({ data, onComplete }) =
             <PriceDisplay>
               <PriceValue>{Math.round(data.estimatedPrice).toLocaleString()}원</PriceValue>
             </PriceDisplay>
+            <PriceExplanation>
+              <PriceExplanationText>
+                해당 가격은 출하일 기준 5개년 평균 "도매가"를 기준으로 산출된 적정가입니다. 이 가격 이상으로 판매하시는 것을 권장드립니다.
+              </PriceExplanationText>
+            </PriceExplanation>
           </PriceSection>
         </TitleSection>
 
