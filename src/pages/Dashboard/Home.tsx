@@ -229,7 +229,7 @@ const Home: React.FC<HomeProps> = ({ className }) => {
           <ServiceCard 
             variant="pricing" 
             title="가격 서비스"
-            description="예상 가격 받아보기"
+            description="일반 가격 제안"
             bgSvg=""
             onClick={handlePricingClick}
           />

@@ -262,7 +262,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
       case 'pricing':
         return {
           first: '적정 가격 찾아드릴게요.',
-          second: '예상 가격 받아보기'
+          second: '일반 가격 제안'
         };
       case 'premium-pricing':
         return {
