@@ -940,7 +940,7 @@ const MyPage: React.FC = () => {
         // 일반 타입은 기존 모달 사용
         const harvestDate = unifiedHistory.harvestDate || unifiedHistory.analysisDate || new Date().toISOString().split('T')[0];
         
-        // 일반 가격 제안은 별도 API로 실제 저장된 데이터 가져오기
+        // 기본 가격 제안은 별도 API로 실제 저장된 데이터 가져오기
         const priceData = await fetchStoredPriceData(unifiedHistory.id);
         
         const convertedHistory: PriceQuoteHistory = {

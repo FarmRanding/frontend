@@ -89,9 +89,9 @@ export const WithSelectedDate: Story = {
   },
 };
 
-// 일반 가격 제안용 날짜 제한
+// 기본 가격 제안용 날짜 제한
 export const ForStandardPricing: Story = {
-  name: '일반 가격 제안용',
+  name: '기본 가격 제안용',
   render: () => {
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [showPicker, setShowPicker] = useState(true);
@@ -128,7 +128,7 @@ export const ForStandardPricing: Story = {
   parameters: {
     docs: {
       description: {
-        story: '일반 가격 제안용 달력입니다. 오늘부터 1년 후까지만 선택 가능하며, 실제 API 요청 시에는 선택된 날짜의 1년 전 데이터를 조회합니다.',
+        story: '기본 가격 제안용 달력입니다. 오늘부터 1년 후까지만 선택 가능하며, 실제 API 요청 시에는 선택된 날짜의 1년 전 데이터를 조회합니다.',
       },
     },
   },

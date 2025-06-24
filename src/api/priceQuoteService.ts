@@ -54,7 +54,7 @@ export interface UnifiedPriceHistoryResponse {
   suggestedPrice: number;
   unit: string;
   quantity: number;
-  harvestDate?: string; // 일반 가격 제안용
+  harvestDate?: string; // 기본 가격 제안용
   analysisDate?: string; // 프리미엄 가격 제안용
   createdAt: string;
   
