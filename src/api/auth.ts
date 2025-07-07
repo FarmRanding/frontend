@@ -149,7 +149,42 @@ export const login = async (provider: string, code: string, redirectUri: string)
     
     throw error;
   }
-}; 
+};
+
+// 테스트 로그인 (평가용)
+export const testLogin = async (password: string): Promise<{ 
+  accessToken: string;
+  refreshToken: string;
+  user: UserResponse;
+  isNewUser: boolean;
+}> => {
+  try {
+    console.log('🔥 testLogin: API 요청 시작');
+    const response = await apiClient.post('/api/auth/test', {
+      password
+    });
+
+    console.log('🔥 testLogin: API 응답 받음:', response.data);
+    const result = response.data;
+    
+    // 백엔드 응답 구조에 맞게 수정: success 대신 code로 체크
+    if (result.code === 'FR000' && result.data) {
+      console.log('🔥 testLogin: 성공 응답 처리');
+      return result.data;
+    }
+    
+    throw new Error(result.message || '테스트 로그인에 실패했습니다.');
+  } catch (error: any) {
+    console.error('❌ testLogin 에러:', error);
+    console.error('❌ 에러 응답:', error.response?.data);
+    
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    
+    throw error;
+  }
+};
 
 // 🔥 멤버십 업그레이드 API
 export const upgradeToPremium = async (): Promise<UserResponse> => {

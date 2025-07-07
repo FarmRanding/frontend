@@ -1,5 +1,6 @@
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
+import iconGraph from '../../../assets/icon-graph.svg';
 
 // 애니메이션
 const fadeInUp = keyframes`
@@ -41,18 +42,54 @@ const EmptyContainer = styled.div`
   gap: 16px;
 `;
 
-const EmptyIcon = styled.div`
+const EmptyIconContainer = styled.div`
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
+  background: linear-gradient(135deg, rgba(31, 65, 187, 0.1) 0%, rgba(79, 70, 229, 0.05) 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
-  color: #9CA3AF;
   animation: ${floatAnimation} 3s ease-in-out infinite;
   margin-bottom: 8px;
+  position: relative;
+  transition: all 0.3s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(31, 65, 187, 0.2) 0%, rgba(79, 70, 229, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover {
+    transform: scale(1.05);
+    
+    &::before {
+      opacity: 1;
+    }
+  }
+`;
+
+const EmptyIcon = styled.img`
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(25%) sepia(98%) saturate(1653%) hue-rotate(221deg) brightness(96%) contrast(91%);
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+
+  ${EmptyIconContainer}:hover & {
+    transform: scale(1.1);
+    filter: brightness(0) saturate(100%) invert(43%) sepia(96%) saturate(1352%) hue-rotate(221deg) brightness(99%) contrast(94%);
+  }
 `;
 
 const EmptyTitle = styled.h3`
@@ -120,7 +157,9 @@ const EmptyPriceHistory: React.FC<EmptyPriceHistoryProps> = ({
 
   return (
     <EmptyContainer className={className}>
-      <EmptyIcon>📊</EmptyIcon>
+      <EmptyIconContainer>
+        <EmptyIcon src={iconGraph} alt="가격 제안" />
+      </EmptyIconContainer>
       <EmptyTitle>아직 가격 제안을 받아본 적이 없어요</EmptyTitle>
       <EmptyDescription>
         농산물의 예상 가격을 확인해보세요.<br />

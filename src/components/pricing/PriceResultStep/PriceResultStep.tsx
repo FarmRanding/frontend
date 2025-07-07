@@ -730,7 +730,10 @@ const PriceResultStep: React.FC<PriceResultStepProps> = ({ data, onComplete }) =
         <ChartTitle>{formatDateForTitle(data.harvestDate)}5년간 시장 가격 추이</ChartTitle>
         {priceDataSource === 'estimated' && (
           <DataSourceNotice>
-            ⚠️ 가락시장 실시간 데이터 조회가 어려워 추정 데이터를 표시하고 있습니다.
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <img src={iconGraph} alt="주의" style={{ width: '16px', height: '16px', filter: 'brightness(0) saturate(100%) invert(73%) sepia(60%) saturate(2552%) hue-rotate(14deg) brightness(93%) contrast(95%)' }} />
+              가락시장 실시간 데이터 조회가 어려워 추정 데이터를 표시하고 있습니다.
+            </span>
           </DataSourceNotice>
         )}
         {chartError && (
@@ -741,7 +744,10 @@ const PriceResultStep: React.FC<PriceResultStepProps> = ({ data, onComplete }) =
             <LoadingMessage>가격 데이터를 불러오는 중...</LoadingMessage>
           ) : priceChartData.length === 0 ? (
             <NoDataMessage>
-              <div>📊 가격 데이터를 표시할 수 없습니다</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                <img src={iconGraph} alt="그래프" style={{ width: '20px', height: '20px', filter: 'brightness(0) saturate(100%) invert(25%) sepia(98%) saturate(1653%) hue-rotate(221deg) brightness(96%) contrast(91%)' }} />
+                가격 데이터를 표시할 수 없습니다
+              </div>
               <div>잠시 후 다시 시도해주세요</div>
             </NoDataMessage>
           ) : (
