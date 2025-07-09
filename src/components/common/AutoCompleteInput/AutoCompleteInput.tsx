@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import styled, { css } from 'styled-components';
 import { useAutocomplete } from '../../../hooks/useAutocomplete';
 
@@ -71,10 +72,66 @@ const AutoCompleteInput = <T,>({
     }),
   });
 
+  // 드롭다운 위치 상태
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const localInputRef = useRef<HTMLInputElement>(null);
+  const effectiveInputRef = inputRef || localInputRef;
+
+  // 외부 클릭 감지
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      
+      // 드롭다운 포탈 내부 클릭인지 확인
+      const dropdownPortal = document.querySelector('[data-dropdown-portal]');
+      if (dropdownPortal && dropdownPortal.contains(target)) {
+        return; // 드롭다운 내부 클릭이면 무시
+      }
+      
+      if (containerRef.current && !containerRef.current.contains(target)) {
+        setIsOpen(false);
+        setSelectedIndex(-1);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [setIsOpen, setSelectedIndex]);
+
   // value prop 변화 처리
   React.useEffect(() => {
     setQuery(value);
   }, [value, setQuery]);
+
+  // 드롭다운 위치 계산
+  const updateDropdownPosition = React.useCallback(() => {
+    if (effectiveInputRef.current) {
+      const rect = effectiveInputRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, [effectiveInputRef]);
+
+  // 드롭다운이 열릴 때 위치 업데이트
+  React.useEffect(() => {
+    if (isOpen) {
+      updateDropdownPosition();
+      
+      const handleResize = () => updateDropdownPosition();
+      const handleScroll = () => setIsOpen(false);
+
+      window.addEventListener('resize', handleResize);
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        window.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, [isOpen, updateDropdownPosition]);
 
   // onChange 이벤트 처리
   const handleInputChangeWithCallback = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,10 +140,19 @@ const AutoCompleteInput = <T,>({
     if (onChange) {
       onChange(newValue);
     }
+    if (newValue && !isOpen) {
+      updateDropdownPosition();
+    }
   };
 
   const handleSelectItem = (item: T) => {
     handleItemSelect(item);
+  };
+
+  // 포커스 핸들러 래핑
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    handleFocus(e);
+    updateDropdownPosition();
   };
 
   const defaultRenderItem = (item: T, isSelected: boolean) => (
@@ -96,46 +162,58 @@ const AutoCompleteInput = <T,>({
   );
 
   return (
-    <Container ref={containerRef} className={className}>
-      <InputWrapper $hasError={!!error} $disabled={disabled}>
-        <Input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={handleInputChangeWithCallback}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          disabled={disabled}
-          autoComplete="off"
-        />
-        {isLoading && <LoadingSpinner />}
-      </InputWrapper>
+    <>
+      <Container ref={containerRef} className={className}>
+        <InputWrapper $hasError={!!error} $disabled={disabled}>
+          <Input
+            ref={effectiveInputRef}
+            type="text"
+            value={query}
+            onChange={handleInputChangeWithCallback}
+            onFocus={handleInputFocus}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            disabled={disabled}
+            autoComplete="off"
+          />
+          {isLoading && <LoadingSpinner />}
+        </InputWrapper>
+        
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+      </Container>
       
-      {error && <ErrorMessage>{error}</ErrorMessage>}
-      
-      {isOpen && (
-        <DropdownList ref={listRef}>
-          {filteredItems.length === 0 ? (
-            <NoResults>
-              {query ? noResultsText : emptyText}
-            </NoResults>
-          ) : (
-            filteredItems.map((item, index) => (
-              <DropdownItem
-                key={getItemKey(item)}
-                $isSelected={index === selectedIndex}
-                onClick={() => handleSelectItem(item)}
-                onMouseEnter={() => setSelectedIndex(index)}
-              >
-                {renderItem ? renderItem(item, index === selectedIndex) : defaultRenderItem(item, index === selectedIndex)}
-              </DropdownItem>
-            ))
-          )}
-        </DropdownList>
+      {/* 포탈로 렌더링되는 드롭다운 */}
+      {typeof window !== 'undefined' && isOpen && createPortal(
+        <DropdownPortal
+          data-dropdown-portal
+          $top={dropdownPosition.top}
+          $left={dropdownPosition.left}
+          $width={dropdownPosition.width}
+        >
+          <DropdownList ref={listRef}>
+            {filteredItems.length === 0 ? (
+              <NoResults>
+                {query ? noResultsText : emptyText}
+              </NoResults>
+            ) : (
+              filteredItems.map((item, index) => (
+                <DropdownItem
+                  key={getItemKey(item)}
+                  $isSelected={index === selectedIndex}
+                  onClick={() => handleSelectItem(item)}
+                  onMouseDown={(e) => e.preventDefault()} // 포커스 잃는 것 방지
+                  onMouseEnter={() => setSelectedIndex(index)}
+                >
+                  {renderItem ? renderItem(item, index === selectedIndex) : defaultRenderItem(item, index === selectedIndex)}
+                </DropdownItem>
+              ))
+            )}
+          </DropdownList>
+        </DropdownPortal>,
+        document.body
       )}
-    </Container>
+    </>
   );
 };
 
@@ -218,20 +296,27 @@ const ErrorMessage = styled.div`
   font-family: 'Inter', sans-serif;
 `;
 
+// 포탈로 렌더링될 드롭다운 컨테이너
+const DropdownPortal = styled.div<{ $top: number; $left: number; $width: number }>`
+  position: fixed;
+  top: ${props => props.$top}px;
+  left: ${props => props.$left}px;
+  width: ${props => props.$width}px;
+  z-index: 99999;
+  margin-top: 4px;
+  pointer-events: auto;
+`;
+
 const DropdownList = styled.ul`
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
   background: white;
   border-radius: 8px;
   box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.15);
   max-height: 200px;
   overflow-y: auto;
-  z-index: 1000;
-  margin: 4px 0 0 0;
+  margin: 0;
   padding: 8px 0;
   list-style: none;
+  width: 100%;
   
   /* 스크롤바 스타일링 */
   &::-webkit-scrollbar {

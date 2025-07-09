@@ -219,8 +219,8 @@ const KamisProductInput: React.FC<KamisProductInputProps> = ({
     if (inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
       setDropdownPosition({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
+        top: rect.bottom,
+        left: rect.left,
         width: rect.width
       });
     }
@@ -254,12 +254,16 @@ const KamisProductInput: React.FC<KamisProductInputProps> = ({
         updateDropdownPosition();
       }
     };
+    
+    const handleScroll = () => {
+      setIsOpen(false);
+    };
 
     window.addEventListener('resize', handleResize);
-    window.addEventListener('scroll', handleResize);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleResize);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, [isOpen]);
 

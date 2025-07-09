@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { addressService, LegalDistrictResponse } from '../../../api/addressService';
+import { createPortal } from 'react-dom';
 
 interface AddressAutocompleteProps {
   value: string;
@@ -26,6 +27,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<number | undefined>(undefined);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
   // value props가 변경되면 inputValue 동기화 (단, 사용자가 직접 입력 중이 아닐 때만)
   useEffect(() => {
@@ -37,7 +39,15 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   // 외부 클릭 감지
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      
+      // 드롭다운 포탈 내부 클릭인지 확인
+      const dropdownPortal = document.querySelector('[data-dropdown-portal]');
+      if (dropdownPortal && dropdownPortal.contains(target)) {
+        return; // 드롭다운 내부 클릭이면 무시
+      }
+      
+      if (containerRef.current && !containerRef.current.contains(target)) {
         setIsOpen(false);
         setSelectedIndex(-1);
       }
@@ -48,6 +58,36 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // 드롭다운 위치 계산
+  const updateDropdownPosition = useCallback(() => {
+    if (inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, []);
+
+  // 드롭다운 열릴 때 위치 업데이트 및 리스너 등록
+  useEffect(() => {
+    if (isOpen) {
+      updateDropdownPosition();
+
+      const handleResize = () => updateDropdownPosition();
+      const handleScroll = () => setIsOpen(false);
+
+      window.addEventListener('resize', handleResize);
+      window.addEventListener('scroll', handleScroll, { passive: true });
+
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        window.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, [isOpen, updateDropdownPosition]);
 
   // 검색 함수 (메모이제이션)
   const searchAddresses = useCallback(async (keyword: string) => {
@@ -150,21 +190,29 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   // 메모이제이션된 suggestion 리스트
   const suggestionList = useMemo(() => {
     if (!isOpen || suggestions.length === 0) return null;
-    
+
     return (
-      <SuggestionsList>
-        {suggestions.map((suggestion, index) => (
-          <SuggestionItem
-            key={suggestion.code}
-            onClick={() => handleSelectAddress(suggestion)}
-            $isSelected={index === selectedIndex}
-          >
-            <MainAddress>{suggestion.fullAddress}</MainAddress>
-          </SuggestionItem>
-        ))}
-      </SuggestionsList>
+      <DropdownPortal
+        data-dropdown-portal
+        $top={dropdownPosition.top}
+        $left={dropdownPosition.left}
+        $width={dropdownPosition.width}
+      >
+        <SuggestionsList>
+          {suggestions.map((suggestion, index) => (
+            <SuggestionItem
+              key={suggestion.code}
+              onClick={() => handleSelectAddress(suggestion)}
+              onMouseDown={(e) => e.preventDefault()}
+              $isSelected={index === selectedIndex}
+            >
+              <MainAddress>{suggestion.fullAddress}</MainAddress>
+            </SuggestionItem>
+          ))}
+        </SuggestionsList>
+      </DropdownPortal>
     );
-  }, [isOpen, suggestions, selectedIndex, handleSelectAddress]);
+  }, [isOpen, suggestions, selectedIndex, handleSelectAddress, dropdownPosition]);
 
   return (
     <Container ref={containerRef} className={className}>
@@ -183,7 +231,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         {isLoading && <LoadingSpinner />}
       </InputContainer>
       
-      {suggestionList}
+      {typeof window !== 'undefined' && createPortal(suggestionList, document.body)}
     </Container>
   );
 };
@@ -194,6 +242,7 @@ export default AddressAutocomplete;
 const Container = styled.div`
   position: relative;
   width: 100%;
+  overflow: visible !important;
 `;
 
 const InputContainer = styled.div`
@@ -248,22 +297,28 @@ const LoadingSpinner = styled.div`
   }
 `;
 
+// 포탈로 렌더링될 드롭다운 컨테이너
+const DropdownPortal = styled.div<{ $top: number; $left: number; $width: number }>`
+  position: fixed;
+  top: ${(props) => props.$top}px;
+  left: ${(props) => props.$left}px;
+  width: ${(props) => props.$width}px;
+  z-index: 99999;
+  margin-top: 4px;
+`;
+
 const SuggestionsList = styled.ul`
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
   background: white;
   border: 1px solid #e1e5e9;
   border-radius: 8px;
-  margin-top: 4px;
   max-height: 300px;
   overflow-y: auto;
-  z-index: 10000;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   padding: 0;
-  margin: 4px 0 0 0;
+  margin: 0;
   list-style: none;
+  width: 100%;
+  box-sizing: border-box;
 `;
 
 const SuggestionItem = styled.li<{ $isSelected: boolean }>`

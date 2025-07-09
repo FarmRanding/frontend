@@ -33,8 +33,8 @@ const PersonalInfoCard = styled.div`
   border: 1px solid rgba(31, 65, 187, 0.08);
   box-sizing: border-box;
   position: relative;
-  overflow: visible;
-  transition: all 0.3s ease;
+  overflow: visible !important;
+  transition: all 0.2s ease;
   animation: ${fadeInUp} 0.6s ease-out;
 
   &::before {
@@ -47,27 +47,12 @@ const PersonalInfoCard = styled.div`
     background: linear-gradient(90deg, #1F41BB 0%, #4F46E5 50%, #818CF8 100%);
   }
 
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-    transition: left 0.7s;
-  }
-
   &:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     box-shadow: 
-      0 8px 32px rgba(31, 65, 187, 0.12),
-      0 2px 8px rgba(0, 0, 0, 0.08);
+      0 6px 24px rgba(31, 65, 187, 0.1),
+      0 2px 6px rgba(0, 0, 0, 0.06);
     border-color: rgba(31, 65, 187, 0.15);
-    
-    &::after {
-      left: 100%;
-    }
   }
 `;
 
@@ -79,18 +64,18 @@ const InfoRow = styled.div`
   padding: 12px 0;
   box-sizing: border-box;
   position: relative;
-  transition: all 0.3s ease;
+  overflow: visible !important;
+  transition: all 0.2s ease;
 
   &:not(:last-child) {
     border-bottom: 1px solid rgba(31, 65, 187, 0.08);
   }
 
   &:hover {
-    transform: translateX(4px);
-    background: rgba(31, 65, 187, 0.02);
-    border-radius: 12px;
-    margin: 0 -8px;
-    padding: 12px 8px;
+    background: rgba(31, 65, 187, 0.015);
+    border-radius: 8px;
+    margin: 0 -4px;
+    padding: 12px 4px;
   }
 `;
 
@@ -111,31 +96,12 @@ const IconContainer = styled.div`
   background: linear-gradient(135deg, rgba(31, 65, 187, 0.1) 0%, rgba(79, 70, 229, 0.1) 100%);
   border-radius: 12px;
   flex-shrink: 0;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    background: rgba(31, 65, 187, 0.1);
-    border-radius: 50%;
-    transition: all 0.3s ease;
-    transform: translate(-50%, -50%);
-  }
-
   ${InfoRow}:hover & {
-    transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(31, 65, 187, 0.15);
-    
-    &::before {
-      width: 100%;
-      height: 100%;
-    }
+    background: linear-gradient(135deg, rgba(31, 65, 187, 0.15) 0%, rgba(79, 70, 229, 0.15) 100%);
   }
 `;
 
@@ -144,13 +110,9 @@ const IconImage = styled.img`
   height: 20px;
   object-fit: contain;
   filter: brightness(0) saturate(100%) invert(25%) sepia(98%) saturate(1653%) hue-rotate(221deg) brightness(96%) contrast(91%);
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   position: relative;
   z-index: 1;
-
-  ${InfoRow}:hover & {
-    transform: scale(1.1);
-  }
 `;
 
 const LabelText = styled.span`
@@ -187,10 +149,10 @@ const ValueText = styled.span`
   text-overflow: ellipsis;
   flex: 1;
   min-width: 0;
-  transition: color 0.3s ease;
+  transition: color 0.2s ease;
 
   ${InfoRow}:hover & {
-    color: #1F41BB;
+    color: #4338CA;
   }
 `;
 

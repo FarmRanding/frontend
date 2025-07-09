@@ -17,6 +17,8 @@ import kakaoLogin from '../../assets/kakaoLogin.svg';
 import iconProfile from '../../assets/icon-profile.svg';
 import { useAuth } from '../../contexts/AuthContext';
 import { testLogin } from '../../api/auth';
+import { useNotification } from '../../contexts/NotificationContext';
+import PasswordInputModal from '../../components/common/PasswordInputModal';
 
 // 과일 이미지 import - 최적화된 버전 사용 + 우선순위별로 정렬
 import fruit1 from '../../assets/fruit-optimized/image 13.svg'; // 183KB
@@ -1162,14 +1164,14 @@ const CtaIcon = styled.span`
   }
 `;
 
-// 테스트 로그인 버튼 스타일 - 카카오 로그인 버튼과 유사하지만 구별되는 디자인
+// 테스트 로그인 버튼 스타일 - 카카오 로그인 버튼과 같은 가로 크기, 더 낮은 높이
 const TestLoginButton = styled.button`
   display: block;
   width: 280px;
-  height: 56px;
+  height: 40px;
   background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
   border: none;
-  border-radius: 16px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 2;
@@ -1178,8 +1180,8 @@ const TestLoginButton = styled.button`
   position: relative;
   margin-top: 16px;
   box-shadow: 
-    0 4px 16px rgba(255, 152, 0, 0.25),
-    0 1px 4px rgba(0, 0, 0, 0.1);
+    0 2px 8px rgba(255, 152, 0, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.08);
   
   &::before {
     content: '';
@@ -1193,10 +1195,10 @@ const TestLoginButton = styled.button`
   }
   
   &:hover {
-    transform: translateY(-4px) scale(1.02);
+    transform: translateY(-2px) scale(1.01);
     box-shadow: 
-      0 8px 24px rgba(255, 152, 0, 0.35),
-      0 4px 8px rgba(0, 0, 0, 0.15);
+      0 4px 12px rgba(255, 152, 0, 0.3),
+      0 2px 4px rgba(0, 0, 0, 0.12);
       
     &::before {
       left: 100%;
@@ -1204,7 +1206,7 @@ const TestLoginButton = styled.button`
   }
   
   &:active {
-    transform: translateY(-2px) scale(1.01);
+    transform: translateY(-1px) scale(1.005);
   }
   
   &:disabled {
@@ -1216,66 +1218,66 @@ const TestLoginButton = styled.button`
   /* 태블릿 */
   @media (min-width: 768px) {
     width: 320px;
-    height: 64px;
-    border-radius: 18px;
+    height: 44px;
+    border-radius: 14px;
   }
   
   /* 데스크탑 */
   @media (min-width: 1024px) {
     width: 360px;
-    height: 72px;
-    border-radius: 20px;
+    height: 48px;
+    border-radius: 16px;
   }
   
   /* 대형 화면 */
   @media (min-width: 1440px) {
     width: 400px;
-    height: 80px;
-    border-radius: 22px;
+    height: 52px;
+    border-radius: 18px;
   }
 `;
 
 const TestLoginButtonText = styled.span`
-  font-family: 'Jalnan 2', sans-serif !important;
-  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
   color: white;
-  font-weight: 700;
+  font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100%;
-  gap: 8px;
+  gap: 6px;
   
   @media (min-width: 768px) {
-    font-size: 18px;
-    gap: 10px;
+    font-size: 14px;
+    gap: 7px;
   }
   
   @media (min-width: 1024px) {
-    font-size: 20px;
-    gap: 12px;
+    font-size: 15px;
+    gap: 8px;
   }
 `;
 
 const TestLoginIcon = styled.img`
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   filter: brightness(0) saturate(100%) invert(100%) sepia(100%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);
   transform: translateX(0);
   transition: all 0.3s ease;
   
   ${TestLoginButton}:hover & {
-    transform: translateX(3px) scale(1.1);
+    transform: translateX(2px) scale(1.05);
   }
   
   @media (min-width: 768px) {
-    width: 22px;
-    height: 22px;
+    width: 17px;
+    height: 17px;
   }
   
   @media (min-width: 1024px) {
-    width: 24px;
-    height: 24px;
+    width: 18px;
+    height: 18px;
   }
 `;
 
@@ -1283,9 +1285,11 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
+  const { showError, showSuccess } = useNotification();
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const [userInfo, setUserInfo] = useState<any>(null);
   const [isTestLoginLoading, setIsTestLoginLoading] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   // 쿼리스트링 인증 처리 (OAuth2 로그인 후 루트로 리다이렉트된 경우)
   useEffect(() => {
@@ -1353,54 +1357,38 @@ const Home: React.FC = () => {
     window.location.href = KAKAO_AUTH_URL;
   };
 
-  const handleTestLogin = async () => {
+  const handleTestLogin = () => {
     console.log('🔍 테스트 로그인 시작');
-    
-    // 사용자에게 패스워드 입력 요청
-    const password = prompt('테스트 계정 패스워드를 입력해주세요:');
-    
-    // 취소하거나 빈 값인 경우 종료
-    if (!password) {
-      console.log('🚫 테스트 로그인 취소됨');
-      return;
-    }
-    
+    setIsPasswordModalOpen(true);
+  };
+
+  const handlePasswordSubmit = async (password: string) => {
+    console.log('📡 테스트 로그인 API 호출 시작');
     setIsTestLoginLoading(true);
     
     try {
-      console.log('📡 testLogin API 호출 중...');
       const result = await testLogin(password);
       console.log('✅ testLogin API 응답:', result);
       
       // 토큰 저장
-      console.log('💾 토큰 및 사용자 정보 저장 중...');
       localStorage.setItem('accessToken', result.accessToken);
       localStorage.setItem('refreshToken', result.refreshToken);
       localStorage.setItem('userId', result.user.id.toString());
       localStorage.setItem('email', result.user.email);
-      localStorage.setItem('nickname', result.user.name || ''); // name을 nickname으로 사용
+      localStorage.setItem('nickname', result.user.name || '');
       localStorage.setItem('membershipType', result.user.membershipType);
       localStorage.setItem('name', result.user.name || '');
       localStorage.setItem('farmName', result.user.farmName || '');
       localStorage.setItem('location', result.user.location || '');
-      console.log('✅ 로컬스토리지 저장 완료:', {
-        userId: result.user.id,
-        email: result.user.email,
-        name: result.user.name,
-        membershipType: result.user.membershipType,
-        farmName: result.user.farmName,
-        location: result.user.location
-      });
 
-      // 사용자 정보 설정 (프론트엔드 형식에 맞게 변환)
-      console.log('👤 사용자 정보 설정 중...');
+      // 사용자 정보 설정
       const userForFrontend = {
         id: result.user.id,
         email: result.user.email,
-        nickname: result.user.name, // name을 nickname으로 사용
+        nickname: result.user.name,
         name: result.user.name,
         profileImage: undefined,
-        provider: 'test', // 테스트 계정 표시
+        provider: 'test',
         membershipType: result.user.membershipType,
         farmName: result.user.farmName,
         location: result.user.location,
@@ -1409,7 +1397,12 @@ const Home: React.FC = () => {
       
       setUserInfo(userForFrontend);
       login(userForFrontend);
-      console.log('✅ 사용자 정보 설정 완료:', userForFrontend);
+
+      // 성공 알림
+      showSuccess('테스트 로그인 성공', '평가용 계정으로 로그인되었습니다');
+      
+      // 모달 닫기
+      setIsPasswordModalOpen(false);
 
       // 신규 유저인 경우 회원가입 모달 표시, 아니면 홈으로 이동
       if (result.isNewUser) {
@@ -1421,29 +1414,34 @@ const Home: React.FC = () => {
       }
     } catch (error: any) {
       console.error('❌ 테스트 로그인 실패:', error);
-      console.error('❌ 에러 상세:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        statusText: error.response?.statusText
-      });
       
-      // 더 상세한 에러 메시지 표시
+      // 에러 메시지 설정
+      let errorTitle = '로그인 실패';
       let errorMessage = '테스트 로그인에 실패했습니다.';
       
-      if (error.response?.status === 404) {
-        errorMessage = '테스트 로그인 API를 찾을 수 없습니다. 백엔드 서버를 확인해주세요.';
+      if (error.response?.status === 401) {
+        errorTitle = '잘못된 패스워드';
+        errorMessage = '테스트 계정 패스워드가 올바르지 않습니다.';
+      } else if (error.response?.status === 404) {
+        errorTitle = 'API 오류';
+        errorMessage = '테스트 로그인 서비스를 찾을 수 없습니다.';
       } else if (error.response?.status === 500) {
-        errorMessage = '서버 내부 오류가 발생했습니다.';
+        errorTitle = '서버 오류';
+        errorMessage = '서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
       } else if (error.message) {
         errorMessage = error.message;
       }
       
-      alert(errorMessage);
+      // Toast 에러 알림
+      showError(errorTitle, errorMessage);
     } finally {
       setIsTestLoginLoading(false);
-      console.log('🔄 테스트 로그인 완료');
     }
+  };
+
+  const handlePasswordCancel = () => {
+    setIsPasswordModalOpen(false);
+    setIsTestLoginLoading(false);
   };
 
   const handleSignupClose = () => {
@@ -1626,6 +1624,14 @@ const Home: React.FC = () => {
           navigate('/home');
         }}
         userInfo={userInfo || {}}
+      />
+      
+      {/* 테스트 로그인 패스워드 입력 모달 */}
+      <PasswordInputModal
+        isOpen={isPasswordModalOpen}
+        onConfirm={handlePasswordSubmit}
+        onCancel={handlePasswordCancel}
+        isLoading={isTestLoginLoading}
       />
     </LandingPageWrapper>
   );

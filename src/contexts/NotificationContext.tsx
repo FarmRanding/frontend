@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { ToastContainer } from '../components/common/ToastContainer';
 import { Dialog, type DialogType } from '../components/common/Dialog';
 import { SelectModal, type SelectOption } from '../components/common/SelectModal';
@@ -197,15 +198,18 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       {children}
       
       {/* Toast Container */}
-      <ToastContainer
-        toasts={toasts}
-        onCloseToast={(id: string) => {
-          setToasts(prev => prev.filter(t => t.id !== id));
-        }}
-      />
+      {createPortal(
+        <ToastContainer
+          toasts={toasts}
+          onCloseToast={(id: string) => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+          }}
+        />,
+        document.body
+      )}
       
       {/* Dialog */}
-      {dialog.isVisible && (
+      {dialog.isVisible && createPortal(
         <Dialog
           type={dialog.type!}
           title={dialog.title!}
@@ -215,11 +219,12 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           onConfirm={handleDialogConfirm}
           onCancel={dialog.type === 'confirm' ? handleDialogCancel : undefined}
           isVisible={dialog.isVisible}
-        />
+        />,
+        document.body
       )}
       
       {/* Select Modal */}
-      {selectModal.isVisible && (
+      {selectModal.isVisible && createPortal(
         <SelectModal
           title={selectModal.title!}
           options={selectModal.options!}
@@ -227,7 +232,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           onSelect={selectModal.onSelect!}
           onCancel={selectModal.onCancel!}
           isVisible={selectModal.isVisible}
-        />
+        />,
+        document.body
       )}
     </NotificationContext.Provider>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import styled, { css } from 'styled-components';
 import { AutocompleteAPI } from '../../api/autocompleteApi';
 import { Crop, AutocompleteOptions } from '../../types/autocomplete';
@@ -28,6 +29,7 @@ const CropAutocomplete: React.FC<CropAutocompleteProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -42,6 +44,36 @@ const CropAutocomplete: React.FC<CropAutocompleteProps> = ({
     enableQuickSearch: true,
     ...options,
   }), [options]);
+
+  // 드롭다운 위치 계산
+  const updateDropdownPosition = useCallback(() => {
+    if (inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, []);
+
+  // 드롭다운이 열릴 때 위치 업데이트
+  useEffect(() => {
+    if (isOpen) {
+      updateDropdownPosition();
+      
+      const handleResize = () => updateDropdownPosition();
+      const handleScroll = () => setIsOpen(false);
+
+      window.addEventListener('resize', handleResize);
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        window.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, [isOpen, updateDropdownPosition]);
 
   // 검색 함수
   const searchCrops = useCallback(async (searchQuery: string) => {
@@ -72,6 +104,27 @@ const CropAutocomplete: React.FC<CropAutocompleteProps> = ({
     [searchCrops, finalOptions.debounceMs]
   );
 
+  // 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      
+      // 드롭다운 포탈 내부 클릭인지 확인
+      const dropdownPortal = document.querySelector('[data-dropdown-portal]');
+      if (dropdownPortal && dropdownPortal.contains(target)) {
+        return; // 드롭다운 내부 클릭이면 무시
+      }
+      
+      if (containerRef.current && !containerRef.current.contains(target)) {
+        setIsOpen(false);
+        setSelectedIndex(-1);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // 입력 변화 처리
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = e.target.value;
@@ -79,19 +132,32 @@ const CropAutocomplete: React.FC<CropAutocompleteProps> = ({
     setSelectedIndex(-1);
     setIsOpen(true);
     
+    if (newQuery && !isOpen) {
+      updateDropdownPosition();
+    }
+    
     debouncedSearch(newQuery);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, isOpen, updateDropdownPosition]);
 
   // 포커스 처리
   const handleFocus = useCallback(() => {
     setIsOpen(true);
+    updateDropdownPosition();
     if (query && query.trim().length >= finalOptions.minChars) {
       searchCrops(query);
     }
-  }, [query, searchCrops, finalOptions.minChars]);
+  }, [query, searchCrops, finalOptions.minChars, updateDropdownPosition]);
 
   // 블러 처리
   const handleBlur = useCallback((e: React.FocusEvent) => {
+    const target = e.relatedTarget as Node;
+    
+    // 드롭다운 포탈 내부 클릭인지 확인
+    const dropdownPortal = document.querySelector('[data-dropdown-portal]');
+    if (dropdownPortal && dropdownPortal.contains(target)) {
+      return; // 드롭다운 내부 클릭이면 무시
+    }
+    
     // 드롭다운 아이템 클릭 시 블러 방지
     if (containerRef.current?.contains(e.relatedTarget as Node)) {
       return;
@@ -156,53 +222,65 @@ const CropAutocomplete: React.FC<CropAutocompleteProps> = ({
   }, [value]);
 
   return (
-    <Container ref={containerRef} className={className}>
-      <InputWrapper $hasError={!!error} $disabled={disabled}>
-        <Input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={handleInputChange}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          disabled={disabled}
-          autoComplete="off"
-        />
-        {isLoading && <LoadingSpinner />}
-      </InputWrapper>
+    <>
+      <Container ref={containerRef} className={className}>
+        <InputWrapper $hasError={!!error} $disabled={disabled}>
+          <Input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={handleInputChange}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            disabled={disabled}
+            autoComplete="off"
+          />
+          {isLoading && <LoadingSpinner />}
+        </InputWrapper>
+        
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+      </Container>
       
-      {error && <ErrorMessage>{error}</ErrorMessage>}
-      
-      {isOpen && (
-        <DropdownList ref={listRef}>
-          {results.length === 0 ? (
-            <NoResults>
-              {query ? '검색 결과가 없습니다' : '작물을 검색해보세요'}
-            </NoResults>
-          ) : (
-            results.map((crop, index) => (
-              <DropdownItem
-                key={crop.id}
-                $isSelected={index === selectedIndex}
-                onClick={() => handleItemSelect(crop)}
-                onMouseEnter={() => setSelectedIndex(index)}
-              >
-                <CropInfo>
-                  <CropName>{crop.cropNameKor}</CropName>
-                  <CropCode>{crop.cropCode}</CropCode>
-                </CropInfo>
-                <CropDetails>
-                  {crop.cropNameEng && <CropEngName>{crop.cropNameEng}</CropEngName>}
-                  {crop.useKind && <UseKind>{crop.useKind}</UseKind>}
-                </CropDetails>
-              </DropdownItem>
-            ))
-          )}
-        </DropdownList>
+      {/* 포탈로 렌더링되는 드롭다운 */}
+      {typeof window !== 'undefined' && isOpen && createPortal(
+        <DropdownPortal
+          data-dropdown-portal
+          $top={dropdownPosition.top}
+          $left={dropdownPosition.left}
+          $width={dropdownPosition.width}
+        >
+          <DropdownList ref={listRef}>
+            {results.length === 0 ? (
+              <NoResults>
+                {query ? '검색 결과가 없습니다' : '작물을 검색해보세요'}
+              </NoResults>
+            ) : (
+              results.map((crop, index) => (
+                <DropdownItem
+                  key={crop.id}
+                  $isSelected={index === selectedIndex}
+                  onClick={() => handleItemSelect(crop)}
+                  onMouseDown={(e) => e.preventDefault()} // 포커스 잃는 것 방지
+                  onMouseEnter={() => setSelectedIndex(index)}
+                >
+                  <CropInfo>
+                    <CropName>{crop.cropNameKor}</CropName>
+                    <CropCode>{crop.cropCode}</CropCode>
+                  </CropInfo>
+                  <CropDetails>
+                    {crop.cropNameEng && <CropEngName>{crop.cropNameEng}</CropEngName>}
+                    {crop.useKind && <UseKind>{crop.useKind}</UseKind>}
+                  </CropDetails>
+                </DropdownItem>
+              ))
+            )}
+          </DropdownList>
+        </DropdownPortal>,
+        document.body
       )}
-    </Container>
+    </>
   );
 };
 
@@ -282,21 +360,28 @@ const ErrorMessage = styled.div`
   font-size: 14px;
 `;
 
+// 포탈로 렌더링될 드롭다운 컨테이너
+const DropdownPortal = styled.div<{ $top: number; $left: number; $width: number }>`
+  position: fixed;
+  top: ${props => props.$top}px;
+  left: ${props => props.$left}px;
+  width: ${props => props.$width}px;
+  z-index: 99999;
+  margin-top: 4px;
+  pointer-events: auto;
+`;
+
 const DropdownList = styled.ul`
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 1000;
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   max-height: 300px;
   overflow-y: auto;
-  margin: 4px 0 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
+  width: 100%;
 `;
 
 const DropdownItem = styled.li<{ $isSelected: boolean }>`
