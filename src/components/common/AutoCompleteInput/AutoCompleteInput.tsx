@@ -52,6 +52,7 @@ const AutoCompleteInput = <T,>({
     setQuery,
     filteredItems,
     isOpen,
+    setIsOpen,
     selectedIndex,
     setSelectedIndex,
     handleInputChange,
@@ -151,7 +152,7 @@ const AutoCompleteInput = <T,>({
 
   // 포커스 핸들러 래핑
   const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    handleFocus(e);
+    handleFocus();
     updateDropdownPosition();
   };
 
