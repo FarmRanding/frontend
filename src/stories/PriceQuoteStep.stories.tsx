@@ -14,8 +14,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const mockData = {
-  cropName: '',
-  variety: '',
+  productId: null,
+  garakCode: '',
+  productName: '',
   grade: '',
   harvestDate: null,
 };

@@ -1,8 +1,29 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
+import React, { useState, useEffect } from 'react';
+import styled, { keyframes } from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 import iconDownload from '../../../assets/icon-download.svg';
 import iconCopy from '../../../assets/icon-copy.svg';
 import MoreButton from '../MoreButton/MoreButton';
+import { fetchCurrentUserFromServer, getCurrentUser } from '../../../api/auth';
+
+// 로딩 애니메이션
+const spin = keyframes`
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+`;
+
+const pulse = keyframes`
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+`;
 
 const BrandResultCard = styled.div`
   display: flex;
@@ -130,51 +151,104 @@ const ImageContainer = styled.div`
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0px 4px 16px 0px rgba(31, 65, 187, 0.12);
+  background: #f0f4ff;
 `;
 
-const BrandImage = styled.img`
+const BrandImage = styled.img<{ $isLoading?: boolean }>`
   width: 100%;
   height: 100%;
-  background: #f0f4ff;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  opacity: ${props => props.$isLoading ? 0 : 1};
 
   &:hover {
     transform: scale(1.02);
   }
 `;
 
-const DownloadButton = styled.button`
+const ImageLoadingContainer = styled.div`
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f0f4ff;
+  gap: 16px;
+`;
+
+const LoadingSpinner = styled.div`
   width: 32px;
   height: 32px;
+  border: 3px solid rgba(31, 65, 187, 0.1);
+  border-top: 3px solid #1F41BB;
+  border-radius: 50%;
+  animation: ${spin} 1s linear infinite;
+`;
+
+const LoadingText = styled.div`
+  font-family: 'Jalnan 2', sans-serif;
+  font-size: 12px;
+  color: #1F41BB;
+  text-align: center;
+  animation: ${pulse} 2s ease-in-out infinite;
+`;
+
+const PlaceholderImage = styled.div`
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8f1ff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Jalnan 2', sans-serif;
+  font-size: 14px;
+  color: #9CA3AF;
+  text-align: center;
+`;
+
+const DownloadButton = styled.button`
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(8px);
   border: none;
-  border-radius: 8px;
-  padding: 0;
+  border-radius: 20px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  box-shadow: 0px 2px 8px 0px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+
+  ${ImageContainer}:hover & {
+    opacity: 1;
+    transform: translateY(0);
+  }
 
   &:hover {
     background: rgba(255, 255, 255, 1);
-    transform: scale(1.05);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   }
 
   &:active {
-    transform: scale(0.95);
+    transform: translateY(0);
   }
 `;
 
 const DownloadIcon = styled.img`
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) saturate(100%) invert(25%) sepia(98%) saturate(1653%) hue-rotate(221deg) brightness(96%) contrast(91%);
 `;
 
 const StoryField = styled.div<{ isExpanded: boolean; isPremium: boolean }>`
@@ -195,25 +269,51 @@ const StoryField = styled.div<{ isExpanded: boolean; isPremium: boolean }>`
   }
 `;
 
-const StoryText = styled.span<{ isExpanded: boolean }>`
+const StoryText = styled.div<{ isExpanded: boolean }>`
   font-family: 'Inter', sans-serif;
   font-weight: 400;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
-  text-align: left;
-  color: #4a4a4a;
-  width: 100%;
-  display: ${props => props.isExpanded ? 'block' : '-webkit-box'};
-  -webkit-line-clamp: ${props => props.isExpanded ? 'none' : '2'};
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: #2d2d2d;
+  white-space: pre-wrap;
+  word-break: keep-all;
+  
+  ${props => !props.isExpanded && `
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  `}
+`;
+
+const PreviewText = styled.div`
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #2d2d2d;
+  white-space: pre-wrap;
   word-break: keep-all;
 `;
 
 const StoryContainer = styled.div`
   width: 100%;
   position: relative;
+`;
+
+const Section = styled.div`
+  width: 100%;
+  margin-bottom: 24px;
+`;
+
+const SectionTitle = styled.h3`
+  font-family: 'Jalnan 2', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.4;
+  color: #1a1a1a;
+  margin-bottom: 16px;
 `;
 
 export interface BrandResultData {
@@ -223,42 +323,187 @@ export interface BrandResultData {
   imageUrl?: string;
 }
 
-interface BrandResultProps {
+export interface BrandResultProps {
   data: BrandResultData;
-  isPremium?: boolean;
-  onCopy?: (field: 'brandName' | 'promotionText' | 'story', value: string) => void;
-  onDownload?: (imageUrl: string) => void;
-  className?: string;
+  canAccessStory?: boolean;
+  onUpgrade?: () => void;
 }
 
 const BrandResult: React.FC<BrandResultProps> = ({
   data,
-  isPremium = false,
-  onCopy,
-  onDownload,
-  className,
+  canAccessStory = false,
+  onUpgrade,
 }) => {
+  const navigate = useNavigate();
   const [isStoryExpanded, setIsStoryExpanded] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  
+  // 🔥 BrandResult 내부에서 직접 멤버십 체크 (확실한 방법)
+  const [actualCanAccessStory, setActualCanAccessStory] = useState(canAccessStory);
 
-  const handleCopy = (field: 'brandName' | 'promotionText' | 'story', value: string) => {
-    navigator.clipboard.writeText(value);
-    onCopy?.(field, value);
-  };
+  // 🔥 컴포넌트 마운트 시 멤버십 직접 체크
+  useEffect(() => {
+    const checkMembershipDirectly = async () => {
+      try {
+        console.log('🔥 BrandResult - 직접 멤버십 체크 시작');
+        
+        const currentUser = await fetchCurrentUserFromServer();
+        if (currentUser) {
+          let membershipTypeStr = '';
+          
+          // 멤버십 타입 정규화
+          if (typeof currentUser.membershipType === 'string') {
+            membershipTypeStr = currentUser.membershipType;
+          } else if (currentUser.membershipType && typeof currentUser.membershipType === 'object' && currentUser.membershipType.name) {
+            membershipTypeStr = currentUser.membershipType.name;
+          } else {
+            membershipTypeStr = currentUser.membershipType?.toString() || 'FREE';
+          }
+          
+          // 대소문자 무관하게 체크
+          const normalizedMembershipType = membershipTypeStr.toUpperCase();
+          const hasStoryAccess = normalizedMembershipType === 'PREMIUM_PLUS' || 
+                                normalizedMembershipType === 'PREMIUMPLUS' ||
+                                normalizedMembershipType.includes('PREMIUM_PLUS') ||
+                                normalizedMembershipType.includes('PREMIUMPLUS');
+          
+          setActualCanAccessStory(hasStoryAccess);
+          
+          console.log('🔥 BrandResult - 직접 체크 결과:');
+          console.log('- 원본 멤버십:', currentUser.membershipType);
+          console.log('- 정규화된 멤버십:', normalizedMembershipType);
+          console.log('- 스토리 접근 권한:', hasStoryAccess);
+        } else {
+          // 로컬 정보 사용
+          const localUser = getCurrentUser();
+          if (localUser) {
+            let membershipTypeStr = '';
+            
+            if (typeof localUser.membershipType === 'string') {
+              membershipTypeStr = localUser.membershipType;
+            } else if (localUser.membershipType && typeof localUser.membershipType === 'object' && localUser.membershipType.name) {
+              membershipTypeStr = localUser.membershipType.name;
+            } else {
+              membershipTypeStr = localUser.membershipType?.toString() || 'FREE';
+            }
+            
+            const normalizedMembershipType = membershipTypeStr.toUpperCase();
+            const hasStoryAccess = normalizedMembershipType === 'PREMIUM_PLUS' || 
+                                  normalizedMembershipType === 'PREMIUMPLUS' ||
+                                  normalizedMembershipType.includes('PREMIUM_PLUS') ||
+                                  normalizedMembershipType.includes('PREMIUMPLUS');
+            
+            setActualCanAccessStory(hasStoryAccess);
+            
+            console.log('🔥 BrandResult - 로컬 체크 결과:');
+            console.log('- 로컬 멤버십:', membershipTypeStr);
+            console.log('- 정규화된 멤버십:', normalizedMembershipType);
+            console.log('- 스토리 접근 권한:', hasStoryAccess);
+          }
+        }
+      } catch (error) {
+        console.error('❌ BrandResult - 멤버십 체크 실패:', error);
+        setActualCanAccessStory(false);
+      }
+    };
+    
+    checkMembershipDirectly();
+  }, []);
 
-  const handleDownload = () => {
-    if (data.imageUrl) {
-      onDownload?.(data.imageUrl);
+  const handleMoreClick = () => {
+    if (actualCanAccessStory) {
+      setIsStoryExpanded(!isStoryExpanded);
+    } else {
+      // 🚀 멤버십 탭으로 이동 (강제 리프레시로 동일 URL 문제 해결)
+      navigate('/mypage?tab=membership', { 
+        replace: true,
+        state: { forceTabChange: Date.now() } // 고유 키로 강제 리프레시
+      });
     }
   };
 
-  const handleMoreClick = () => {
-    setIsStoryExpanded(!isStoryExpanded);
+  const handleImageLoad = () => {
+    setIsImageLoading(false);
+    setImageError(false);
   };
 
-  const showMoreButton = !isPremium;
+  const handleImageError = () => {
+    setIsImageLoading(false);
+    setImageError(true);
+  };
+
+  // 🔥 스토리 미리보기 텍스트 생성
+  const getPreviewText = (text: string, maxLength: number = 80): string => {
+    if (text.length <= maxLength) return text;
+    
+    // 문장 단위로 자르기 (마침표, 느낌표, 물음표 기준)
+    const sentences = text.split(/([.!?])/);
+    let preview = '';
+    
+    for (let i = 0; i < sentences.length; i += 2) {
+      const sentence = sentences[i] + (sentences[i + 1] || '');
+      if ((preview + sentence).length > maxLength) break;
+      preview += sentence;
+    }
+    
+    // 문장 단위로 자를 수 없으면 글자 수로 자르기
+    if (preview.length === 0) {
+      preview = text.substring(0, maxLength);
+    }
+    
+    return preview.trim() + '...';
+  };
+
+  // 이미지 URL이 변경될 때 로딩 상태 초기화
+  React.useEffect(() => {
+    if (data.imageUrl) {
+      setIsImageLoading(true);
+      setImageError(false);
+    } else {
+      setIsImageLoading(false);
+      setImageError(false);
+    }
+  }, [data.imageUrl]);
+
+  const renderImageContent = () => {
+    // 이미지 URL이 없는 경우 (아직 생성 중)
+    if (!data.imageUrl) {
+      return (
+        <ImageLoadingContainer>
+          <LoadingSpinner />
+          <LoadingText>이미지 생성 중...</LoadingText>
+        </ImageLoadingContainer>
+      );
+    }
+
+    // 이미지 로딩 중
+    if (isImageLoading) {
+      return (
+        <ImageLoadingContainer>
+          <LoadingSpinner />
+          <LoadingText>이미지 로딩 중...</LoadingText>
+        </ImageLoadingContainer>
+      );
+    }
+
+    // 이미지 로딩 실패
+    if (imageError) {
+      return (
+        <PlaceholderImage>
+          브랜드 이미지
+          <br />
+          생성 완료
+        </PlaceholderImage>
+      );
+    }
+
+    // 정상적인 이미지 표시
+    return null;
+  };
 
   return (
-    <BrandResultCard className={className}>
+    <BrandResultCard>
       <ContentFrame>
         <FieldContainer>
           <LabelContainer>
@@ -270,19 +515,27 @@ const BrandResult: React.FC<BrandResultProps> = ({
         </FieldContainer>
 
         <ImageContainer>
-          <BrandImage 
-            src={data.imageUrl || 'https://placehold.co/200x200/a4a4a4/ffffff?text=Brand+Image'} 
-            alt="브랜드 이미지" 
-          />
-          <DownloadButton onClick={handleDownload}>
-            <DownloadIcon src={iconDownload} alt="다운로드" />
-          </DownloadButton>
+          {renderImageContent()}
+          {data.imageUrl && (
+            <BrandImage 
+              src={data.imageUrl} 
+              alt="브랜드 이미지" 
+              $isLoading={isImageLoading}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+            />
+          )}
+          {data.imageUrl && !isImageLoading && !imageError && (
+            <DownloadButton onClick={() => {}}>
+              <DownloadIcon src={iconDownload} alt="다운로드" />
+            </DownloadButton>
+          )}
         </ImageContainer>
 
         <FieldContainer>
           <LabelContainer>
             <FieldLabel>홍보 문구</FieldLabel>
-            <CopyButton onClick={() => handleCopy('promotionText', data.promotionText)}>
+            <CopyButton onClick={() => {}}>
               <CopyIcon src={iconCopy} alt="복사" />
             </CopyButton>
           </LabelContainer>
@@ -294,19 +547,28 @@ const BrandResult: React.FC<BrandResultProps> = ({
         <FieldContainer>
           <LabelContainer>
             <FieldLabel>스토리</FieldLabel>
-            <CopyButton onClick={() => handleCopy('story', data.story)}>
+            <CopyButton onClick={() => {}}>
               <CopyIcon src={iconCopy} alt="복사" />
             </CopyButton>
           </LabelContainer>
           <StoryContainer>
-            <StoryField isExpanded={isStoryExpanded} isPremium={isPremium}>
-              <StoryText isExpanded={isStoryExpanded}>
-                {data.story}
-              </StoryText>
+            <StoryField isExpanded={isStoryExpanded} isPremium={actualCanAccessStory}>
+              {!actualCanAccessStory ? (
+                <PreviewText>{getPreviewText(data.story)}</PreviewText>
+              ) : (
+                <StoryText isExpanded={isStoryExpanded}>
+                  {data.story}
+                </StoryText>
+              )}
             </StoryField>
-            {showMoreButton && (
+            {!actualCanAccessStory && (
               <MoreButton onClick={handleMoreClick}>
-                {isStoryExpanded ? '접기' : '프리미엄 구독하고 더 보기'}
+                프리미엄 플러스 구독하고 더 보기
+              </MoreButton>
+            )}
+            {actualCanAccessStory && data.story.length > 120 && (
+              <MoreButton onClick={handleMoreClick}>
+                {isStoryExpanded ? '접기' : '더보기'}
               </MoreButton>
             )}
           </StoryContainer>

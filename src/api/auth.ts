@@ -11,11 +11,11 @@ interface SignupRequest {
 interface UserResponse {
   id: number;
   email: string;
-  nickname: string;
+  nickname?: string;
   name?: string;
   profileImage?: string;
-  provider: string;
-  membershipType: string;
+  provider?: string;
+  membershipType: string | { name: string } | any;
   farmName?: string;
   location?: string;
   createdAt: string;
@@ -33,8 +33,6 @@ export const signupUser = async (signupData: SignupRequest): Promise<UserRespons
     const response = await apiClient.post('/api/auth/signup', signupData);
     
     const result: ApiResponse<UserResponse> = response.data;
-    
-    console.log('서버 응답:', result);
     
     // 성공 케이스 (success가 true이거나 message가 "성공"인 경우)
     if (result.success || result.message === '성공') {
@@ -55,11 +53,11 @@ export const signupUser = async (signupData: SignupRequest): Promise<UserRespons
   }
 };
 
-// 로그인 상태 확인 함수
+// 토큰 상태 확인
 export const checkAuthStatus = (): boolean => {
-  const token = localStorage.getItem('accessToken');
-  const userId = localStorage.getItem('userId');
-  return !!(token && userId);
+  const accessToken = localStorage.getItem('accessToken');
+  const refreshToken = localStorage.getItem('refreshToken');
+  return !!(accessToken && refreshToken);
 };
 
 // 로그아웃 함수
@@ -74,12 +72,202 @@ export const logout = (): void => {
   window.location.href = '/';
 };
 
-// 현재 사용자 정보 가져오기
-export const getCurrentUser = () => {
+// 현재 사용자 정보 가져오기 (서버에서)
+export const fetchCurrentUserFromServer = async (): Promise<UserResponse | null> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.data) {
+        return data.data;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('서버에서 사용자 정보 조회 실패:', error);
+    return null;
+  }
+};
+
+// 현재 사용자 정보 가져오기 (로컬 스토리지에서)
+export const getCurrentUser = (): UserResponse | null => {
+  const userId = localStorage.getItem('userId');
+  const email = localStorage.getItem('email');
+  const nickname = localStorage.getItem('nickname');
+  const membershipType = localStorage.getItem('membershipType');
+  const name = localStorage.getItem('name');
+  const farmName = localStorage.getItem('farmName');
+  const location = localStorage.getItem('location');
+  
+  if (!userId || !email || !nickname) {
+    return null;
+  }
+  
   return {
-    userId: localStorage.getItem('userId'),
-    email: localStorage.getItem('email'),
-    nickname: localStorage.getItem('nickname'),
-    membershipType: localStorage.getItem('membershipType'),
+    id: parseInt(userId),
+    email,
+    nickname,
+    name: name || undefined,
+    profileImage: undefined,
+    provider: 'kakao', // 기본값
+    membershipType: membershipType || 'FREE',
+    farmName: farmName || undefined,
+    location: location || undefined,
+    createdAt: new Date().toISOString()
   };
+};
+
+export const login = async (provider: string, code: string, redirectUri: string): Promise<UserResponse> => {
+  try {
+    const response = await apiClient.post('/api/auth/oauth/login', {
+      provider,
+      code,
+      redirectUri
+    });
+
+    const result = response.data;
+    
+    if (result.success && result.data) {
+      return result.data;
+    }
+    
+    throw new Error(result.message || '로그인에 실패했습니다.');
+  } catch (error: any) {
+    console.error('login 에러:', error);
+    
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    
+    throw error;
+  }
+};
+
+// 테스트 로그인 (평가용)
+export const testLogin = async (password: string): Promise<{ 
+  accessToken: string;
+  refreshToken: string;
+  user: UserResponse;
+  isNewUser: boolean;
+}> => {
+  try {
+    console.log('🔥 testLogin: API 요청 시작');
+    const response = await apiClient.post('/api/auth/test', {
+      password
+    });
+
+    console.log('🔥 testLogin: API 응답 받음:', response.data);
+    const result = response.data;
+    
+    // 백엔드 응답 구조에 맞게 수정: success 대신 code로 체크
+    if (result.code === 'FR000' && result.data) {
+      console.log('🔥 testLogin: 성공 응답 처리');
+      return result.data;
+    }
+    
+    throw new Error(result.message || '테스트 로그인에 실패했습니다.');
+  } catch (error: any) {
+    console.error('❌ testLogin 에러:', error);
+    console.error('❌ 에러 응답:', error.response?.data);
+    
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    
+    throw error;
+  }
+};
+
+// 🔥 멤버십 업그레이드 API
+export const upgradeToPremium = async (): Promise<UserResponse> => {
+  try {
+    const response = await apiClient.post('/api/v1/users/upgrade/premium');
+    const result: ApiResponse<UserResponse> = response.data;
+    
+    if (result.success && result.data) {
+      return result.data;
+    }
+    
+    throw new Error(result.message || '프리미엄 업그레이드에 실패했습니다.');
+  } catch (error: any) {
+    console.error('upgradeToPremium 에러:', error);
+    
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    
+    throw error;
+  }
+};
+
+export const upgradeToPremiumPlus = async (): Promise<UserResponse> => {
+  try {
+    const response = await apiClient.post('/api/v1/users/upgrade/premium-plus');
+    const result: ApiResponse<UserResponse> = response.data;
+    
+    if (result.success && result.data) {
+      return result.data;
+    }
+    
+    throw new Error(result.message || '프리미엄 플러스 업그레이드에 실패했습니다.');
+  } catch (error: any) {
+    console.error('upgradeToPremiumPlus 에러:', error);
+    
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    
+    throw error;
+  }
+};
+
+// 🔥 멤버십 다운그레이드 API
+export const downgradeToPremium = async (): Promise<UserResponse> => {
+  try {
+    const response = await apiClient.post('/api/v1/users/downgrade/premium');
+    const result: ApiResponse<UserResponse> = response.data;
+    
+    if (result.success && result.data) {
+      return result.data;
+    }
+    
+    throw new Error(result.message || '프리미엄 다운그레이드에 실패했습니다.');
+  } catch (error: any) {
+    console.error('downgradeToPremium 에러:', error);
+    
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    
+    throw error;
+  }
+};
+
+export const downgradeToFree = async (): Promise<UserResponse> => {
+  try {
+    const response = await apiClient.post('/api/v1/users/downgrade/free');
+    const result: ApiResponse<UserResponse> = response.data;
+    
+    if (result.success && result.data) {
+      return result.data;
+    }
+    
+    throw new Error(result.message || '무료 다운그레이드에 실패했습니다.');
+  } catch (error: any) {
+    console.error('downgradeToFree 에러:', error);
+    
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    
+    throw error;
+  }
 }; 

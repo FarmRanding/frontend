@@ -205,28 +205,41 @@ const FeatureItem = styled.li<{ isSpecial?: boolean }>`
   }
 `;
 
-const SelectButton = styled.button<{ isSpecial?: boolean }>`
+const SelectButton = styled.button<{ isSpecial?: boolean; isDisabled?: boolean }>`
   margin-top: 20px;
   padding: 14px 24px;
-  background: ${props => props.isSpecial ? 'rgba(255,255,255,0.2)' : '#1f41bb'};
-  color: ${props => props.isSpecial ? 'white' : 'white'};
-  border: ${props => props.isSpecial ? '1px solid rgba(255,255,255,0.3)' : 'none'};
+  background: ${props => {
+    if (props.isDisabled) return '#E5E7EB';
+    return props.isSpecial ? 'rgba(255,255,255,0.2)' : '#1f41bb';
+  }};
+  color: ${props => {
+    if (props.isDisabled) return '#9CA3AF';
+    return props.isSpecial ? 'white' : 'white';
+  }};
+  border: ${props => {
+    if (props.isDisabled) return '1px solid #D1D5DB';
+    return props.isSpecial ? '1px solid rgba(255,255,255,0.3)' : 'none';
+  }};
   border-radius: 12px;
   font-family: 'Jalnan 2', sans-serif;
   font-weight: 400;
   font-size: 14px;
-  cursor: pointer;
+  cursor: ${props => props.isDisabled ? 'not-allowed' : 'pointer'};
   transition: all 0.3s ease;
   backdrop-filter: ${props => props.isSpecial ? 'blur(10px)' : 'none'};
+  opacity: ${props => props.isDisabled ? 0.6 : 1};
 
   &:hover {
-    background: ${props => props.isSpecial ? 'rgba(255,255,255,0.3)' : '#1a3aa3'};
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    background: ${props => {
+      if (props.isDisabled) return '#E5E7EB';
+      return props.isSpecial ? 'rgba(255,255,255,0.3)' : '#1a3aa3';
+    }};
+    transform: ${props => props.isDisabled ? 'none' : 'translateY(-2px)'};
+    box-shadow: ${props => props.isDisabled ? 'none' : '0 4px 12px rgba(0, 0, 0, 0.15)'};
   }
 
   &:active {
-    transform: translateY(0);
+    transform: ${props => props.isDisabled ? 'none' : 'translateY(0)'};
   }
 `;
 
@@ -248,12 +261,14 @@ interface MembershipListProps {
   plans: MembershipPlan[];
   onSelectPlan?: (planId: string) => void;
   className?: string;
+  currentMembershipType?: string;
 }
 
 const MembershipList: React.FC<MembershipListProps> = ({
   plans,
   onSelectPlan,
   className,
+  currentMembershipType = 'FREE',
 }) => {
   const getIconForPlan = (plan: MembershipPlan): string | undefined => {
     if (plan.iconType) {
@@ -273,6 +288,31 @@ const MembershipList: React.FC<MembershipListProps> = ({
     if (plan.isPremium) return 'premium-plus';
     if (plan.isRecommended) return 'premium';
     return 'basic';
+  };
+
+  // 버튼 텍스트 결정 함수
+  const getButtonText = (planId: string): string => {
+    if (planId === 'free') {
+      return currentMembershipType === 'FREE' ? '현재 사용 중' : '다운그레이드';
+    }
+    if (planId === 'premium') {
+      if (currentMembershipType === 'PREMIUM') return '현재 사용 중';
+      if (currentMembershipType === 'PREMIUM_PLUS') return '다운그레이드';
+      return '업그레이드';
+    }
+    if (planId === 'premium-plus') {
+      if (currentMembershipType === 'PREMIUM_PLUS') return '현재 사용 중';
+      return '업그레이드';
+    }
+    return '선택하기';
+  };
+
+  // 버튼 비활성화 여부 결정 함수
+  const isButtonDisabled = (planId: string): boolean => {
+    if (planId === 'free' && currentMembershipType === 'FREE') return true;
+    if (planId === 'premium' && currentMembershipType === 'PREMIUM') return true;
+    if (planId === 'premium-plus' && currentMembershipType === 'PREMIUM_PLUS') return true;
+    return false;
   };
 
   // 추천순으로 기본 정렬
@@ -332,9 +372,10 @@ const MembershipList: React.FC<MembershipListProps> = ({
 
             <SelectButton 
               isSpecial={plan.isRecommended || plan.isPremium}
-              onClick={() => onSelectPlan?.(plan.id)}
+              isDisabled={isButtonDisabled(plan.id)}
+              onClick={() => !isButtonDisabled(plan.id) && onSelectPlan?.(plan.id)}
             >
-              선택하기
+              {getButtonText(plan.id)}
             </SelectButton>
           </MembershipCard>
         ))}

@@ -32,13 +32,9 @@ const meta: Meta<typeof PriceQuoteCard> = {
     }
   },
   argTypes: {
-    cropName: {
+    productName: {
       control: 'text',
-      description: '작물명'
-    },
-    variety: {
-      control: 'text',
-      description: '품종'
+      description: '품목명'
     },
     grade: {
       control: 'select',
@@ -73,8 +69,7 @@ type Story = StoryObj<typeof PriceQuoteCard>;
 
 export const Default: Story = {
   args: {
-    cropName: '감자',
-    variety: '수미',
+    productName: '감자',
     grade: '상',
     fairPrice: 2745,
     unit: 'kg',
@@ -86,8 +81,7 @@ export const Default: Story = {
 
 export const Premium: Story = {
   args: {
-    cropName: '사과',
-    variety: '후지',
+    productName: '사과',
     grade: '특',
     fairPrice: 6900,
     unit: 'kg',
@@ -99,8 +93,7 @@ export const Premium: Story = {
 
 export const Expensive: Story = {
   args: {
-    cropName: '아스파라거스',
-    variety: '그린아스파라',
+    productName: '아스파라거스',
     grade: '중',
     fairPrice: 14700,
     unit: 'kg',
@@ -112,8 +105,7 @@ export const Expensive: Story = {
 
 export const LongNames: Story = {
   args: {
-    cropName: '친환경무농약재배토마토',
-    variety: '대추방울토마토프리미엄',
+    productName: '친환경무농약재배토마토',
     grade: '특',
     fairPrice: 8500,
     unit: 'kg',
@@ -138,8 +130,7 @@ export const WithoutDelete: Story = {
 
 export const DifferentUnits: Story = {
   args: {
-    cropName: '포도',
-    variety: '샤인머스캣',
+    productName: '포도',
     grade: '특',
     fairPrice: 45000,
     unit: 'box',

@@ -180,6 +180,7 @@ interface InputFieldProps {
   variant?: InputFieldVariant;
   className?: string;
   disabled?: boolean;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 const InputFieldComponent: React.FC<InputFieldProps> = ({
@@ -193,6 +194,7 @@ const InputFieldComponent: React.FC<InputFieldProps> = ({
   variant = 'default',
   className,
   disabled = false,
+  inputRef,
 }) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const newValue = e.target.value;
@@ -251,6 +253,7 @@ const InputFieldComponent: React.FC<InputFieldProps> = ({
           />
         ) : (
           <InputField
+            ref={inputRef}
             type="text"
             placeholder={hasGrade ? gradePlaceholder : calendarPlaceholder}
             value={value}

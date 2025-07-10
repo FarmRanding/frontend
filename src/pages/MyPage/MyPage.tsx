@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import Header from '../../components/common/Header/Header';
@@ -8,12 +8,21 @@ import BrandingCard from '../../components/common/BrandingCard/BrandingCard';
 import BrandingDetailModal from '../../components/common/BrandingDetailModal/BrandingDetailModal';
 import PriceQuoteCard from '../../components/common/PriceQuoteCard/PriceQuoteCard';
 import PriceQuoteDetailModal from '../../components/common/PriceQuoteDetailModal/PriceQuoteDetailModal';
+import PremiumPriceDetailModal from '../../components/common/PremiumPriceDetailModal/PremiumPriceDetailModal';
 import PersonalInfo, { type PersonalInfoData } from '../../components/common/PersonalInfo/PersonalInfo';
 import MembershipList, { type MembershipPlan } from '../../components/common/MembershipList/MembershipList';
-import type { PriceQuoteHistory } from '../../types/priceHistory';
+import type { PriceQuoteHistory, PriceHistoryData } from '../../types/priceHistory';
+import { BrandingHistory, mapBrandingApiToHistory } from '../../types/branding';
 import iconSort from '../../assets/icon-sort.svg';
 import iconBrush from '../../assets/icon-brush.svg';
 import iconMoney from '../../assets/icon-money.svg';
+import iconPencil from '../../assets/icon-pencil.svg';
+import { fetchMyUser, updateMyUserProfile, upgradeToPremium, upgradeToPremiumPlus, downgradeToPremium, downgradeToFree, type UpdateProfileRequest, type UserProfileResponse } from '../../api/userService';
+import { fetchBrandingList, fetchBrandingDetail, deleteBranding } from '../../api/brandingService';
+import { PriceQuoteService, UnifiedPriceHistoryResponse } from '../../api/priceQuoteService';
+import type { UserResponse } from '../../types/user';
+import { useNotification } from '../../contexts/NotificationContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 // 애니메이션
 const fadeIn = keyframes`
@@ -61,6 +70,15 @@ const ContentArea = styled.div`
   overflow-x: hidden;
 `;
 
+const SectionHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 370px;
+  margin-bottom: 24px;
+`;
+
 const SectionTitle = styled.h2`
   font-family: 'Jalnan 2', sans-serif;
   font-weight: 400;
@@ -68,9 +86,38 @@ const SectionTitle = styled.h2`
   line-height: 1.18;
   letter-spacing: -2%;
   color: #1F41BB;
-  margin: 0 0 24px 0;
-  align-self: flex-start;
+  margin: 0;
   animation: ${fadeIn} 0.6s ease-out;
+`;
+
+const EditButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(31, 65, 187, 0.1);
+  border: 1px solid rgba(31, 65, 187, 0.2);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: rgba(31, 65, 187, 0.15);
+    border-color: rgba(31, 65, 187, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(31, 65, 187, 0.15);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+const EditIcon = styled.img`
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) saturate(100%) invert(25%) sepia(98%) saturate(1653%) hue-rotate(221deg) brightness(96%) contrast(91%);
 `;
 
 const PersonalInfoContainer = styled.div`
@@ -79,6 +126,19 @@ const PersonalInfoContainer = styled.div`
   margin-bottom: 48px;
   animation: ${fadeIn} 0.6s ease-out 0.1s both;
   box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
+  z-index: 10;
+  border-radius: 16px;
+  background: #FFFFFF;
+  
+  /* PersonalInfo 컴포넌트 내부 스타일 오버라이드 */
+  > div {
+    border-radius: 16px !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: hidden;
+  }
 `;
 
 const TabContainer = styled.div`
@@ -308,21 +368,14 @@ const MembershipContainer = styled.div`
   }
 `;
 
-// Mock 데이터 타입 정의
-interface BrandingHistory {
-  id: string;
-  title: string;
-  description: string;
-  story: string;
-  imageUrl?: string;
-  createdAt: string;
-}
-
+// Mock 데이터 타입 정의 (BrandingHistory는 이제 types/branding.ts에서 import)
 type SortType = 'latest' | 'oldest' | 'name';
 
 const MyPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user: authUser, refreshUser } = useAuth();
+  const { showSuccess, showError, showConfirm, showInfo, showWarning } = useNotification();
   const [selectedTab, setSelectedTab] = useState<MyPageTabOption>(
     location.state?.initialTab || 'branding'
   );
@@ -331,6 +384,181 @@ const MyPage: React.FC = () => {
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [selectedBrandingHistory, setSelectedBrandingHistory] = useState<BrandingHistory | null>(null);
   const [isBrandingDetailVisible, setIsBrandingDetailVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // 실제 사용자 정보 상태 (서버에서 가져온 최신 정보)
+  const [user, setUser] = useState<UserProfileResponse | null>(null);
+  
+  // 편집 관련 상태
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValues, setEditValues] = useState<PersonalInfoData>({
+    name: '',
+    farmName: '',
+    location: ''
+  });
+  const [updateLoading, setUpdateLoading] = useState(false);
+
+  // 브랜딩 관련 상태
+  const [brandingHistory, setBrandingHistory] = useState<BrandingHistory[]>([]);
+  const [brandingLoading, setBrandingLoading] = useState(false);
+  const [brandingError, setBrandingError] = useState<string | null>(null);
+  
+  // 가격 제안 관련 상태 (통합)
+  const [unifiedPriceHistory, setUnifiedPriceHistory] = useState<UnifiedPriceHistoryResponse[]>([]);
+  const [priceQuoteLoading, setPriceQuoteLoading] = useState(false);
+  const [priceQuoteError, setPriceQuoteError] = useState<string | null>(null);
+  
+  // 프리미엄 상세 모달 관련 상태
+  const [selectedUnifiedData, setSelectedUnifiedData] = useState<UnifiedPriceHistoryResponse | null>(null);
+  const [isPremiumDetailModalOpen, setIsPremiumDetailModalOpen] = useState(false);
+
+  // URL 파라미터 변경 감지 (location 변경 시마다 실행)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const tabFromUrl = urlParams.get('tab') as MyPageTabOption;
+    if (tabFromUrl === 'membership') {
+      setSelectedTab('membership');
+    } else if (tabFromUrl === 'pricing') {
+      setSelectedTab('pricing');
+    } else if (tabFromUrl === 'branding') {
+      setSelectedTab('branding');
+    }
+  }, [location.search, location.state]); // location.state도 감지하여 강제 탭 변경 감지
+
+  // 사용자 정보 조회
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!authUser) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const userData = await fetchMyUser();
+        
+        // 멤버십 타입 정규화
+        let normalizedMembershipType = userData.membershipType;
+        if (typeof userData.membershipType === 'object' && userData.membershipType && (userData.membershipType as any)?.name) {
+          normalizedMembershipType = (userData.membershipType as any).name;
+        } else if (typeof userData.membershipType === 'string') {
+          normalizedMembershipType = userData.membershipType.toUpperCase();
+        }
+        
+        const processedUserData = {
+          ...userData,
+          membershipType: normalizedMembershipType
+        };
+        
+        setUser(processedUserData);
+        setEditValues({
+          name: userData.name || '',
+          farmName: userData.farmName || '',
+          location: userData.location || ''
+        });
+        
+      } catch (err: any) {
+        console.error('사용자 정보 조회 실패:', err);
+        setError(err.message || '사용자 정보를 불러오지 못했습니다.');
+        
+        // 에러 발생 시 authUser 정보로 폴백
+        if (authUser) {
+          const fallbackUser: UserProfileResponse = {
+            id: authUser.id,
+            email: authUser.email,
+            name: authUser.name || authUser.nickname,
+            membershipType: authUser.membershipType,
+            farmName: authUser.farmName,
+            location: authUser.location,
+            createdAt: authUser.createdAt
+          };
+          setUser(fallbackUser);
+          setEditValues({
+            name: authUser.name || authUser.nickname || '',
+            farmName: authUser.farmName || '',
+            location: authUser.location || ''
+          });
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserData();
+  }, [authUser]);
+
+  // 브랜딩 목록 조회
+  useEffect(() => {
+    const loadBrandingHistory = async () => {
+      setBrandingLoading(true);
+      setBrandingError(null);
+      
+      try {
+        const apiData = await fetchBrandingList();
+        const mappedData = apiData.map(mapBrandingApiToHistory);
+        setBrandingHistory(mappedData);
+      } catch (err: any) {
+        console.error('브랜딩 목록 조회 실패:', err);
+        setBrandingError(err.message || '브랜딩 목록을 불러오지 못했습니다.');
+        // 에러가 발생해도 빈 배열로 설정하여 UI가 정상 작동하도록 함
+        setBrandingHistory([]);
+      } finally {
+        setBrandingLoading(false);
+      }
+    };
+
+    loadBrandingHistory();
+  }, []);
+
+  const handleEditClick = () => {
+    if (user) {
+      setEditValues({
+        name: user.name || '',
+        farmName: user.farmName || '',
+        location: user.location || ''
+      });
+      setIsEditing(true);
+    }
+  };
+
+  const handleValueChange = (field: keyof PersonalInfoData, value: string) => {
+    setEditValues(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+
+    setUpdateLoading(true);
+    try {
+      const updatedUser = await updateMyUserProfile(editValues);
+      setUser(updatedUser);
+      setIsEditing(false);
+      setError(null);
+      showSuccess('프로필 수정', '프로필이 성공적으로 수정되었습니다.');
+    } catch (err: any) {
+      setError(err.message || '프로필 수정에 실패했습니다.');
+      showError('수정 실패', err.message || '프로필 수정에 실패했습니다.');
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (user) {
+      setEditValues({
+        name: user.name || '',
+        farmName: user.farmName || '',
+        location: user.location || ''
+      });
+    }
+    setIsEditing(false);
+  };
 
   // 5년간 더미 데이터 생성 함수
   const generatePriceData = () => {
@@ -358,93 +586,67 @@ const MyPage: React.FC = () => {
     return data;
   };
 
-  // Mock 가격 제안 이력 데이터
-  const priceQuoteHistory: PriceQuoteHistory[] = [
-    {
-      id: '1',
-      request: {
-        cropName: '감자',
-        variety: '수미',
-        grade: '상',
-        harvestDate: new Date('2025-05-15')
-      },
-      result: {
-        fairPrice: 2745,
-        priceData: generatePriceData()
-      },
-      createdAt: '2025.05.15',
-      unit: 'kg',
-      quantity: 1
-    },
-    {
-      id: '2',
-      request: {
-        cropName: '사과',
-        variety: '후지',
-        grade: '특',
-        harvestDate: new Date('2025-05-14')
-      },
-      result: {
-        fairPrice: 6900,
-        priceData: generatePriceData()
-      },
-      createdAt: '2025.05.15',
-      unit: 'kg',
-      quantity: 1
-    },
-    {
-      id: '3',
-      request: {
-        cropName: '아스파라거스',
-        variety: '그린아스파라',
-        grade: '중',
-        harvestDate: new Date('2025-05-14')
-      },
-      result: {
-        fairPrice: 14700,
-        priceData: generatePriceData()
-      },
-      createdAt: '2025.05.14',
-      unit: 'kg',
-      quantity: 1
+  // 실제 저장된 차트 데이터 파싱 (yearlyPriceData에서)
+  const parseStoredChartData = (yearlyPriceDataJson: string | null) => {
+    if (!yearlyPriceDataJson) {
+      // 저장된 데이터가 없으면 기본 더미 데이터 (고정값)
+      return [
+        { year: '2019', price: 23000 },
+        { year: '2020', price: 25000 },
+        { year: '2021', price: 27000 },
+        { year: '2022', price: 24000 },
+        { year: '2023', price: 26000 }
+      ];
     }
-  ];
+    
+    try {
+      const parsed = JSON.parse(yearlyPriceDataJson);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // 저장된 데이터가 {year, price} 형식인지 확인
+        if (parsed[0].year && parsed[0].price !== undefined) {
+          return parsed.map(item => ({
+            year: item.year,
+            price: typeof item.price === 'object' ? item.price.value || item.price : item.price
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('저장된 차트 데이터 파싱 실패:', error);
+    }
+    
+    // 파싱 실패 시 기본 더미 데이터
+    return [
+      { year: '2019', price: 23000 },
+      { year: '2020', price: 25000 },
+      { year: '2021', price: 27000 },
+      { year: '2022', price: 24000 },
+      { year: '2023', price: 26000 }
+    ];
+  };
 
-  // Mock 브랜딩 이력 데이터
-  const brandingHistory: BrandingHistory[] = [
-    {
-      id: '1',
-      title: '뽀사과',
-      description: '한 입에 쏙, 귀여움이 톡!',
-      story: '아이들이 좋아하는 작고 귀여운 사과를 만들고 싶었어요. 기존 사과보다 크기는 작지만, 당도는 더 높고 아삭한 식감이 매력적입니다.\n\n매일 새벽 5시에 일어나 과수원을 돌보며, 하나하나 정성스럽게 키운 사과들입니다. 농약 사용을 최소화하고, 자연 친화적인 방법으로 재배했습니다.\n\n\'뽀사과\'라는 이름은 손녀가 지어줬는데, 정말 사과처럼 볼이 뽀얗고 귀엽다고 해서 붙인 이름이에요.',
-      imageUrl: 'https://placehold.co/72x72/ff6b6b/ffffff?text=🍎',
-      createdAt: '2024.12.15'
-    },
-    {
-      id: '2',
-      title: '하은 감자',
-      description: '자연이 키운 진심의 맛',
-      story: '고향 강원도의 깨끗한 고랭지에서 자란 감자입니다. 일교차가 큰 환경에서 자란 덕분에 당도가 높고 포슬포슬한 식감을 자랑해요.\n\n3대째 이어온 감자 농사의 노하우를 바탕으로, 전통 농법과 현대 기술을 조화롭게 접목했습니다. 화학비료 대신 퇴비를 사용하고, 토양의 건강을 최우선으로 생각합니다.\n\n딸 하은이의 이름을 따서 \'하은 감자\'라고 명명했습니다. 하은이가 농업에 관심을 갖고 함께 일할 수 있기를 바라는 마음을 담았어요.',
-      imageUrl: 'https://placehold.co/72x72/8B4513/ffffff?text=🥔',
-      createdAt: '2024.12.14'
-    },
-    {
-      id: '3',
-      title: '싱싱초록',
-      description: '노지에서 자란 고품질 오이고추, 바로 산지에서 보내드립니다.',
-      story: '충청남도 논산의 비옥한 땅에서 자란 오이고추입니다. 조부모님 대부터 이어온 씨앗을 사용해 재배하는 토종 오이고추로, 시중에서 찾기 어려운 진짜 맛을 자랑합니다.\n\n농약을 최소한으로 사용하고, 천적 곤충을 활용한 친환경 농법으로 재배합니다. 매일 새벽 이슬을 맞으며 자란 오이고추는 아삭하고 신선함이 오래 지속됩니다.\n\n싱싱하고 초록빛이 아름다워 \'싱싱초록\'이라는 브랜드명을 지었습니다. 소비자들에게 건강하고 신선한 채소를 전달하고 싶은 마음을 담았어요.',
-      imageUrl: 'https://placehold.co/72x72/32CD32/ffffff?text=🌶️',
-      createdAt: '2024.12.10'
-    },
-    {
-      id: '4',
-      title: '토담토',
-      description: '"햇살과 정성을 가득 담은 산지직송 대추토마토, 토담토가 전하는 자연 그대로의 달콤함."',
-      story: '전라남도 고흥의 따뜻한 햇살 아래에서 자란 대추토마토입니다. 바닷바람과 충분한 일조량, 그리고 농부의 정성이 만들어낸 최고의 토마토예요.\n\n당도 12브릭스 이상의 고당도 토마토로, 과일처럼 달콤합니다. 하우스가 아닌 노지에서 자연스럽게 익힌 토마토라 영양가도 풍부하고 맛도 진합니다.\n\n\'토마토에 정성을 담다\'는 의미로 \'토담토\'라고 이름 지었습니다. 소비자 분들이 한 입 베어물면 농부의 진심을 느끼실 수 있을 거라 확신합니다.',
-      imageUrl: 'https://placehold.co/72x72/FF6347/ffffff?text=🍅',
-      createdAt: '2024.11.28'
-    }
-  ];
+  // 통합 가격 제안 목록 조회
+  useEffect(() => {
+    const loadUnifiedPriceHistory = async () => {
+      setPriceQuoteLoading(true);
+      setPriceQuoteError(null);
+      
+      try {
+        const unifiedData = await PriceQuoteService.getUnifiedPriceHistory();
+        setUnifiedPriceHistory(unifiedData);
+      } catch (err: any) {
+        console.error('통합 가격 제안 목록 조회 실패:', err);
+        setPriceQuoteError(err.message || '가격 제안 목록을 불러오지 못했습니다.');
+        // 에러가 발생해도 빈 배열로 설정하여 UI가 정상 작동하도록 함
+        setUnifiedPriceHistory([]);
+      } finally {
+        setPriceQuoteLoading(false);
+      }
+    };
+
+    loadUnifiedPriceHistory();
+  }, []);
+
+  // 더미 브랜딩 이력 데이터 제거 (실제 API 데이터 사용)
 
   // 멤버십 플랜 데이터
   const membershipPlans: MembershipPlan[] = [
@@ -458,7 +660,6 @@ const MyPage: React.FC = () => {
         '브랜딩: 최초 5회',
         '가격 제안: 최초 5회',
         '판매글 생성: 제공되지 않음',
-        '기본 고객 지원',
       ],
     },
     {
@@ -471,7 +672,6 @@ const MyPage: React.FC = () => {
         '브랜딩: 무제한',
         '가격 제안: 무제한',
         '판매글 생성: 제공되지 않음',
-        '우선 고객 지원',
       ],
       isRecommended: true,
     },
@@ -480,23 +680,16 @@ const MyPage: React.FC = () => {
       iconType: 'diamond',
       title: '프리미엄 플러스',
       price: '₩8,900 /월',
-      description: '홍보 문구까지 자동으로 완성해드릴게요. 마케팅까지 맡기고 싶은 농장주님께 추천합니다.',
+      description: '홍보 문구까지 자동으로 완성해드릴게요. 모든 기능을 제한 없이 사용할 수 있습니다. ',
       features: [
         '브랜딩: 무제한',
         '가격 제안: 무제한',
         '판매글 생성: 무제한',
-        '감성형 / 실용형 / 쇼핑몰형 등 다양한 문체 지원',
+        '프리미엄 가격 제안 서비스 이용 가능'
       ],
       isPremium: true,
     },
   ];
-
-  // PersonalInfo 데이터
-  const personalData: PersonalInfoData = {
-    name: "윤하은",
-    farmName: " 하은팜",
-    location: "○○도 □□시 △△동"
-  };
 
   const handleTabChange = (tab: MyPageTabOption) => {
     setSelectedTab(tab);
@@ -519,6 +712,11 @@ const MyPage: React.FC = () => {
   };
 
   const getSortedBrandingHistory = () => {
+    // 안전장치: brandingHistory가 없으면 빈 배열 반환
+    if (!brandingHistory || !Array.isArray(brandingHistory)) {
+      return [];
+    }
+    
     const historyCopy = [...brandingHistory];
     
     switch (sortType) {
@@ -534,7 +732,7 @@ const MyPage: React.FC = () => {
   };
 
   const getSortedPriceHistory = () => {
-    const historyCopy = [...priceQuoteHistory];
+    const historyCopy = [...unifiedPriceHistory];
     
     switch (sortType) {
       case 'latest':
@@ -542,7 +740,7 @@ const MyPage: React.FC = () => {
       case 'oldest':
         return historyCopy.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
       case 'name':
-        return historyCopy.sort((a, b) => a.request.cropName.localeCompare(b.request.cropName));
+        return historyCopy.sort((a, b) => a.productName.localeCompare(b.productName));
       default:
         return historyCopy;
     }
@@ -564,20 +762,26 @@ const MyPage: React.FC = () => {
 
   const getGroupedPriceHistory = () => {
     const sortedHistory = getSortedPriceHistory();
-    const grouped: { [date: string]: PriceQuoteHistory[] } = {};
+    const grouped: { [date: string]: UnifiedPriceHistoryResponse[] } = {};
     
     sortedHistory.forEach(item => {
-      if (!grouped[item.createdAt]) {
-        grouped[item.createdAt] = [];
+      const dateKey = new Date(item.createdAt).toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
       }
-      grouped[item.createdAt].push(item);
+      grouped[dateKey].push(item);
     });
     
     return grouped;
   };
 
   const handleLogoClick = () => {
-    navigate('/');
+    navigate('/home');
   };
 
   const handleMypageClick = () => {
@@ -585,14 +789,67 @@ const MyPage: React.FC = () => {
     window.scrollTo(0, 0);
   };
 
-  const handleDeleteBranding = (id: string) => {
-    console.log(`브랜딩 ${id} 삭제`);
-    // TODO: 실제 삭제 로직 구현
+  const handleDeleteBranding = async (id: string) => {
+    const confirmed = await showConfirm({
+      type: 'confirm',
+      title: '브랜딩 삭제',
+      message: '정말로 이 브랜딩을 삭제하시겠습니까?',
+      confirmText: '삭제',
+      cancelText: '취소'
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const projectId = parseInt(id);
+      if (isNaN(projectId)) {
+        throw new Error('유효하지 않은 프로젝트 ID입니다.');
+      }
+      
+      await deleteBranding(projectId);
+      
+      // 삭제 후 목록 새로고침
+      try {
+        const updatedData = await fetchBrandingList();
+        const mappedData = updatedData.map(mapBrandingApiToHistory);
+        setBrandingHistory(mappedData);
+        showSuccess('삭제 완료', '브랜딩이 성공적으로 삭제되었습니다.');
+      } catch (refreshErr: any) {
+        console.error('목록 새로고침 실패:', refreshErr);
+        // 새로고침 실패해도 기존 목록에서 해당 항목만 제거
+        setBrandingHistory(prev => prev.filter(item => item.id !== id));
+        showSuccess('삭제 완료', '브랜딩이 삭제되었습니다.');
+      }
+    } catch (err: any) {
+      console.error('브랜딩 삭제 실패:', err);
+      showError('삭제 실패', err.message || '브랜딩 삭제에 실패했습니다.');
+    }
   };
 
-  const handleBrandingClick = (brandingHistory: BrandingHistory) => {
-    setSelectedBrandingHistory(brandingHistory);
-    setIsBrandingDetailVisible(true);
+  const handleBrandingClick = async (brandingHistory: BrandingHistory) => {
+    try {
+      // 상세 정보 조회 (필요시)
+      const projectId = parseInt(brandingHistory.id);
+      if (isNaN(projectId)) {
+        console.warn('유효하지 않은 프로젝트 ID, 기존 데이터로 모달 표시:', brandingHistory.id);
+        setSelectedBrandingHistory(brandingHistory);
+        setIsBrandingDetailVisible(true);
+        return;
+      }
+      
+      const detailData = await fetchBrandingDetail(projectId);
+      const mappedDetail = mapBrandingApiToHistory(detailData);
+      
+      setSelectedBrandingHistory(mappedDetail);
+      setIsBrandingDetailVisible(true);
+    } catch (err: any) {
+      console.error('브랜딩 상세 조회 실패:', err);
+      // 실패해도 기존 데이터로 모달 열기
+      setSelectedBrandingHistory(brandingHistory);
+      setIsBrandingDetailVisible(true);
+    }
   };
 
   const handleCloseBrandingDetail = () => {
@@ -600,9 +857,36 @@ const MyPage: React.FC = () => {
     setSelectedBrandingHistory(null);
   };
 
-  const handleDeletePriceQuote = (id: string) => {
-    console.log(`가격 제안 ${id} 삭제`);
-    // TODO: 실제 삭제 로직 구현
+  const handleDeletePriceQuote = async (id: string) => {
+    const confirmed = await showConfirm({
+      type: 'confirm',
+      title: '가격 제안 삭제',
+      message: '정말로 이 가격 제안을 삭제하시겠습니까?',
+      confirmText: '삭제',
+      cancelText: '취소'
+    });
+
+    if (confirmed) {
+      try {
+        // 해당 ID의 항목을 찾아서 타입 확인
+        const targetItem = unifiedPriceHistory.find(item => item.id === parseInt(id));
+        if (!targetItem) {
+          showError('삭제 실패', '삭제하려는 항목을 찾을 수 없습니다.');
+          return;
+        }
+
+        // 통합 삭제 API 사용
+        await PriceQuoteService.deleteUnifiedPriceQuote(parseInt(id), targetItem.type);
+        
+        // 로컬 상태에서 해당 항목 제거
+        setUnifiedPriceHistory(prev => prev.filter(item => item.id !== parseInt(id)));
+        
+        showSuccess('삭제 완료', '가격 제안이 성공적으로 삭제되었습니다.');
+      } catch (err: any) {
+        console.error('가격 제안 삭제 실패:', err);
+        showError('삭제 실패', err.message || '가격 제안 삭제에 실패했습니다.');
+      }
+    }
   };
 
   const handlePriceQuoteClick = (priceHistory: PriceQuoteHistory) => {
@@ -610,60 +894,301 @@ const MyPage: React.FC = () => {
     setIsDetailModalVisible(true);
   };
 
+  // 저장된 가격 데이터 가져오기 (실제 API 호출)
+  const fetchStoredPriceData = async (priceQuoteId: number) => {
+    try {
+      // 개별 가격 제안 상세 조회 API 호출
+      const response = await PriceQuoteService.getPriceQuote(priceQuoteId);
+      
+      if (response.yearlyPriceData) {
+        const parsed = JSON.parse(response.yearlyPriceData);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // 저장된 데이터가 올바른 형식인지 확인
+          const firstItem = parsed[0];
+          if (firstItem.year && firstItem.price !== undefined) {
+            return parsed.map(item => ({
+              year: item.year,
+              price: typeof item.price === 'object' ? 
+                (item.price.value || item.price) : 
+                item.price
+            }));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('저장된 가격 데이터 조회 실패:', error);
+    }
+    
+    // 실패 시 또는 데이터가 없을 시 고정 더미 데이터 반환
+    return [
+      { year: '2019', price: 23000 },
+      { year: '2020', price: 25000 },
+      { year: '2021', price: 27000 },
+      { year: '2022', price: 24000 },
+      { year: '2023', price: 26000 }
+    ];
+  };
+
+  const handleUnifiedPriceClick = async (unifiedHistory: UnifiedPriceHistoryResponse) => {
+    if (unifiedHistory.type === 'PREMIUM') {
+      // 프리미엄 타입은 프리미엄 전용 모달 사용
+      setSelectedUnifiedData(unifiedHistory);
+      setIsPremiumDetailModalOpen(true);
+    } else {
+      try {
+        // 일반 타입은 기존 모달 사용
+        const harvestDate = unifiedHistory.harvestDate || unifiedHistory.analysisDate || new Date().toISOString().split('T')[0];
+        
+        // 기본 가격 제안은 별도 API로 실제 저장된 데이터 가져오기
+        const priceData = await fetchStoredPriceData(unifiedHistory.id);
+        
+        const convertedHistory: PriceQuoteHistory = {
+          id: unifiedHistory.id.toString(),
+          request: {
+            productName: unifiedHistory.productName,
+            grade: unifiedHistory.grade,
+            harvestDate: new Date(harvestDate)
+          },
+          result: {
+            fairPrice: unifiedHistory.suggestedPrice,
+            priceData: priceData as any // 타입 호환성을 위해 any로 캐스팅
+          },
+          unit: unifiedHistory.unit,
+          quantity: unifiedHistory.quantity,
+          createdAt: unifiedHistory.createdAt,
+          quotationType: unifiedHistory.type // 직접 매핑 (둘 다 동일한 값)
+        };
+        
+        setSelectedPriceHistory(convertedHistory);
+        setIsDetailModalVisible(true);
+      } catch (error) {
+        console.error('가격 데이터 로드 실패:', error);
+        showError('오류', '가격 데이터를 불러오는데 실패했습니다.');
+      }
+    }
+  };
+
   const handleCloseDetailModal = () => {
     setIsDetailModalVisible(false);
     setSelectedPriceHistory(null);
   };
 
-  const handleSelectPlan = (planId: string) => {
-    console.log(`플랜 선택됨: ${planId}`);
-    // TODO: 실제 플랜 구독 로직 구현
-    alert(`${planId} 플랜이 선택되었습니다!`);
+  const handleClosePremiumDetailModal = () => {
+    setIsPremiumDetailModalOpen(false);
+    setSelectedUnifiedData(null);
+  };
+
+  const handleSelectPlan = async (planId: string) => {
+    try {
+      if (!user) {
+        showError('오류', '사용자 정보를 찾을 수 없습니다.');
+        return;
+      }
+
+      const currentMembership = user.membershipType;
+      
+      // 🔥 현재와 동일한 플랜 선택 시 안내
+      if ((planId === 'free' && currentMembership === 'FREE') ||
+          (planId === 'premium' && currentMembership === 'PREMIUM') ||
+          (planId === 'premium-plus' && currentMembership === 'PREMIUM_PLUS')) {
+        showInfo('동일한 플랜', '이미 해당 멤버십을 사용 중입니다.');
+        return;
+      }
+
+      // 🔥 변경 확인 다이얼로그
+      const isUpgrade = (planId === 'premium' && currentMembership === 'FREE') ||
+                       (planId === 'premium-plus' && (currentMembership === 'FREE' || currentMembership === 'PREMIUM'));
+      const isDowngrade = !isUpgrade;
+
+      let confirmMessage = '';
+      if (planId === 'free') {
+        confirmMessage = '무료 멤버십으로 다운그레이드하시겠습니까?\n일부 기능이 제한됩니다.';
+      } else if (planId === 'premium') {
+        if (currentMembership === 'FREE') {
+          confirmMessage = '프리미엄 멤버십으로 업그레이드하시겠습니까?';
+        } else {
+          confirmMessage = '프리미엄 멤버십으로 다운그레이드하시겠습니까?\n프리미엄 플러스 기능이 제한됩니다.';
+        }
+      } else if (planId === 'premium-plus') {
+        confirmMessage = '프리미엄 플러스 멤버십으로 업그레이드하시겠습니까?';
+      }
+
+      const confirmed = await showConfirm({
+        type: 'confirm',
+        title: isUpgrade ? '멤버십 업그레이드' : '멤버십 다운그레이드',
+        message: confirmMessage,
+        confirmText: '확인',
+        cancelText: '취소'
+      });
+
+      if (!confirmed) return;
+
+      // 🔥 변경 진행 토스트 (1.5초 표시)
+      showInfo(
+        isUpgrade ? '업그레이드 진행 중' : '다운그레이드 진행 중', 
+        isUpgrade ? '멤버십 업그레이드를 진행하고 있습니다...' : '멤버십 다운그레이드를 진행하고 있습니다...'
+      );
+      
+      let updatedUser: UserProfileResponse;
+      let successMessage = '';
+      let newMembershipType = '';
+      
+      // 🔥 API 호출
+      if (planId === 'free') {
+        updatedUser = await downgradeToFree();
+        successMessage = '무료 멤버십으로 다운그레이드되었습니다!';
+        newMembershipType = 'FREE';
+      } else if (planId === 'premium') {
+        if (currentMembership === 'FREE') {
+          updatedUser = await upgradeToPremium();
+          successMessage = '프리미엄 멤버십으로 업그레이드되었습니다!';
+        } else {
+          updatedUser = await downgradeToPremium();
+          successMessage = '프리미엄 멤버십으로 다운그레이드되었습니다!';
+        }
+        newMembershipType = 'PREMIUM';
+      } else if (planId === 'premium-plus') {
+        updatedUser = await upgradeToPremiumPlus();
+        successMessage = '프리미엄 플러스 멤버십으로 업그레이드되었습니다!';
+        newMembershipType = 'PREMIUM_PLUS';
+      } else {
+        showError('잘못된 요청', '올바르지 않은 멤버십 플랜입니다.');
+        return;
+      }
+      
+      // 🚀 즉시 UI 업데이트 (실시간 반영)
+      setUser(prev => prev ? {
+        ...prev,
+        membershipType: newMembershipType,
+        name: updatedUser.name || prev.name || '',
+        farmName: updatedUser.farmName || prev.farmName || '',
+        location: updatedUser.location || prev.location || '',
+        id: updatedUser.id || prev.id,
+        email: updatedUser.email || prev.email,
+        createdAt: updatedUser.createdAt || prev.createdAt
+      } : null);
+
+      // 🔥 AuthContext의 사용자 정보도 새로고침 (캐시 문제 해결)
+      console.log('멤버십 변경 완료 - AuthContext 사용자 정보 새로고침 시작');
+      await refreshUser();
+      
+      // 편집된 값도 업데이트  
+      setEditValues(prev => ({
+        ...prev,
+        name: updatedUser.name || prev.name,
+        farmName: updatedUser.farmName || prev.farmName,
+        location: updatedUser.location || prev.location
+      }));
+      
+      // 🔥 성공 토스트는 1.5초 딜레이 후 표시 (진행중 토스트 끝난 후)
+      setTimeout(() => {
+        showSuccess('변경 완료', successMessage);
+      }, 1500);
+      
+    } catch (error: any) {
+      console.error('멤버십 변경 실패:', error);
+      showError('변경 실패', error.message || '멤버십 변경에 실패했습니다.');
+    }
   };
 
   const renderBrandingContent = () => {
-    const groupedHistory = getGroupedBrandingHistory();
-    const dateKeys = Object.keys(groupedHistory);
-
-    if (dateKeys.length === 0) {
+    if (brandingLoading) {
       return (
-        <EmptyState>
-          <EmptyIconContainer>
-            <EmptyIcon src={iconBrush} alt="브랜딩" />
-          </EmptyIconContainer>
-          <EmptyTitle>브랜딩 이력이 없습니다</EmptyTitle>
-          <EmptyDescription>
-            첫 번째 브랜드를 만들어보세요!<br />
-            홈에서 브랜딩 서비스를 시작할 수 있습니다.
-          </EmptyDescription>
-        </EmptyState>
+        <div style={{ padding: '60px 20px', textAlign: 'center', color: '#9CA3AF' }}>
+          브랜딩 목록을 불러오는 중...
+        </div>
       );
     }
 
-    return (
-      <HistoryListContainer>
-        {dateKeys.map(date => (
-          <DateGroup key={date}>
-            <DateHeader>
-              <DateText>{date}</DateText>
-              <DateLine />
-            </DateHeader>
-            <CardsList>
-              {groupedHistory[date].map(item => (
-                <BrandingCard
-                  key={item.id}
-                  title={item.title}
-                  description={item.description}
-                  imageUrl={item.imageUrl}
-                  onClick={() => handleBrandingClick(item)}
-                  onDelete={() => handleDeleteBranding(item.id)}
-                />
-              ))}
-            </CardsList>
-          </DateGroup>
-        ))}
-      </HistoryListContainer>
-    );
+    if (brandingError) {
+      return (
+        <div style={{ padding: '60px 20px', textAlign: 'center', color: '#EF4444' }}>
+          {brandingError}
+          <br />
+          <button 
+            onClick={() => window.location.reload()} 
+            style={{ 
+              marginTop: '16px', 
+              padding: '8px 16px', 
+              backgroundColor: '#1F41BB', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '8px', 
+              cursor: 'pointer' 
+            }}
+          >
+            새로고침
+          </button>
+        </div>
+      );
+    }
+
+    try {
+      const groupedHistory = getGroupedBrandingHistory();
+      const dateKeys = Object.keys(groupedHistory);
+
+      if (dateKeys.length === 0) {
+        return (
+          <EmptyState>
+            <EmptyIconContainer>
+              <EmptyIcon src={iconBrush} alt="브랜딩" />
+            </EmptyIconContainer>
+            <EmptyTitle>브랜딩 이력이 없습니다</EmptyTitle>
+            <EmptyDescription>
+              첫 번째 브랜드를 만들어보세요!<br />
+              홈에서 브랜딩 서비스를 시작할 수 있습니다.
+            </EmptyDescription>
+          </EmptyState>
+        );
+      }
+
+      return (
+        <HistoryListContainer>
+          {dateKeys.map(date => (
+            <DateGroup key={date}>
+              <DateHeader>
+                <DateText>{date}</DateText>
+                <DateLine />
+              </DateHeader>
+              <CardsList>
+                {groupedHistory[date]?.map(item => (
+                  <BrandingCard
+                    key={item.id}
+                    title={item.title}
+                    description={item.description}
+                    imageUrl={item.imageUrl}
+                    onClick={() => handleBrandingClick(item)}
+                    onDelete={() => handleDeleteBranding(item.id)}
+                  />
+                )) || []}
+              </CardsList>
+            </DateGroup>
+          ))}
+        </HistoryListContainer>
+      );
+    } catch (renderError: any) {
+      console.error('브랜딩 콘텐츠 렌더링 에러:', renderError);
+      return (
+        <div style={{ padding: '60px 20px', textAlign: 'center', color: '#EF4444' }}>
+          브랜딩 목록 표시 중 오류가 발생했습니다.
+          <br />
+          <button 
+            onClick={() => window.location.reload()} 
+            style={{ 
+              marginTop: '16px', 
+              padding: '8px 16px', 
+              backgroundColor: '#1F41BB', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '8px', 
+              cursor: 'pointer' 
+            }}
+          >
+            새로고침
+          </button>
+        </div>
+      );
+    }
   };
 
   const renderPricingContent = () => {
@@ -697,14 +1222,15 @@ const MyPage: React.FC = () => {
               {groupedHistory[date].map(item => (
                 <PriceQuoteCard
                   key={item.id}
-                  cropName={item.request.cropName}
-                  variety={item.request.variety}
-                  grade={item.request.grade}
-                  fairPrice={item.result.fairPrice}
+                  productName={item.productName}
+                  grade={item.grade}
+                  fairPrice={item.suggestedPrice}
                   unit={item.unit}
                   quantity={item.quantity}
-                  onClick={() => handlePriceQuoteClick(item)}
-                  onDelete={() => handleDeletePriceQuote(item.id)}
+                  type={item.type}
+                  location={item.location}
+                  onClick={() => handleUnifiedPriceClick(item)}
+                  onDelete={() => handleDeletePriceQuote(item.id.toString())}
                 />
               ))}
             </CardsList>
@@ -735,6 +1261,7 @@ const MyPage: React.FC = () => {
               <MembershipList
                 plans={membershipPlans}
                 onSelectPlan={handleSelectPlan}
+                currentMembershipType={user?.membershipType || 'FREE'}
                 className="membership-list"
               />
             </MembershipContainer>
@@ -753,9 +1280,34 @@ const MyPage: React.FC = () => {
       />
       
       <ContentArea>
-        <SectionTitle>개인 정보</SectionTitle>
+        <SectionHeader>
+          <SectionTitle>내 정보</SectionTitle>
+          {!isEditing && (
+            <EditButton onClick={handleEditClick}>
+              <EditIcon src={iconPencil} alt="수정" />
+            </EditButton>
+          )}
+        </SectionHeader>
+        
         <PersonalInfoContainer>
-          <PersonalInfo data={personalData} />
+          {loading ? (
+            <div>로딩 중...</div>
+          ) : error ? (
+            <div style={{ color: 'red' }}>{error}</div>
+          ) : user ? (
+            <PersonalInfo
+              data={{
+                name: user.name || '-',
+                farmName: user.farmName || '-',
+                location: user.location || '-',
+              }}
+              isEditing={isEditing}
+              editValues={editValues}
+              onValueChange={handleValueChange}
+              onSave={handleSave}
+              onCancel={handleCancel}
+            />
+          ) : null}
         </PersonalInfoContainer>
 
         <TabContainer>
@@ -790,6 +1342,14 @@ const MyPage: React.FC = () => {
         brandingHistory={selectedBrandingHistory}
         onClose={handleCloseBrandingDetail}
       />
+
+      {selectedUnifiedData && (
+        <PremiumPriceDetailModal
+          isOpen={isPremiumDetailModalOpen}
+          data={selectedUnifiedData}
+          onClose={handleClosePremiumDetailModal}
+        />
+      )}
     </PageContainer>
   );
 };

@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
+import CropVarietyInput from '../../common/CropVarietyInput';
 import InputField from '../../common/InputField/InputField';
 import GradeSelector from '../../common/GradeSelector/GradeSelector';
 import iconGrade from '../../../assets/icon-grade.svg';
+import iconToggle from '../../../assets/icon-toggle.svg';
 
 const slideInUp = keyframes`
   from {
@@ -97,11 +99,92 @@ const GradeIcon = styled.img`
   }
 `;
 
+const ToggleContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 0;
+`;
+
+const ToggleLabel = styled.span`
+  font-family: 'Jalnan 2', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.18;
+  color: #000000;
+`;
+
+const ToggleButton = styled.button<{ $isActive: boolean }>`
+  width: 48px;
+  height: 28px;
+  background: ${props => props.$isActive ? '#1F41BB' : '#E5E7EB'};
+  border: none;
+  border-radius: 14px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+  outline: none;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(31, 65, 187, 0.2);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+`;
+
+const ToggleKnob = styled.div<{ $isActive: boolean }>`
+  width: 20px;
+  height: 20px;
+  background: #FFFFFF;
+  border-radius: 50%;
+  position: absolute;
+  top: 4px;
+  left: ${props => props.$isActive ? '24px' : '4px'};
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const ToggleIcon = styled.img<{ $isActive: boolean }>`
+  width: 12px;
+  height: 12px;
+  filter: ${props => props.$isActive 
+    ? 'brightness(0) saturate(100%) invert(25%) sepia(98%) saturate(1653%) hue-rotate(221deg) brightness(96%) contrast(91%)'
+    : 'brightness(0) saturate(100%) invert(60%) sepia(5%) saturate(7%) hue-rotate(4deg) brightness(93%) contrast(87%)'
+  };
+  transition: all 0.3s ease;
+`;
+
+const ToggleDescription = styled.div`
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 10px;
+  line-height: 1.4;
+  color: #999;
+  margin-top: 4px;
+  text-align: left;
+`;
+
 interface BasicInfoData {
   cropName: string;
   variety: string;
   cultivationMethod: string;
   grade: string;
+  includeFarmName: boolean;
+}
+
+interface CropVarietyData {
+  cropCode: string;
+  cropName: string;
+  varietyCode: string;
+  varietyName: string;
 }
 
 interface BasicInfoStepProps {
@@ -116,12 +199,34 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
   onValidationChange 
 }) => {
   const [showGradeSelector, setShowGradeSelector] = useState(false);
+  
+  // 재배 방식 필드 ref
+  const cultivationMethodRef = useRef<HTMLInputElement>(null);
 
-  const handleInputChange = (field: keyof BasicInfoData, value: string) => {
+  const handleInputChange = (field: keyof BasicInfoData, value: string | boolean) => {
     const newData = { ...data, [field]: value };
     onChange(newData);
     
     // 유효성 검사 (등급은 선택사항)
+    const isValid = newData.cropName.trim() !== '' && 
+                   newData.variety.trim() !== '' && 
+                   newData.cultivationMethod.trim() !== '';
+    onValidationChange(isValid);
+  };
+
+  // 작물/품종 선택 처리
+  const handleCropVarietyChange = (cropVarietyData: CropVarietyData) => {
+    console.log('🌾 작물/품종 데이터 변경:', cropVarietyData);
+    
+    // 작물명과 품종명 업데이트
+    const newData = { 
+      ...data, 
+      cropName: cropVarietyData.cropName,
+      variety: cropVarietyData.varietyName 
+    };
+    onChange(newData);
+    
+    // 유효성 검사
     const isValid = newData.cropName.trim() !== '' && 
                    newData.variety.trim() !== '' && 
                    newData.cultivationMethod.trim() !== '';
@@ -151,20 +256,12 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
       </Title>
       
       <FormContainer>
-        <InputField
-          label="작물명"
-          placeholder="예 : 토마토"
-          value={data.cropName}
-          onChange={(value) => handleInputChange('cropName', value)}
-          variant="default"
-        />
-        
-        <InputField
-          label="품종"
-          placeholder="예 : 스테비아 토마토"
-          value={data.variety}
-          onChange={(value) => handleInputChange('variety', value)}
-          variant="default"
+        {/* 작물명과 품종을 자동완성으로 처리 */}
+        <CropVarietyInput
+          cropValue={data.cropName}
+          varietyValue={data.variety}
+          onChange={handleCropVarietyChange}
+          nextFieldRef={cultivationMethodRef}
         />
         
         <InputField
@@ -173,6 +270,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
           value={data.cultivationMethod}
           onChange={(value) => handleInputChange('cultivationMethod', value)}
           variant="default"
+          inputRef={cultivationMethodRef}
         />
 
         <GradeContainer>
@@ -182,6 +280,27 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
             <GradeIcon src={iconGrade} alt="등급" />
           </GradeInput>
         </GradeContainer>
+
+        <div>
+          <ToggleContainer>
+            <ToggleLabel>농가명 포함</ToggleLabel>
+            <ToggleButton
+              $isActive={data.includeFarmName}
+              onClick={() => handleInputChange('includeFarmName', !data.includeFarmName)}
+            >
+              <ToggleKnob $isActive={data.includeFarmName}>
+                <ToggleIcon 
+                  src={iconToggle} 
+                  alt="토글" 
+                  $isActive={data.includeFarmName}
+                />
+              </ToggleKnob>
+            </ToggleButton>
+          </ToggleContainer>
+          <ToggleDescription>
+            농가명 정보는 판매글에만 반영됩니다
+          </ToggleDescription>
+        </div>
       </FormContainer>
 
       {showGradeSelector && (

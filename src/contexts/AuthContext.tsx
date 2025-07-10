@@ -1,24 +1,23 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { checkAuthStatus, getCurrentUser, logout } from '../api/auth';
-
-interface User {
-  userId: string | null;
-  email: string | null;
-  nickname: string | null;
-  membershipType: string | null;
-}
+import { checkAuthStatus, getCurrentUser, fetchCurrentUserFromServer, logout } from '../api/auth';
+import type { UserResponse } from '../types/user';
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: User | null;
-  login: (userInfo: User) => void;
+  user: UserResponse | null;
+  login: (userInfo: UserResponse) => void;
   logout: () => void;
   loading: boolean;
+  refreshUser: () => Promise<void>;
+}
+
+interface AuthProviderProps {
+  children: ReactNode;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
@@ -26,17 +25,13 @@ export const useAuth = () => {
   return context;
 };
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   // useCallback으로 함수들을 메모이제이션
-  const handleLogin = useCallback((userInfo: User) => {
+  const handleLogin = useCallback((userInfo: UserResponse) => {
     setUser(userInfo);
     setIsAuthenticated(true);
   }, []);
@@ -47,26 +42,70 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout(); // API 함수 호출
   }, []);
 
+  // 사용자 정보 강제 새로고침 함수
+  const refreshUser = useCallback(async () => {
+    console.log('AuthContext - 사용자 정보 강제 새로고침 시작');
+    try {
+      const serverUser = await fetchCurrentUserFromServer();
+      if (serverUser) {
+        console.log('AuthContext - 서버에서 최신 사용자 정보 조회 성공:', serverUser);
+        setUser(serverUser);
+        setIsAuthenticated(true);
+      } else {
+        console.warn('AuthContext - 서버에서 사용자 정보 조회 실패');
+      }
+    } catch (error) {
+      console.error('AuthContext - 사용자 정보 새로고침 중 오류:', error);
+    }
+  }, []);
+
   useEffect(() => {
     // 앱 시작 시 인증 상태 확인
-    const initializeAuth = () => {
+    const initializeAuth = async () => {
       try {
-        const authStatus = checkAuthStatus();
-        if (authStatus) {
-          const currentUser = getCurrentUser();
-          setUser(currentUser);
-          setIsAuthenticated(true);
+        const hasTokens = checkAuthStatus();
+        
+        if (hasTokens) {
+          // 먼저 서버에서 최신 사용자 정보 가져오기 시도
+          const serverUser = await fetchCurrentUserFromServer();
+          
+          if (serverUser) {
+            // 서버에서 정보 조회 성공
+            setUser(serverUser);
+            setIsAuthenticated(true);
+          } else {
+            // 서버에서 실패하면 로컬 정보로 폴백 (토큰 갱신이 자동으로 수행됨)
+            const localUser = getCurrentUser();
+            if (localUser) {
+              setUser(localUser);
+              setIsAuthenticated(true);
+            } else {
+              // 로컬 정보도 없으면 로그아웃
+              handleLogout();
+            }
+          }
+        } else {
+          // 토큰이 없으면 로그아웃 상태
+          setIsAuthenticated(false);
+          setUser(null);
         }
       } catch (error) {
         console.error('인증 상태 확인 중 오류:', error);
-        handleLogout();
+        // 에러 발생 시 로컬 정보로 시도
+        const localUser = getCurrentUser();
+        if (localUser && checkAuthStatus()) {
+          setUser(localUser);
+          setIsAuthenticated(true);
+        } else {
+          handleLogout();
+        }
       } finally {
         setLoading(false);
       }
     };
 
     initializeAuth();
-  }, [handleLogout]); // handleLogout을 의존성에 추가
+  }, [handleLogout]);
 
   const value: AuthContextType = {
     isAuthenticated,
@@ -74,6 +113,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login: handleLogin,
     logout: handleLogout,
     loading,
+    refreshUser,
   };
 
   return (

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import PersonalInfo from '../components/common/PersonalInfo';
 import type { PersonalInfoData } from '../components/common/PersonalInfo';
+import { useState } from 'react';
 
 const meta: Meta<typeof PersonalInfo> = {
   title: 'Components/PersonalInfo',
@@ -24,11 +25,11 @@ const meta: Meta<typeof PersonalInfo> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<typeof PersonalInfo>;
 
 const sampleData: PersonalInfoData = {
-  name: '',
-  farmName: ' 하은팜',
+  name: '김농부',
+  farmName: '김농부네 하은팜',
   location: '○○도 □□시 △△동',
 };
 
@@ -91,6 +92,61 @@ export const Interactive: Story = {
     docs: {
       description: {
         story: '각 행에 마우스를 올려보면 개별적인 호버 효과와 함께 아이콘과 텍스트가 인터랙티브하게 반응합니다.',
+      },
+    },
+  },
+};
+
+// 편집 모드 스토리 (주소 자동완성 포함)
+export const EditMode: Story = {
+  render: () => {
+    const [isEditing, setIsEditing] = useState(true);
+    const [editValues, setEditValues] = useState<PersonalInfoData>({
+      name: '김농부',
+      farmName: '김농부네 딸기농장',
+      location: '',
+    });
+
+    const handleValueChange = (field: keyof PersonalInfoData, value: string) => {
+      setEditValues(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    };
+
+    const handleSave = () => {
+      console.log('저장된 데이터:', editValues);
+      setIsEditing(false);
+    };
+
+    const handleCancel = () => {
+      setEditValues({
+        name: '김농부',
+        farmName: '김농부네 딸기농장', 
+        location: '경상북도 안동시 풍천면',
+      });
+      setIsEditing(false);
+    };
+
+    return (
+      <PersonalInfo
+        data={{
+          name: '김농부',
+          farmName: '김농부네 딸기농장',
+          location: '경상북도 안동시 풍천면',
+        }}
+        isEditing={isEditing}
+        editValues={editValues}
+        onValueChange={handleValueChange}
+        onSave={handleSave}
+        onCancel={handleCancel}
+      />
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: '편집 모드에서 위치 필드에 주소 자동완성 기능이 적용됩니다. 지역명을 입력하면 자동완성 목록이 나타납니다.',
       },
     },
   },

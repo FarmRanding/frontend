@@ -1,9 +1,13 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import Header from '../../components/common/Header';
 import ServiceCard from '../../components/common/ServiceCard';
-import PriceTrendChart from '../../components/common/PriceTrendChart';
+import PriceQuoteHistoryCard from '../../components/common/PriceQuoteHistoryCard';
+import EmptyPriceHistory from '../../components/common/EmptyPriceHistory';
+import { useAuth } from '../../contexts/AuthContext';
+import PremiumMembershipModal from '../../components/common/PremiumMembershipModal/PremiumMembershipModal';
+import { PriceQuoteService, UnifiedPriceHistoryResponse } from '../../api/priceQuoteService';
 
 // 부드러운 애니메이션만 유지
 const fadeInUp = keyframes`
@@ -59,8 +63,9 @@ const ChartScrollContainer = styled.div`
   display: flex;
   gap: 16px;
   overflow-x: auto;
-  padding: 0 0 16px 0;
+  padding: 8px 0 24px 0;
   scroll-behavior: smooth;
+  margin: -8px 0;
   
   /* 깔끔한 스크롤바 */
   &::-webkit-scrollbar {
@@ -107,56 +112,33 @@ interface HomeProps {
   className?: string;
 }
 
-// 샘플 가격 동향 데이터
-const generateSampleData = (basePrice: number, days: number = 30) => {
-  const data = [];
-  const today = new Date();
-  
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(today.getDate() - i);
-    
-    // 가격 변동 시뮬레이션
-    const variation = (Math.random() - 0.5) * 0.2; // ±10% 변동
-    const price = Math.round(basePrice * (1 + variation));
-    
-    data.push({
-      date: date.toISOString(),
-      price
-    });
-  }
-  
-  return data;
-};
-
-const samplePriceTrends = [
-  {
-    cropName: '사과',
-    variety: '후지',
-    currentPrice: 12500,
-    priceChange: 5.2,
-    data: generateSampleData(12500)
-  },
-  {
-    cropName: '배추',
-    variety: '김장용',
-    currentPrice: 8900,
-    priceChange: -2.1,
-    data: generateSampleData(8900)
-  },
-  {
-    cropName: '당근',
-    variety: '일반',
-    currentPrice: 6700,
-    priceChange: 8.7,
-    data: generateSampleData(6700)
-  }
-];
-
 const Home: React.FC<HomeProps> = ({ className }) => {
   const navigate = useNavigate();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activeChart, setActiveChart] = useState(0);
+  const [priceHistory, setPriceHistory] = useState<UnifiedPriceHistoryResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+  const { user, refreshUser } = useAuth();
+  
+  // API에서 가격 제안 이력 가져오기
+  useEffect(() => {
+    const fetchPriceHistory = async () => {
+      try {
+        setIsLoading(true);
+        const data = await PriceQuoteService.getUnifiedPriceHistory();
+        // 최근 5개만 표시
+        setPriceHistory(data.slice(0, 5));
+      } catch (error) {
+        console.error('가격 제안 이력 조회 실패:', error);
+        setPriceHistory([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPriceHistory();
+  }, []);
 
   const handleBrandingClick = () => {
     navigate('/branding');
@@ -166,12 +148,37 @@ const Home: React.FC<HomeProps> = ({ className }) => {
     navigate('/price-quote');
   };
 
+  const handlePremiumPricingClick = () => {
+    console.log('프리미엄 가격 제안 클릭 - 사용자 멤버십:', user?.membershipType);
+    if (user?.membershipType === 'FREE') {
+      // 무료 사용자는 프리미엄 멤버십 모달 표시
+      console.log('무료 사용자 - 프리미엄 모달 표시');
+      setIsPremiumModalOpen(true);
+    } else {
+      // 프리미엄 이상 사용자는 프리미엄 가격 제안 페이지로 이동
+      console.log('프리미엄 사용자 - 페이지 이동');
+      navigate('/premium-pricing');
+    }
+  };
+
   const handleLogoClick = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleMypageClick = () => {
     navigate('/mypage');
+  };
+
+  const handleQuoteCardClick = (data: UnifiedPriceHistoryResponse) => {
+    // 마이페이지 가격 제안 이력 탭으로 이동 (PremiumPricing 방식과 동일)
+    navigate('/mypage?tab=pricing', { 
+      replace: true,
+      state: { forceTabChange: Date.now() } // 고유 키로 강제 탭 변경
+    });
+  };
+
+  const handleStartQuote = () => {
+    navigate('/price-quote');
   };
 
   const handleIndicatorClick = (index: number) => {
@@ -194,6 +201,15 @@ const Home: React.FC<HomeProps> = ({ className }) => {
     }
   };
 
+  const handlePremiumModalClose = () => {
+    setIsPremiumModalOpen(false);
+  };
+
+  const handlePremiumUpgrade = () => {
+    setIsPremiumModalOpen(false);
+    navigate('/mypage?tab=membership'); // 멤버십 탭으로 이동
+  };
+
   return (
     <PageContainer className={className}>
       <Header 
@@ -213,37 +229,76 @@ const Home: React.FC<HomeProps> = ({ className }) => {
           <ServiceCard 
             variant="pricing" 
             title="가격 서비스"
-            description="예상 가격 받아보기"
+            description="기본 가격 제안"
             bgSvg=""
             onClick={handlePricingClick}
+          />
+          <ServiceCard 
+            variant="premium-pricing" 
+            title="프리미엄 가격 제안"
+            description="더 정확한 가격 분석"
+            bgSvg=""
+            onClick={handlePremiumPricingClick}
           />
         </ServiceCardsContainer>
 
         <PriceTrendSection>
-          <SectionTitle>최근 가격 동향</SectionTitle>
-          <ChartScrollContainer 
-            ref={scrollContainerRef}
-            onScroll={handleScroll}
-          >
-            {samplePriceTrends.map((trend, index) => (
-              <PriceTrendChart
-                key={`${trend.cropName}-${trend.variety}`}
-                data={trend}
-              />
-            ))}
-          </ChartScrollContainer>
-          
-          <ScrollIndicator>
-            {samplePriceTrends.map((_, index) => (
-              <IndicatorDot
-                key={index}
-                active={index === activeChart}
-                onClick={() => handleIndicatorClick(index)}
-              />
-            ))}
-          </ScrollIndicator>
+          <SectionTitle>최근 받아본 가격</SectionTitle>
+          {isLoading ? (
+            <ChartScrollContainer>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                height: '200px',
+                color: '#6B7280',
+                fontSize: '14px'
+              }}>
+                가격 제안 이력을 불러오는 중...
+              </div>
+            </ChartScrollContainer>
+          ) : priceHistory.length > 0 ? (
+            <>
+              <ChartScrollContainer 
+                ref={scrollContainerRef}
+                onScroll={handleScroll}
+              >
+                {priceHistory.map((quote) => (
+                  <PriceQuoteHistoryCard
+                    key={quote.id}
+                    data={quote}
+                    onClick={handleQuoteCardClick}
+                  />
+                ))}
+              </ChartScrollContainer>
+              
+              {priceHistory.length > 1 && (
+                <ScrollIndicator>
+                  {priceHistory.map((_, index) => (
+                    <IndicatorDot
+                      key={index}
+                      active={index === activeChart}
+                      onClick={() => handleIndicatorClick(index)}
+                    />
+                  ))}
+                </ScrollIndicator>
+              )}
+            </>
+          ) : (
+            <EmptyPriceHistory onStartQuote={handleStartQuote} />
+          )}
         </PriceTrendSection>
       </ContentArea>
+      
+      {/* 프리미엄 멤버십 모달 */}
+      <PremiumMembershipModal
+        isOpen={isPremiumModalOpen}
+        onClose={handlePremiumModalClose}
+        onUpgrade={handlePremiumUpgrade}
+        title="프리미엄 멤버십 필요"
+        subtitle="프리미엄 가격 제안은 프리미엄 이상 멤버십에서 이용할 수 있습니다."
+        featureName="프리미엄 가격 제안"
+      />
     </PageContainer>
   );
 };

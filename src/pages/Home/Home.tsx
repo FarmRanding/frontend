@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import miniLogo from '../../assets/miniLogo.svg';
 import card1 from '../../assets/card1.svg';
@@ -14,6 +14,11 @@ import SignupModal from '../../components/common/SignupModal';
 import logo from '../../assets/logo.svg';
 import chevronUp from '../../assets/icon-ChevronUp.svg';
 import kakaoLogin from '../../assets/kakaoLogin.svg';
+import iconProfile from '../../assets/icon-profile.svg';
+import { useAuth } from '../../contexts/AuthContext';
+import { testLogin } from '../../api/auth';
+import { useNotification } from '../../contexts/NotificationContext';
+import PasswordInputModal from '../../components/common/PasswordInputModal';
 
 // 과일 이미지 import - 최적화된 버전 사용 + 우선순위별로 정렬
 import fruit1 from '../../assets/fruit-optimized/image 13.svg'; // 183KB
@@ -46,6 +51,8 @@ const allFruits = [...fastLoadingFruits, ...mediumLoadingFruits, ...slowLoadingF
 const fruitImages = [
   fruit1, fruit2, fruit3, fruit4, fruit5, fruit6, fruit7, fruit8, fruit9, fruit10, fruit11, fruit12
 ];
+
+const KAKAO_AUTH_URL = `${import.meta.env.VITE_API_BASE_URL}/oauth2/authorization/kakao`;
 
 // 랜딩페이지 전체 래퍼 - 완전히 흰색 배경
 const LandingPageWrapper = styled.div`
@@ -1157,24 +1164,187 @@ const CtaIcon = styled.span`
   }
 `;
 
+// 테스트 로그인 버튼 스타일 - 카카오 로그인 버튼과 같은 가로 크기, 더 낮은 높이
+const TestLoginButton = styled.button`
+  display: block;
+  width: 280px;
+  height: 40px;
+  background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 2;
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+  margin-top: 16px;
+  box-shadow: 
+    0 2px 8px rgba(255, 152, 0, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.08);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+    transition: left 0.5s ease;
+  }
+  
+  &:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 
+      0 4px 12px rgba(255, 152, 0, 0.3),
+      0 2px 4px rgba(0, 0, 0, 0.12);
+      
+    &::before {
+      left: 100%;
+    }
+  }
+  
+  &:active {
+    transform: translateY(-1px) scale(1.005);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  /* 태블릿 */
+  @media (min-width: 768px) {
+    width: 320px;
+    height: 44px;
+    border-radius: 14px;
+  }
+  
+  /* 데스크탑 */
+  @media (min-width: 1024px) {
+    width: 360px;
+    height: 48px;
+    border-radius: 16px;
+  }
+  
+  /* 대형 화면 */
+  @media (min-width: 1440px) {
+    width: 400px;
+    height: 52px;
+    border-radius: 18px;
+  }
+`;
+
+const TestLoginButtonText = styled.span`
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: white;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 6px;
+  
+  @media (min-width: 768px) {
+    font-size: 14px;
+    gap: 7px;
+  }
+  
+  @media (min-width: 1024px) {
+    font-size: 15px;
+    gap: 8px;
+  }
+`;
+
+const TestLoginIcon = styled.img`
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) saturate(100%) invert(100%) sepia(100%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);
+  transform: translateX(0);
+  transition: all 0.3s ease;
+  
+  ${TestLoginButton}:hover & {
+    transform: translateX(2px) scale(1.05);
+  }
+  
+  @media (min-width: 768px) {
+    width: 17px;
+    height: 17px;
+  }
+  
+  @media (min-width: 1024px) {
+    width: 18px;
+    height: 18px;
+  }
+`;
+
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+  const { showError, showSuccess } = useNotification();
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
+  const [userInfo, setUserInfo] = useState<any>(null);
+  const [isTestLoginLoading, setIsTestLoginLoading] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
-  // 테스트용 키보드 단축키 (개발 시에만 사용)
+  // 쿼리스트링 인증 처리 (OAuth2 로그인 후 루트로 리다이렉트된 경우)
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // Ctrl + M 또는 Cmd + M으로 모달 열기/닫기
-      if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
-        e.preventDefault();
-        setIsSignupModalOpen(prev => !prev);
-        console.log('모달 토글:', !isSignupModalOpen);
-      }
-    };
+    const params = new URLSearchParams(location.search);
+    const accessToken = params.get('accessToken');
+    const refreshToken = params.get('refreshToken');
+    const userId = params.get('userId');
+    const email = params.get('email');
+    const nickname = params.get('nickname');
+    const membershipType = params.get('membershipType');
+    const isNewUser = params.get('isNewUser') === 'true';
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isSignupModalOpen]);
+    // 개발 모드에서 강제 신규 유저 모드 체크
+    const isForceNewUserMode = localStorage.getItem('DEV_FORCE_NEW_USER') === 'true';
+
+    if (accessToken && refreshToken && userId) {
+      // 토큰 저장
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('userId', userId);
+      localStorage.setItem('email', email || '');
+      localStorage.setItem('nickname', nickname || '');
+      localStorage.setItem('membershipType', membershipType || '');
+
+      // 사용자 정보 설정
+      const currentUserInfo = {
+        id: parseInt(userId),
+        email: email || '',
+        nickname: nickname || '',
+        name: undefined,
+        profileImage: undefined,
+        provider: 'kakao',
+        membershipType: membershipType || 'FREE',
+        farmName: undefined,
+        location: undefined,
+        createdAt: new Date().toISOString()
+      };
+      setUserInfo(currentUserInfo);
+      login(currentUserInfo);
+
+      // 강제 신규 유저 모드이거나 신규 유저인 경우 모달 표시
+      if (isForceNewUserMode || isNewUser) {
+        console.log('🔧 개발 도구: 강제 신규 유저 모드 또는 실제 신규 유저 - 회원가입 모달 표시');
+        setIsSignupModalOpen(true);
+        
+        // 강제 신규 유저 모드 플래그 제거 (한 번만 적용)
+        if (isForceNewUserMode) {
+          localStorage.removeItem('DEV_FORCE_NEW_USER');
+        }
+      } else {
+        navigate('/home');
+      }
+    }
+    // eslint-disable-next-line
+  }, [location.search, login, navigate]);
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -1184,12 +1354,99 @@ const Home: React.FC = () => {
   };
 
   const handleKakaoLogin = () => {
-    // 백엔드의 카카오 OAuth2 로그인 엔드포인트로 리다이렉트
-    window.location.href = 'http://localhost:8081/oauth2/authorization/kakao';
+    window.location.href = KAKAO_AUTH_URL;
+  };
+
+  const handleTestLogin = () => {
+    console.log('🔍 테스트 로그인 시작');
+    setIsPasswordModalOpen(true);
+  };
+
+  const handlePasswordSubmit = async (password: string) => {
+    console.log('📡 테스트 로그인 API 호출 시작');
+    setIsTestLoginLoading(true);
+    
+    try {
+      const result = await testLogin(password);
+      console.log('✅ testLogin API 응답:', result);
+      
+      // 토큰 저장
+      localStorage.setItem('accessToken', result.accessToken);
+      localStorage.setItem('refreshToken', result.refreshToken);
+      localStorage.setItem('userId', result.user.id.toString());
+      localStorage.setItem('email', result.user.email);
+      localStorage.setItem('nickname', result.user.name || '');
+      localStorage.setItem('membershipType', result.user.membershipType);
+      localStorage.setItem('name', result.user.name || '');
+      localStorage.setItem('farmName', result.user.farmName || '');
+      localStorage.setItem('location', result.user.location || '');
+
+      // 사용자 정보 설정
+      const userForFrontend = {
+        id: result.user.id,
+        email: result.user.email,
+        nickname: result.user.name,
+        name: result.user.name,
+        profileImage: undefined,
+        provider: 'test',
+        membershipType: result.user.membershipType,
+        farmName: result.user.farmName,
+        location: result.user.location,
+        createdAt: new Date().toISOString()
+      };
+      
+      setUserInfo(userForFrontend);
+      login(userForFrontend);
+
+      // 성공 알림
+      showSuccess('테스트 로그인 성공', '평가용 계정으로 로그인되었습니다');
+      
+      // 모달 닫기
+      setIsPasswordModalOpen(false);
+
+      // 신규 유저인 경우 회원가입 모달 표시, 아니면 홈으로 이동
+      if (result.isNewUser) {
+        console.log('🆕 신규 유저 - 회원가입 모달 표시');
+        setIsSignupModalOpen(true);
+      } else {
+        console.log('🏠 기존 유저 - 홈으로 이동');
+        navigate('/home');
+      }
+    } catch (error: any) {
+      console.error('❌ 테스트 로그인 실패:', error);
+      
+      // 에러 메시지 설정
+      let errorTitle = '로그인 실패';
+      let errorMessage = '테스트 로그인에 실패했습니다.';
+      
+      if (error.response?.status === 401) {
+        errorTitle = '잘못된 패스워드';
+        errorMessage = '테스트 계정 패스워드가 올바르지 않습니다.';
+      } else if (error.response?.status === 404) {
+        errorTitle = 'API 오류';
+        errorMessage = '테스트 로그인 서비스를 찾을 수 없습니다.';
+      } else if (error.response?.status === 500) {
+        errorTitle = '서버 오류';
+        errorMessage = '서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      // Toast 에러 알림
+      showError(errorTitle, errorMessage);
+    } finally {
+      setIsTestLoginLoading(false);
+    }
+  };
+
+  const handlePasswordCancel = () => {
+    setIsPasswordModalOpen(false);
+    setIsTestLoginLoading(false);
   };
 
   const handleSignupClose = () => {
     setIsSignupModalOpen(false);
+    navigate('/');
   };
 
   return (
@@ -1223,6 +1480,17 @@ const Home: React.FC = () => {
           <KakaoLoginButton onClick={handleKakaoLogin}>
             <KakaoLoginImg src={kakaoLogin} alt="카카오 로그인" />
           </KakaoLoginButton>
+          
+          {/* 테스트 로그인 버튼 - 카카오 로그인 바로 아래에 배치 */}
+          <TestLoginButton 
+            onClick={handleTestLogin}
+            disabled={isTestLoginLoading}
+          >
+            <TestLoginButtonText>
+              {!isTestLoginLoading && <TestLoginIcon src={iconProfile} alt="테스트 로그인" />}
+              {isTestLoginLoading ? '로그인 중...' : '테스트 계정 로그인'}
+            </TestLoginButtonText>
+          </TestLoginButton>
         </HeroSection>
 
         {/* 섹션 2: 과일/채소 무한 스크롤 - 순차적 로딩 */}
@@ -1255,10 +1523,10 @@ const Home: React.FC = () => {
           
           {/* 서비스 섹션 헤더 */}
           <SectionHeader>
-            <SectionMainTitle>팜랜딩에서 뭘 할 수 있나요?</SectionMainTitle>
+            <SectionMainTitle>팜랜딩이 당신에게 주는 가치</SectionMainTitle>
             <SectionSubTitle>
-              농산물에 브랜딩과 적정 가격을 제안하여<br />
-              농장주님의 직거래를 성공으로 이끕니다.
+              농장주님이 찾던 브랜드와 가격을 한 번에,<br />
+              농장주님의 직거래가 쉬워집니다.
             </SectionSubTitle>
           </SectionHeader>
           
@@ -1315,8 +1583,7 @@ const Home: React.FC = () => {
           <CtaSection>
             <CtaTitle>직접 사용해보세요!</CtaTitle>
             <CtaSubtitle>
-              농산물에 브랜딩과 적정 가격을 제안하여<br />
-              농장주님의 직거래를 성공으로 이끌어보세요.
+              내 농산물에 딱 맞는 브랜드와 가격을 만나보세요.
             </CtaSubtitle>
             <CtaButton onClick={handleKakaoLogin}>
               <CtaButtonText>
@@ -1356,12 +1623,15 @@ const Home: React.FC = () => {
           setIsSignupModalOpen(false);
           navigate('/home');
         }}
-        userInfo={{
-          userId: '',
-          email: '',
-          nickname: '',
-          membershipType: ''
-        }}
+        userInfo={userInfo || {}}
+      />
+      
+      {/* 테스트 로그인 패스워드 입력 모달 */}
+      <PasswordInputModal
+        isOpen={isPasswordModalOpen}
+        onConfirm={handlePasswordSubmit}
+        onCancel={handlePasswordCancel}
+        isLoading={isTestLoginLoading}
       />
     </LandingPageWrapper>
   );

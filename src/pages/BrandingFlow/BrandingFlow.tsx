@@ -8,6 +8,7 @@ import GapVerificationStep from '../../components/branding/GapVerificationStep';
 import BrandNameGenerationStep from '../../components/branding/BrandNameGenerationStep';
 import BrandResultStep from '../../components/branding/BrandResultStep';
 import { BRAND_IMAGE_KEYWORDS, CROP_APPEAL_KEYWORDS, LOGO_IMAGE_KEYWORDS } from '../../constants/keywords';
+import type { GapCertificationResponse } from '../../api/gapCertificationService';
 
 // 애니메이션
 const fadeIn = keyframes`
@@ -179,6 +180,7 @@ export interface BrandingData {
   variety: string;
   cultivationMethod: string;
   grade: string;
+  includeFarmName: boolean;
   
   // 키워드들
   brandingKeywords: string[];
@@ -188,6 +190,7 @@ export interface BrandingData {
   // GAP 인증
   gapNumber: string;
   isGapVerified: boolean;
+  gapCertificationInfo?: GapCertificationResponse;
   
   // 생성된 브랜드명
   generatedBrandName: string;
@@ -213,16 +216,18 @@ const BrandingFlow: React.FC = () => {
     variety: '',
     cultivationMethod: '',
     grade: '',
+    includeFarmName: false,
     brandingKeywords: [],
     cropAppealKeywords: [],
     logoImageKeywords: [],
     gapNumber: '',
     isGapVerified: false,
+    gapCertificationInfo: undefined,
     generatedBrandName: ''
   });
 
   const handleLogoClick = () => {
-    navigate('/');
+    navigate('/home');
   };
 
   const handleMypageClick = () => {
@@ -245,8 +250,53 @@ const BrandingFlow: React.FC = () => {
     }
   };
 
-  const updateBrandingData = (updates: Partial<BrandingData>) => {
-    setBrandingData(prev => ({ ...prev, ...updates }));
+  const updateBrandingData = (newData: Partial<BrandingData>) => {
+    setBrandingData(prev => {
+      const updated = { ...prev, ...newData };
+      
+      // 작물명이 변경되면 localStorage에 저장
+      if (newData.cropName) {
+        localStorage.setItem('brandingCropName', newData.cropName);
+      }
+      
+      // 품종이 변경되면 localStorage에 저장
+      if (newData.variety) {
+        localStorage.setItem('brandingVariety', newData.variety);
+      }
+      
+      // 재배 방식이 변경되면 localStorage에 저장
+      if (newData.cultivationMethod) {
+        localStorage.setItem('brandingCultivationMethod', newData.cultivationMethod);
+      }
+      
+      // 등급이 변경되면 localStorage에 저장
+      if (newData.grade !== undefined) {
+        localStorage.setItem('brandingGrade', newData.grade);
+      }
+      
+      // 농가명 포함 여부가 변경되면 localStorage에 저장
+      if (newData.includeFarmName !== undefined) {
+        localStorage.setItem('brandingIncludeFarmName', newData.includeFarmName.toString());
+      }
+      
+      // GAP 인증 정보가 변경되면 localStorage에 저장
+      if (newData.isGapVerified !== undefined) {
+        localStorage.setItem('brandingIsGapVerified', newData.isGapVerified.toString());
+      }
+      
+      // GAP 번호가 변경되면 localStorage에 저장
+      if (newData.gapNumber !== undefined) {
+        localStorage.setItem('brandingGapNumber', newData.gapNumber);
+      }
+      
+      // GAP 상세 정보가 있으면 localStorage에 저장
+      if (newData.gapCertificationInfo) {
+        localStorage.setItem('brandingGapInstitutionName', newData.gapCertificationInfo.certificationInstitution);
+        localStorage.setItem('brandingGapProductName', newData.gapCertificationInfo.productName);
+      }
+      
+      return updated;
+    });
   };
 
   const getProgress = () => {
@@ -262,7 +312,8 @@ const BrandingFlow: React.FC = () => {
               cropName: brandingData.cropName,
               variety: brandingData.variety,
               cultivationMethod: brandingData.cultivationMethod,
-              grade: brandingData.grade
+              grade: brandingData.grade,
+              includeFarmName: brandingData.includeFarmName
             }}
             onChange={(data) => updateBrandingData(data)}
             onValidationChange={setIsCurrentStepValid}
@@ -273,11 +324,13 @@ const BrandingFlow: React.FC = () => {
           <GapVerificationStep
             data={{
               gapNumber: brandingData.gapNumber,
-              isVerified: brandingData.isGapVerified
+              isVerified: brandingData.isGapVerified,
+              certificationInfo: brandingData.gapCertificationInfo
             }}
             onChange={(data) => updateBrandingData({ 
               gapNumber: data.gapNumber, 
-              isGapVerified: data.isVerified 
+              isGapVerified: data.isVerified,
+              gapCertificationInfo: data.certificationInfo
             })}
             onValidationChange={setIsCurrentStepValid}
           />
@@ -313,28 +366,26 @@ const BrandingFlow: React.FC = () => {
           />
         );
       case BrandingStep.BRAND_NAME_GENERATION:
-        const allKeywords = [
-          ...brandingData.brandingKeywords,
-          ...brandingData.cropAppealKeywords,
-          ...brandingData.logoImageKeywords
-        ];
         return (
           <BrandNameGenerationStep
-            allKeywords={allKeywords}
+            brandingKeywords={brandingData.brandingKeywords}
+            cropAppealKeywords={brandingData.cropAppealKeywords}
             onBrandNameGenerated={(name) => updateBrandingData({ generatedBrandName: name })}
             onValidationChange={setIsCurrentStepValid}
           />
         );
       case BrandingStep.RESULT:
-        const allKeywordsForResult = [
-          ...brandingData.brandingKeywords,
-          ...brandingData.cropAppealKeywords,
-          ...brandingData.logoImageKeywords
-        ];
+        console.log('BrandingFlow - RESULT 단계 키워드 확인:');
+        console.log('- brandingData.brandingKeywords:', brandingData.brandingKeywords);
+        console.log('- brandingData.cropAppealKeywords:', brandingData.cropAppealKeywords);
+        console.log('- brandingData.logoImageKeywords:', brandingData.logoImageKeywords);
+        
         return (
           <BrandResultStep
             brandName={brandingData.generatedBrandName}
-            allKeywords={allKeywordsForResult}
+            brandingKeywords={brandingData.brandingKeywords}
+            cropAppealKeywords={brandingData.cropAppealKeywords}
+            logoImageKeywords={brandingData.logoImageKeywords}
             onComplete={() => navigate('/mypage')}
           />
         );

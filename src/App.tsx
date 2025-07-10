@@ -1,20 +1,23 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { AuthProvider } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import ProtectedRoute from './components/common/ProtectedRoute/ProtectedRoute';
+import DevPanel from './components/common/DevPanel/DevPanel';
+import { StagewiseSetup } from './components/dev';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard/Home';
 import BrandingFlow from './pages/BrandingFlow/BrandingFlow';
 import BrandResult from './pages/BrandResult/BrandResult';
 import MyPage from './pages/MyPage/MyPage';
 import PriceQuoteFlow from './pages/PriceQuoteFlow/PriceQuoteFlow';
-import AuthCallback from './pages/AuthCallback';
+import PremiumPricing from './pages/PremiumPricing/PremiumPricing';
 import './App.css';
 
-const AppContainer = styled.div<{ isLanding: boolean }>`
+const AppContainer = styled.div<{ $isLanding: boolean }>`
   width: 100vw;
   min-height: 100vh;
-  background: ${props => props.isLanding ? '#FFFFFF' : '#F4FAFF'};
+  background: ${props => props.$isLanding ? '#FFFFFF' : '#F4FAFF'};
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -28,14 +31,14 @@ const AppContainer = styled.div<{ isLanding: boolean }>`
   text-rendering: optimizeLegibility;
 `;
 
-const ContentWrapper = styled.div<{ isLanding: boolean }>`
+const ContentWrapper = styled.div<{ $isLanding: boolean }>`
   width: 100%;
   min-height: 100vh;
-  background: ${props => props.isLanding ? '#FFFFFF' : '#F4FAFF'};
+  background: ${props => props.$isLanding ? '#FFFFFF' : '#F4FAFF'};
   position: relative;
   
   /* 랜딩페이지가 아닐 때만 최대 너비 제한 */
-  ${props => !props.isLanding && `
+  ${props => !props.$isLanding && `
     max-width: 402px;
     margin: 0 auto;
     
@@ -47,15 +50,13 @@ const ContentWrapper = styled.div<{ isLanding: boolean }>`
 
 function AppContent() {
   const location = useLocation();
-  const isLanding = location.pathname === '/' || location.pathname === '/auth/callback';
+  const isLanding = location.pathname === '/';
 
   return (
-    <AppContainer isLanding={isLanding}>
-      <ContentWrapper isLanding={isLanding}>
+    <AppContainer $isLanding={isLanding}>
+      <ContentWrapper $isLanding={isLanding}>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          
           {/* 보호된 라우트들 */}
           <Route path="/home" element={
             <ProtectedRoute>
@@ -82,9 +83,17 @@ function AppContent() {
               <PriceQuoteFlow />
             </ProtectedRoute>
           } />
+          <Route path="/premium-pricing" element={
+            <ProtectedRoute>
+              <PremiumPricing />
+            </ProtectedRoute>
+          } />
           {/* 추가 페이지 라우트는 여기에 추가 */}
         </Routes>
       </ContentWrapper>
+      
+      {/* 개발 환경에서만 표시되는 개발자 패널 */}
+      <DevPanel />
     </AppContainer>
   );
 }
@@ -92,9 +101,13 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <NotificationProvider>
+        <Router>
+          <AppContent />
+          {/* Stagewise toolbar for development mode only */}
+          <StagewiseSetup />
+        </Router>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

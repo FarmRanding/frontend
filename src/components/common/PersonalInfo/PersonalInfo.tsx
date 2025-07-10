@@ -4,6 +4,7 @@ import iconProfile from '../../../assets/icon-profile.svg';
 import iconFarm from '../../../assets/icon_farm.svg';
 import iconLocation from '../../../assets/icon-location.png';
 import iconMypage from '../../../assets/icon-mypage.svg';
+import AddressAutocomplete from '../AddressAutocomplete';
 
 // 애니메이션
 const fadeInUp = keyframes`
@@ -32,8 +33,8 @@ const PersonalInfoCard = styled.div`
   border: 1px solid rgba(31, 65, 187, 0.08);
   box-sizing: border-box;
   position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
+  overflow: visible !important;
+  transition: all 0.2s ease;
   animation: ${fadeInUp} 0.6s ease-out;
 
   &::before {
@@ -46,27 +47,12 @@ const PersonalInfoCard = styled.div`
     background: linear-gradient(90deg, #1F41BB 0%, #4F46E5 50%, #818CF8 100%);
   }
 
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-    transition: left 0.7s;
-  }
-
   &:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     box-shadow: 
-      0 8px 32px rgba(31, 65, 187, 0.12),
-      0 2px 8px rgba(0, 0, 0, 0.08);
+      0 6px 24px rgba(31, 65, 187, 0.1),
+      0 2px 6px rgba(0, 0, 0, 0.06);
     border-color: rgba(31, 65, 187, 0.15);
-    
-    &::after {
-      left: 100%;
-    }
   }
 `;
 
@@ -78,18 +64,18 @@ const InfoRow = styled.div`
   padding: 12px 0;
   box-sizing: border-box;
   position: relative;
-  transition: all 0.3s ease;
+  overflow: visible !important;
+  transition: all 0.2s ease;
 
   &:not(:last-child) {
     border-bottom: 1px solid rgba(31, 65, 187, 0.08);
   }
 
   &:hover {
-    transform: translateX(4px);
-    background: rgba(31, 65, 187, 0.02);
-    border-radius: 12px;
-    margin: 0 -8px;
-    padding: 12px 8px;
+    background: rgba(31, 65, 187, 0.015);
+    border-radius: 8px;
+    margin: 0 -4px;
+    padding: 12px 4px;
   }
 `;
 
@@ -110,31 +96,12 @@ const IconContainer = styled.div`
   background: linear-gradient(135deg, rgba(31, 65, 187, 0.1) 0%, rgba(79, 70, 229, 0.1) 100%);
   border-radius: 12px;
   flex-shrink: 0;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    background: rgba(31, 65, 187, 0.1);
-    border-radius: 50%;
-    transition: all 0.3s ease;
-    transform: translate(-50%, -50%);
-  }
-
   ${InfoRow}:hover & {
-    transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(31, 65, 187, 0.15);
-    
-    &::before {
-      width: 100%;
-      height: 100%;
-    }
+    background: linear-gradient(135deg, rgba(31, 65, 187, 0.15) 0%, rgba(79, 70, 229, 0.15) 100%);
   }
 `;
 
@@ -143,13 +110,9 @@ const IconImage = styled.img`
   height: 20px;
   object-fit: contain;
   filter: brightness(0) saturate(100%) invert(25%) sepia(98%) saturate(1653%) hue-rotate(221deg) brightness(96%) contrast(91%);
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   position: relative;
   z-index: 1;
-
-  ${InfoRow}:hover & {
-    transform: scale(1.1);
-  }
 `;
 
 const LabelText = styled.span`
@@ -186,11 +149,148 @@ const ValueText = styled.span`
   text-overflow: ellipsis;
   flex: 1;
   min-width: 0;
-  transition: color 0.3s ease;
+  transition: color 0.2s ease;
 
   ${InfoRow}:hover & {
-    color: #1F41BB;
+    color: #4338CA;
   }
+`;
+
+const EditInput = styled.input`
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #334155;
+  border: 1px solid rgba(31, 65, 187, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  flex: 1;
+  min-width: 0;
+  background: white;
+  transition: all 0.3s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #1F41BB;
+    box-shadow: 0 0 0 3px rgba(31, 65, 187, 0.1);
+  }
+`;
+
+// AddressAutocomplete용 스타일드 컴포넌트
+const AddressAutocompleteWrapper = styled.div`
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1000;
+  
+  // AddressAutocomplete 내부 스타일 조정
+  .address-autocomplete-container {
+    position: relative;
+    z-index: 1000;
+  }
+  
+  input {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #334155;
+    border: 1px solid rgba(31, 65, 187, 0.3);
+    border-radius: 8px;
+    padding: 8px 12px;
+    width: 100%;
+    background: white;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+
+    &:focus {
+      outline: none;
+      border-color: #1F41BB;
+      box-shadow: 0 0 0 3px rgba(31, 65, 187, 0.1);
+    }
+    
+    &::placeholder {
+      color: #9CA3AF;
+    }
+  }
+  
+  // 드롭다운 리스트 스타일 조정
+  ul {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    max-height: 200px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid rgba(31, 65, 187, 0.2);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-top: 4px;
+    
+    li {
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #334155;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      
+      &:hover, &[aria-selected="true"] {
+        background-color: rgba(31, 65, 187, 0.08);
+        color: #1F41BB;
+      }
+      
+      &:first-child {
+        border-top-left-radius: 7px;
+        border-top-right-radius: 7px;
+      }
+      
+      &:last-child {
+        border-bottom-left-radius: 7px;
+        border-bottom-right-radius: 7px;
+      }
+    }
+  }
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+`;
+
+const ActionButton = styled.button<{ variant: 'save' | 'cancel' }>`
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid;
+
+  ${props => props.variant === 'save' ? `
+    background: #1F41BB;
+    color: white;
+    border-color: #1F41BB;
+
+    &:hover {
+      background: #1a3aa0;
+      border-color: #1a3aa0;
+    }
+  ` : `
+    background: white;
+    color: #6B7280;
+    border-color: #D1D5DB;
+
+    &:hover {
+      background: #F9FAFB;
+      border-color: #9CA3AF;
+    }
+  `}
 `;
 
 export interface PersonalInfoData {
@@ -202,32 +302,58 @@ export interface PersonalInfoData {
 interface PersonalInfoProps {
   data: PersonalInfoData;
   className?: string;
+  isEditing?: boolean;
+  editValues?: PersonalInfoData;
+  onValueChange?: (field: keyof PersonalInfoData, value: string) => void;
+  onSave?: () => void;
+  onCancel?: () => void;
 }
 
 const PersonalInfo: React.FC<PersonalInfoProps> = ({
   data,
   className,
+  isEditing = false,
+  editValues = data,
+  onValueChange,
+  onSave,
+  onCancel,
 }) => {
   const infoItems = [
     {
       icon: iconProfile,
       label: '이름',
       value: data.name,
+      editValue: editValues.name,
+      field: 'name' as keyof PersonalInfoData,
       alt: '프로필'
     },
     {
       icon: iconFarm,
       label: '농가명',
       value: data.farmName,
+      editValue: editValues.farmName,
+      field: 'farmName' as keyof PersonalInfoData,
       alt: '농가'
     },
     {
       icon: iconLocation,
       label: '농가 위치',
       value: data.location,
+      editValue: editValues.location,
+      field: 'location' as keyof PersonalInfoData,
       alt: '위치'
     }
   ];
+
+  const handleInputChange = (field: keyof PersonalInfoData, value: string) => {
+    if (onValueChange) {
+      onValueChange(field, value);
+    }
+  };
+
+  const handleLocationChange = (location: string) => {
+    handleInputChange('location', location);
+  };
 
   return (
     <PersonalInfoCard className={className}>
@@ -240,9 +366,39 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({
             <LabelText>{item.label}</LabelText>
           </LeftSection>
           <Divider>•</Divider>
-          <ValueText>{item.value}</ValueText>
+          {isEditing ? (
+            item.field === 'location' ? (
+              <AddressAutocompleteWrapper>
+                <AddressAutocomplete
+                  value={item.editValue}
+                  onChange={handleLocationChange}
+                  placeholder="부산, 서울, 화성 등 지역명을 입력하세요"
+                  className="address-autocomplete-container"
+                />
+              </AddressAutocompleteWrapper>
+            ) : (
+              <EditInput
+                value={item.editValue}
+                onChange={(e) => handleInputChange(item.field, e.target.value)}
+                placeholder={`${item.label}을 입력하세요`}
+              />
+            )
+          ) : (
+            <ValueText>{item.value}</ValueText>
+          )}
         </InfoRow>
       ))}
+      
+      {isEditing && (
+        <ButtonGroup>
+          <ActionButton variant="cancel" onClick={onCancel}>
+            취소
+          </ActionButton>
+          <ActionButton variant="save" onClick={onSave}>
+            저장
+          </ActionButton>
+        </ButtonGroup>
+      )}
     </PersonalInfoCard>
   );
 };

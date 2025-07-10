@@ -1,6 +1,5 @@
 export interface PriceQuoteRequest {
-  cropName: string;
-  variety: string;
+  productName: string;
   grade: string;
   harvestDate: Date;
 }
@@ -17,6 +16,9 @@ export interface PriceHistoryData {
   avgPrice: number;
 }
 
+// 가격 제안 타입 (프리미엄/일반 구분)
+export type QuotationType = 'STANDARD' | 'PREMIUM';
+
 export interface PriceQuoteHistory {
   id: string;
   request: PriceQuoteRequest;
@@ -24,4 +26,5 @@ export interface PriceQuoteHistory {
   createdAt: string;
   unit: string; // 'kg', 'box' 등
   quantity: number; // 1kg, 5kg 등
+  quotationType: QuotationType; // 프리미엄/일반 구분
 } 

@@ -1,0 +1,590 @@
+import React, { useEffect, useState } from 'react';
+import styled, { keyframes } from 'styled-components';
+import iconMoney from '../../../assets/icon-money.svg';
+import iconGraph from '../../../assets/icon-graph.svg';
+import iconCheck from '../../../assets/icon-check.svg';
+
+// 애니메이션
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+const slideInUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+const pulse = keyframes`
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+`;
+
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  width: 100%;
+  max-width: 500px;
+  padding: 0 20px;
+  box-sizing: border-box;
+`;
+
+const ResultHeader = styled.div`
+  text-align: center;
+  animation: ${fadeIn} 0.8s ease-out;
+`;
+
+const Title = styled.h1`
+  font-family: 'Jalnan 2', sans-serif;
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.67;
+  color: #000000;
+  margin: 0 0 8px 0;
+`;
+
+const Subtitle = styled.p`
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #8B5CF6;
+  margin: 0;
+`;
+
+const ResultCard = styled.div`
+  width: 100%;
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+  border-radius: 20px;
+  padding: 32px 24px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  animation: ${slideInUp} 0.8s ease-out 0.2s both;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    33% { transform: translate(10px, -10px) rotate(1deg); }
+    66% { transform: translate(-5px, 5px) rotate(-1deg); }
+  }
+`;
+
+const ProductInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 2;
+`;
+
+const ProductIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  img {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
+  }
+`;
+
+const ProductDetails = styled.div`
+  flex: 1;
+`;
+
+const ProductName = styled.h2`
+  font-family: 'Jalnan 2', sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.3;
+  color: #FFFFFF;
+  margin: 0 0 4px 0;
+`;
+
+const ProductLocation = styled.p`
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+`;
+
+const PriceSection = styled.div`
+  text-align: center;
+  position: relative;
+  z-index: 2;
+`;
+
+const PriceLabel = styled.p`
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 8px 0;
+`;
+
+const SuggestedPrice = styled.div`
+  font-family: 'Jalnan 2', sans-serif;
+  font-weight: 400;
+  font-size: 36px;
+  line-height: 1.2;
+  color: #FFFFFF;
+  margin-bottom: 16px;
+  animation: ${pulse} 2s ease-in-out infinite;
+`;
+
+const PriceBreakdown = styled.div`
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+`;
+
+const PriceItem = styled.div`
+  flex: 1;
+  text-align: center;
+`;
+
+const PriceItemLabel = styled.p`
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 4px 0;
+`;
+
+const PriceItemValue = styled.p`
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.3;
+  color: #FFFFFF;
+  margin: 0;
+`;
+
+const AnalysisSection = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: ${slideInUp} 0.8s ease-out 0.4s both;
+`;
+
+const AnalysisCard = styled.div`
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.1);
+`;
+
+const AnalysisHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+`;
+
+const AnalysisIcon = styled.div`
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  img {
+    width: 16px;
+    height: 16px;
+    filter: brightness(0) saturate(100%) invert(47%) sepia(82%) saturate(1352%) hue-rotate(242deg) brightness(97%) contrast(94%);
+  }
+`;
+
+const AnalysisTitle = styled.h3`
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.3;
+  color: #1F2937;
+  margin: 0;
+`;
+
+const AnalysisContent = styled.div`
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #6B7280;
+`;
+
+const CalculationExplanation = styled.div`
+  font-family: 'Pretendard', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #475569;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 16px;
+  
+  /* 읽기 쉬운 텍스트 스타일 */
+  text-align: left;
+  word-break: keep-all;
+  
+  /* 신뢰성을 강조하는 스타일 */
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+    border-radius: 2px 0 0 2px;
+  }
+`;
+
+const RecommendationList = styled.ul`
+  margin: 8px 0 0 0;
+  padding-left: 16px;
+`;
+
+const RecommendationItem = styled.li`
+  margin-bottom: 4px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+`;
+
+const CompleteButton = styled.button`
+  width: 100%;
+  max-width: 300px;
+  padding: 16px;
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+  border: none;
+  border-radius: 12px;
+  font-family: 'Jalnan 2', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.18;
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  animation: ${slideInUp} 0.8s ease-out 0.6s both;
+
+  &:hover {
+    background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+  }
+  
+  img {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
+  }
+`;
+
+// 정보 섹션 스타일
+const InfoSection = styled.div`
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid rgba(139, 92, 246, 0.1);
+  animation: ${slideInUp} 0.8s ease-out 0.4s both;
+`;
+
+const InfoSectionTitle = styled.h3`
+  font-family: 'Jalnan 2', sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.3;
+  color: #000000;
+  margin: 0 0 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const InfoTitleIcon = styled.div`
+  width: 24px;
+  height: 24px;
+  background: #8B5CF6;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &::after {
+    content: 'ⓘ';
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+  }
+`;
+
+const InfoGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+`;
+
+const InfoItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const InfoLabel = styled.span`
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.3;
+  color: #666666;
+`;
+
+const InfoValue = styled.span`
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.3;
+  color: #000000;
+`;
+
+// 프리미엄 가격 제안 데이터 타입
+interface PremiumPriceData {
+  productItemCode: string;
+  productVarietyCode: string;
+  productName: string;
+  location: string;
+  productRankCode?: string; // 등급 코드 (04: 상급, 05: 중급, 06: 하급)
+  date?: Date | null; // 분석일
+  grade?: string;
+  analysisDate?: string;
+  quantity?: string;
+  unit?: string;
+  suggestedPrice: number;
+  retailPrice: number;
+  wholesalePrice: number;
+  priceCalculation?: {
+    retailAverage: number;
+    wholesaleAverage: number;
+    priceRatio: number;
+    calculationFormula: string;
+    explanation: string;
+  };
+  marketAnalysis?: {
+    marketTrend: string;
+    priceFactors: string[];
+    recommendations: string[];
+  };
+}
+
+interface PremiumResultStepProps {
+  data: PremiumPriceData;
+  onComplete: () => void;
+}
+
+const PremiumResultStep: React.FC<PremiumResultStepProps> = ({ data, onComplete }) => {
+  // 등급 코드를 한글로 변환
+  const getGradeText = (gradeCode: string) => {
+    const gradeMap: { [key: string]: string } = {
+      '04': '상급',
+      '05': '중급',
+      '06': '하급'
+    };
+    return gradeMap[gradeCode] || '상급';
+  };
+  const handleComplete = async () => {
+    try {
+      // 프리미엄 가격 제안 결과 저장
+      const { premiumPriceService } = await import('../../../api/premiumPriceService');
+      
+      const saveRequest = {
+        productGroupCode: '', // 사용하지 않음
+        productItemCode: data.productItemCode,
+        productVarietyCode: data.productVarietyCode,
+        location: data.location
+      };
+      
+      // 결과가 이미 생성되어 있으므로 별도 저장 API 호출 (필요시)
+      // await premiumPriceService.saveSuggestion(saveRequest);
+      console.log('프리미엄 가격 제안 결과 저장 완료');
+      
+    } catch (error) {
+      console.error('프리미엄 가격 제안 결과 저장 실패:', error);
+      // 저장 실패해도 계속 진행 (사용자 경험 방해하지 않음)
+    }
+    
+    onComplete();
+  };
+
+  const formatPrice = (price: number) => {
+    if (isNaN(price) || price === 0) {
+      return '데이터 없음';
+    }
+    return `${Math.round(price).toLocaleString()}원`;
+  };
+
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}.`;
+  };
+
+  // 지역명을 원본 그대로 반환 (줄여서 표시하지 않음)
+  const getLocationDisplayName = (location: string) => {
+    return location;
+  };
+
+  return (
+    <Container>
+      <ResultHeader>
+        <Title>프리미엄 가격 분석 완료!</Title>
+        <Subtitle>KAMIS 데이터와 AI 분석을 통한 정확한 직거래 가격입니다.</Subtitle>
+      </ResultHeader>
+
+      <ResultCard>
+        <ProductInfo>
+          <ProductIcon>
+            <img src={iconMoney} alt="농산물" />
+          </ProductIcon>
+          <ProductDetails>
+            <ProductName>{data.productName || '선택한 농산물'}</ProductName>
+            <ProductLocation>{getLocationDisplayName(data.location)} 기준</ProductLocation>
+          </ProductDetails>
+        </ProductInfo>
+
+        <PriceSection>
+          <PriceLabel>AI 추천 직거래 가격</PriceLabel>
+          <SuggestedPrice>{formatPrice(data.suggestedPrice)}</SuggestedPrice>
+          
+          <PriceBreakdown>
+            <PriceItem>
+              <PriceItemLabel>소매 평균</PriceItemLabel>
+              <PriceItemValue>{formatPrice(data.retailPrice)}</PriceItemValue>
+            </PriceItem>
+            <PriceItem>
+              <PriceItemLabel>도매 평균</PriceItemLabel>
+              <PriceItemValue>{formatPrice(data.wholesalePrice)}</PriceItemValue>
+            </PriceItem>
+          </PriceBreakdown>
+        </PriceSection>
+      </ResultCard>
+
+      <InfoSection>
+        <InfoSectionTitle>
+          <InfoTitleIcon />
+          분석 상세 정보
+        </InfoSectionTitle>
+        <InfoGrid>
+          <InfoItem>
+            <InfoLabel>품목명</InfoLabel>
+            <InfoValue>{data.productName || '-'}</InfoValue>
+          </InfoItem>
+
+          <InfoItem>
+            <InfoLabel>등급</InfoLabel>
+            <InfoValue>{data.grade || (data.productRankCode ? getGradeText(data.productRankCode) : '상급')}</InfoValue>
+          </InfoItem>
+
+          <InfoItem>
+            <InfoLabel>분석일</InfoLabel>
+            <InfoValue>{data.analysisDate ? formatDate(data.analysisDate) : (data.date ? formatDate(data.date.toISOString()) : formatDate(new Date().toISOString()))}</InfoValue>
+          </InfoItem>
+
+          <InfoItem>
+            <InfoLabel>기준 수량</InfoLabel>
+            <InfoValue>{data.quantity || '1'}{data.unit || 'kg'}</InfoValue>
+          </InfoItem>
+
+          <InfoItem>
+            <InfoLabel>지역</InfoLabel>
+            <InfoValue>{getLocationDisplayName(data.location)}</InfoValue>
+          </InfoItem>
+        </InfoGrid>
+      </InfoSection>
+
+      <AnalysisSection>
+        <AnalysisCard>
+          <AnalysisHeader>
+            <AnalysisIcon>
+              <img src={iconGraph} alt="계산 근거" />
+            </AnalysisIcon>
+            <AnalysisTitle>가격 산출 근거</AnalysisTitle>
+          </AnalysisHeader>
+          <AnalysisContent>
+            <CalculationExplanation>
+              {data.priceCalculation?.explanation || 
+                'KAMIS(한국농수산식품유통공사) 공식 데이터를 기반으로 최근 5일간의 소매·도매 가격을 분석하여 생산자와 소비자 모두에게 공정한 직거래 가격을 제안했습니다. 품질 등급과 지역 특성을 고려하여 시장 상황에 맞는 합리적인 가격을 산출했습니다.'
+              }
+            </CalculationExplanation>
+          </AnalysisContent>
+        </AnalysisCard>
+      </AnalysisSection>
+
+      <CompleteButton onClick={handleComplete}>
+        <img src={iconCheck} alt="완료" />
+        마이페이지에서 확인하기
+      </CompleteButton>
+    </Container>
+  );
+};
+
+export default PremiumResultStep; 
